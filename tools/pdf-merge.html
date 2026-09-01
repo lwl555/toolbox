@@ -31,14 +31,25 @@
    16-pdf.js — PDF 处理（pdf-lib，浏览器本地，零上传）
    ============================================================ */
 
-  
-window.TOOL = { id: "pdf-merge", n: "PDF 合并", c: "pdf", d: "多份 PDF 按顺序合并成一份。",
-  custom: null,
-  fields: [{"k":"files","t":"PDF 文件(多选)","type":"file","multi":true,"accept":".pdf"},{"k":"outfile","t":"输出","type":"outfile"}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) {
+  var T = [];
+  function tool(o) { T.push(o); }
+
+  function bufOf(file) { return RT.fileToBuf(file); }
+  function parseRange(s, total) {
+    // 支持 "1,3,5-8" 形式，返回 0 基页码数组
+    var set = {}, parts = (s || '').split(',');
+    parts.forEach(function (p) {
+      p = p.trim(); if (!p) return;
+      if (/-/.test(p)) { var a = p.split('-'); var lo = +a[0], hi = +a[1]; for (var i = lo; i <= hi; i++) if (i >= 1 && i <= total) set[i - 1] = 1; }
+      else { var n = +p; if (n >= 1 && n <= total) set[n - 1] = 1; }
+    });
+    return Object.keys(set).map(Number).sort(function (a, b) { return a - b; });
+  }
+
+  /* 1 合并 */
+  tool({ id: 'pdf-merge', n: 'PDF 合并', c: 'pdf', d: '多份 PDF 按顺序合并成一份。',
+    f: [{ k: 'files', t: 'PDF 文件(多选)', type: 'file', multi: true, accept: '.pdf' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
       if (!v.files || v.files.length < 2) return { note: '请选择至少 2 个 PDF', outfile: [] };
       return RT.lib(RT.CDN.pdfLib).then(function () {
         var P = window.PDFLib; return Promise.all(v.files.map(bufOf)).then(function (bufs) {
@@ -51,7 +62,123 @@ window.TOOL = { id: "pdf-merge", n: "PDF 合并", c: "pdf", d: "多份 PDF 按�
           });
         });
       });
-    } };
+    } });
+
+  /* 2 拆分为单页 */
+  tool({ id: 'pdf-split', n: 'PDF 拆分单页', c: 'pdf', d: '每一页导出为独立 PDF 文件。',
+    f: [{ k: 'file', t: 'PDF 文件', type: 'file', accept: '.pdf' }, { k: 'outfile', t: '输出(每页一个)', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 PDF', outfile: [] };
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        var P = window.PDFLib; return bufOf(v.file).then(function (b) {
+          return P.PDFDocument.load(b).then(function (src) {
+            var idx = src.getPageIndices(), out = [];
+            return idx.reduce(function (p, i) {
+              return p.then(function () { return P.PDFDocument.create().then(function (one) { return src.copyPages(one, [i]).then(function (ps) { ps.forEach(function (pg) { one.addPage(pg); }); return one.save(); }).then(function (bytes) { out.push({ name: 'page-' + (i + 1) + '.pdf', blob: new Blob([bytes], { type: 'application/pdf' }), size: bytes.length }); }); }); });
+            }, Promise.resolve()).then(function () { return { outfile: out }; });
+          });
+        });
+      });
+    } });
+
+  /* 3 提取页码范围 */
+  tool({ id: 'pdf-extract', n: 'PDF 提取页', c: 'pdf', d: '按页码范围导出（如 1,3,5-8）。',
+    f: [{ k: 'file', t: 'PDF 文件', type: 'file', accept: '.pdf' }, { k: 'range', t: '页码范围', type: 'text', v: '1-3', ph: '1,3,5-8' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 PDF', outfile: [] };
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        var P = window.PDFLib; return bufOf(v.file).then(function (b) {
+          return P.PDFDocument.load(b).then(function (src) {
+            var total = src.getPageCount(), pick = parseRange(v.range, total);
+            if (!pick.length) return { note: '范围无效，共 ' + total + ' 页', outfile: [] };
+            return P.PDFDocument.create().then(function (out) {
+              return src.copyPages(out, pick).then(function (ps) { ps.forEach(function (pg) { out.addPage(pg); }); return out.save(); }).then(function (bytes) {
+                return { outfile: [{ name: 'extract-' + v.range.replace(/[^0-9-]/g, '') + '.pdf', blob: new Blob([bytes], { type: 'application/pdf' }), size: bytes.length }], note: '已提取 ' + pick.length + ' 页（共 ' + total + ' 页）' };
+              });
+            });
+          });
+        });
+      });
+    } });
+
+  /* 4 删除页 */
+  tool({ id: 'pdf-remove', n: 'PDF 删除页', c: 'pdf', d: '删除指定页码后导出。',
+    f: [{ k: 'file', t: 'PDF 文件', type: 'file', accept: '.pdf' }, { k: 'range', t: '要删除的页码', type: 'text', v: '2', ph: '1,3,5-8' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 PDF', outfile: [] };
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        var P = window.PDFLib; return bufOf(v.file).then(function (b) {
+          return P.PDFDocument.load(b).then(function (src) {
+            var total = src.getPageCount(), del = parseRange(v.range, total);
+            var keep = src.getPageIndices().filter(function (i) { return del.indexOf(i) < 0; });
+            if (!keep.length) return { note: '不能全删', outfile: [] };
+            return P.PDFDocument.create().then(function (out) {
+              return src.copyPages(out, keep).then(function (ps) { ps.forEach(function (pg) { out.addPage(pg); }); return out.save(); }).then(function (bytes) {
+                return { outfile: [{ name: 'removed.pdf', blob: new Blob([bytes], { type: 'application/pdf' }), size: bytes.length }], note: '保留 ' + keep.length + ' 页' };
+              });
+            });
+          });
+        });
+      });
+    } });
+
+  /* 5 旋转页 */
+  tool({ id: 'pdf-rotate', n: 'PDF 旋转页', c: 'pdf', d: '将所有页面旋转 90/180/270 度。',
+    f: [{ k: 'file', t: 'PDF 文件', type: 'file', accept: '.pdf' }, { k: 'deg', t: '角度', type: 'seg', opts: [{ v: '90', t: '90°' }, { v: '180', t: '180°' }, { v: '270', t: '270°' }], v: '90' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 PDF', outfile: [] };
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        var P = window.PDFLib; return bufOf(v.file).then(function (b) {
+          return P.PDFDocument.load(b).then(function (src) {
+            src.getPages().forEach(function (pg) { pg.setRotation(P.degrees((pg.getRotation().angle + (+v.deg)) % 360)); });
+            return src.save().then(function (bytes) { return { outfile: [{ name: 'rotated.pdf', blob: new Blob([bytes], { type: 'application/pdf' }), size: bytes.length }] }; });
+          });
+        });
+      });
+    } });
+
+  /* 6 信息 */
+  tool({ id: 'pdf-info', n: 'PDF 信息', c: 'pdf', d: '读取页数。',
+    f: [{ k: 'file', t: 'PDF 文件', type: 'file', accept: '.pdf' }, { k: 'out', t: '信息', type: 'out', mono: true }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        return bufOf(v.file).then(function (b) { return window.PDFLib.PDFDocument.load(b); }).then(function (src) {
+          return { out: '文件名：' + v.file.name + '\n页数：' + src.getPageCount() + '\n体积：' + RT.fmtSize(v.file.size) };
+        });
+      });
+    } });
+
+  /* 7 生成空白 PDF */
+  tool({ id: 'pdf-blank', n: '生成空白 PDF', c: 'pdf', d: '指定页数生成空白 A4 文档。',
+    f: [{ k: 'n', t: '页数', type: 'number', v: 1, min: 1, max: 50 }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        var P = window.PDFLib; return P.PDFDocument.create().then(function (doc) {
+          var n = Math.max(1, Math.min(50, v.n || 1));
+          for (var i = 0; i < n; i++) doc.addPage([595.28, 841.89]);
+          return doc.save().then(function (bytes) { return { outfile: [{ name: 'blank-' + n + '.pdf', blob: new Blob([bytes], { type: 'application/pdf' }), size: bytes.length }] }; });
+        });
+      });
+    } });
+
+  /* 8 重新保存（去冗余压缩） */
+  tool({ id: 'pdf-repack', n: 'PDF 重新保存', c: 'pdf', d: '重新打包，去除部分冗余对象。',
+    f: [{ k: 'file', t: 'PDF 文件', type: 'file', accept: '.pdf' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 PDF', outfile: [] };
+      return RT.lib(RT.CDN.pdfLib).then(function () {
+        return bufOf(v.file).then(function (b) { return window.PDFLib.PDFDocument.load(b); }).then(function (src) {
+          return src.save().then(function (bytes) {
+            return { outfile: [{ name: 'repacked.pdf', blob: new Blob([bytes], { type: 'application/pdf' }), size: bytes.length }], note: '原 ' + RT.fmtSize(v.file.size) + ' → ' + RT.fmtSize(bytes.length) };
+          });
+        });
+      });
+    } });
+
+  
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "pdf-merge"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: pdf-merge'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

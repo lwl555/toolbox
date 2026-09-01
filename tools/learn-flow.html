@@ -31,19 +31,103 @@
 var Lr = {};
 Lr.words = [['apple', '苹果'], ['banana', '香蕉'], ['computer', '电脑'], ['happy', '开心'], ['science', '科学'], ['knowledge', '知识'], ['student', '学生'], ['teacher', '老师'], ['language', '语言'], ['memory', '记忆'], ['practice', '练习'], ['progress', '进步'], ['future', '未来'], ['dream', '梦想'], ['friend', '朋友'], ['family', '家庭'], ['health', '健康'], ['success', '成功'], ['courage', '勇气'], ['wisdom', '智慧'], ['nature', '自然'], ['travel', '旅行'], ['music', '音乐'], ['book', '书'], ['time', '时间'], ['world', '世界'], ['idea', '想法'], ['skill', '技能'], ['goal', '目标'], ['habit', '习惯']];
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "learn-flow", n: "流程图", c: "learn", d: "用 节点→下一节点 生成简单流程图",
-  custom: null,
-  fields: [{"k":"in","t":"每行：节点|下一个","type":"textarea","rows":6,"ph":"开始|处理\n处理|判断\n判断|结束"},{"k":"out","t":"流程图","type":"outhtml"}],
-  auto: true,
-  first: true,
-  init: null,
+tool({ id: 'learn-mindmap', n: '思维导图', c: 'learn', d: '缩进大纲一键生成可折叠树状图',
+  f: [{ k: 'in', t: '大纲（用缩进表示层级）', type: 'textarea', rows: 8, ph: '中心主题\n  分支一\n    子项A\n    子项B\n  分支二' }, { k: 'out', t: '导图', type: 'outhtml' }],
+  run: function (v) {
+    var lines = (v.in || '').split('\n'); var html = '<div style="font-size:13px;line-height:1.8">'; var stack = [{ d: -1, el: '' }];
+    function build(items) { var h = '<ul style="list-style:none;padding-left:16px;margin:4px 0;border-left:2px solid var(--ink-2)">'; items.forEach(function (it) { h += '<li style="margin:3px 0"><span style="background:var(--accent);color:#fff;padding:1px 8px;border-radius:6px;font-size:12px">' + RT.esc(it.t) + '</span>' + (it.children.length ? build(it.children) : '') + '</li>'; }); return h + '</ul>'; }
+    var roots = [], cur = null, path = [];
+    lines.forEach(function (l) { var indent = (l.match(/^\s*/) || [''])[0].length, t = l.trim(); if (!t) return; var node = { t: t, children: [] }; while (path.length && path[path.length - 1].indent >= indent) path.pop(); if (!path.length) roots.push(node); else path[path.length - 1].node.children.push(node); path.push({ indent: indent, node: node }); });
+    html += build(roots) + '</div>';
+    return { out: html };
+  } });
+
+tool({ id: 'learn-flow', n: '流程图', c: 'learn', d: '用 节点→下一节点 生成简单流程图',
+  f: [{ k: 'in', t: '每行：节点|下一个', type: 'textarea', rows: 6, ph: '开始|处理\n处理|判断\n判断|结束' }, { k: 'out', t: '流程图', type: 'outhtml' }],
   run: function (v) {
     var lines = (v.in || '').split('\n').filter(function (l) { return l.trim(); }); var nodes = {}, order = [];
     lines.forEach(function (l) { var p = l.split('|'); var a = p[0].trim(), b = p[1] ? p[1].trim() : ''; if (!nodes[a]) { nodes[a] = { t: a, next: [] }; order.push(a); } if (b && !nodes[b]) { nodes[b] = { t: b, next: [] }; order.push(b); } if (b) nodes[a].next.push(b); });
     var html = '<div style="font-size:13px">'; order.forEach(function (k, i) { var n = nodes[k]; html += '<div style="display:flex;align-items:center;gap:8px"><div style="border:1px solid var(--accent);color:var(--accent);padding:4px 12px;border-radius:8px;font-weight:600">' + RT.esc(n.t) + '</div>'; if (n.next.length) html += '<span style="color:var(--ink-3)">→ ' + n.next.map(function (x) { return RT.esc(x); }).join(', ') + '</span>'; html += '</div>'; });
     return { out: html + '</div>' };
-  } };
+  } });
+
+tool({ id: 'learn-flashcard', n: '闪卡复习', c: 'learn', d: '自定义卡片，正反面翻牌记忆',
+  f: [{ k: 'cv', t: '闪卡', type: 'custom', html: '<div style="display:flex;gap:6px;margin-bottom:8px"><input id="fcFront" class="ipt" placeholder="正面" style="flex:1"><input id="fcBack" class="ipt" placeholder="背面" style="flex:1"><button id="fcAdd" class="btn btn-pri">加</button></div><div id="fcCard" style="border:1px solid var(--ink-2);border-radius:12px;padding:30px;text-align:center;cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600">点击查看卡片</div><div style="margin-top:8px;font-size:12px;color:var(--ink-3)" id="fcInfo"></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'learn_flash_v2'; var front = document.getElementById('fcFront'), back = document.getElementById('fcBack'), add = document.getElementById('fcAdd'), card = document.getElementById('fcCard'), info = document.getElementById('fcInfo');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(a) { localStorage.setItem(KEY, JSON.stringify(a)); }
+    var idx = -1, flipped = false;
+    function show() { var a = load(); if (!a.length) { card.textContent = '暂无卡片，先添加'; info.textContent = ''; return; } if (idx < 0) idx = 0; flipped = false; card.textContent = a[idx].front; info.textContent = '第 ' + (idx + 1) + '/' + a.length + ' 张'; }
+    add.onclick = function () { if (!front.value || !back.value) return; var a = load(); a.push({ front: front.value, back: back.value }); save(a); front.value = ''; back.value = ''; idx = a.length - 1; show(); };
+    card.onclick = function () { var a = load(); if (!a.length) return; if (!flipped) { card.textContent = a[idx].back; flipped = true; } else { idx = (idx + 1) % a.length; show(); } };
+    show();
+  } });
+
+tool({ id: 'learn-timer', n: '学习计时', c: 'learn', d: '按科目计时，统计今日专注',
+  f: [{ k: 'cv', t: '计时', type: 'custom', html: '<div style="display:flex;gap:6px;margin-bottom:8px"><input id="ltSubj" class="ipt" placeholder="科目" style="flex:1"><button id="ltStart" class="btn btn-pri">开始</button><button id="ltStop" class="btn btn-sec">结束</button></div><div id="ltView" style="font-size:13px"></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'learn_timer_v2'; var subj = document.getElementById('ltSubj'), start = document.getElementById('ltStart'), stop = document.getElementById('ltStop'), view = document.getElementById('ltView');
+    var begin = 0, running = null;
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
+    function save(o) { localStorage.setItem(KEY, JSON.stringify(o)); }
+    function render() { var o = load(); var today = new Date().toDateString(); var keys = Object.keys(o).filter(function (k) { return o[k].date === today; }); var html = keys.length ? keys.map(function (k) { return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--ink-1)"><span>' + RT.esc(k) + '</span><b>' + Math.round(o[k].sec / 60) + ' 分</b></div>'; }).join('') : '<div style="color:var(--ink-3)">今日暂无记录</div>'; view.innerHTML = html; }
+    start.onclick = function () { if (!subj.value) { RT.toast('先填科目'); return; } begin = Date.now(); running = subj.value; RT.toast('开始计时：' + running); };
+    stop.onclick = function () { if (!running) return; var o = load(); var today = new Date().toDateString(); if (!o[running]) o[running] = { date: today, sec: 0 }; o[running].date = today; o[running].sec += Math.floor((Date.now() - begin) / 1000); save(o); RT.toast('已记录 ' + running); running = null; render(); };
+    render();
+  } });
+
+tool({ id: 'learn-ebb', n: '艾宾浩斯复习', c: 'learn', d: '输入学习日，算出最佳复习时间点',
+  f: [{ k: 'date', t: '学习日期', type: 'text', v: '2026-09-01' }, { k: 'out', t: '复习计划', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var m = (v.date || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (!m) return { out: '', note: '格式如 2026-09-01', warn: true }; var d = new Date(+m[1], +m[2] - 1, +m[3]); var days = [1, 2, 4, 7, 15, 30]; var r = days.map(function (n) { var x = new Date(d); x.setDate(x.getDate() + n); return '第 ' + n + ' 天（' + x.toISOString().slice(0, 10) + '）'; }); return { out: r.join('\n'), metrics: [{ t: '复习点', v: days.length + ' 次' }] }; } });
+
+tool({ id: 'learn-words', n: '背单词', c: 'learn', d: '随机抽词，点一下看释义',
+  f: [{ k: 'cv', t: '卡片', type: 'custom', html: '<div id="wdCard" style="border:1px solid var(--ink-2);border-radius:12px;padding:30px;text-align:center;cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700">点击抽词</div>' }],
+  run: function () {}, init: function () {
+    var card = document.getElementById('wdCard'); var flipped = false, cur = null;
+    card.onclick = function () { if (!flipped) { cur = Lr.words[Math.floor(Math.random() * Lr.words.length)]; card.textContent = cur[0]; flipped = true; } else { card.textContent = cur[1]; flipped = false; } };
+  } });
+
+tool({ id: 'learn-wrong', n: '错题本', c: 'learn', d: '记录错题，可标注掌握',
+  f: [{ k: 'cv', t: '错题', type: 'custom', html: '<div style="display:flex;gap:6px;margin-bottom:8px"><input id="wkQ" class="ipt" placeholder="题目" style="flex:1"><input id="wkA" class="ipt" placeholder="答案" style="flex:1"><button id="wkAdd" class="btn btn-pri">记</button></div><div id="wkList" style="font-size:13px"></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'learn_wrong_v2'; var q = document.getElementById('wkQ'), a = document.getElementById('wkA'), add = document.getElementById('wkAdd'), list = document.getElementById('wkList');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(x) { localStorage.setItem(KEY, JSON.stringify(x)); }
+    function render() { var arr = load(); list.innerHTML = arr.length ? arr.map(function (r, i) { return '<div style="padding:6px;border-bottom:1px solid var(--ink-1)"><div style="font-weight:600">' + RT.esc(r.q) + '</div><div style="font-size:12px;color:var(--ink-3)">答：' + RT.esc(r.a) + (r.ok ? ' ✓已掌握' : '') + ' <button class="fx" data-i="' + i + '">掌握</button></div></div>'; }).join('') : '<div style="color:var(--ink-3)">暂无错题</div>'; list.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { var arr = load(); arr[+b.dataset.i].ok = true; save(arr); render(); }; }); }
+    add.onclick = function () { if (!q.value) return; var arr = load(); arr.push({ q: q.value, a: a.value, ok: false }); save(arr); q.value = ''; a.value = ''; render(); };
+    render();
+  } });
+
+tool({ id: 'learn-outline', n: '大纲转 Markdown', c: 'learn', d: '缩进大纲转成 # 标题层级',
+  f: [{ k: 'in', t: '缩进大纲', type: 'textarea', rows: 8, ph: '主题\n  一级\n    二级' }, { k: 'out', t: 'Markdown', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var lines = (v.in || '').split('\n'); var r = lines.map(function (l) { var ind = (l.match(/^\s*/) || [''])[0].length / 2; var t = l.trim(); if (!t) return ''; return '#'.repeat(Math.min(6, ind + 1)) + ' ' + t; }); return { out: r.join('\n') }; } });
+
+tool({ id: 'learn-formula', n: '公式速查', c: 'learn', d: '常用数学/物理公式一览',
+  f: [{ k: 'cat', t: '类别', type: 'select', opts: [{ v: 'math', t: '数学' }, { v: 'phys', t: '物理' }, { v: 'chem', t: '化学' }] }, { k: 'out', t: '公式', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) {
+    var F = { math: '勾股定理 a²+b²=c²\n一元二次方程 x=(-b±√(b²-4ac))/2a\n等差数列和 S=n(a1+an)/2\n圆的面积 S=πr²\n三角形面积 S=½ah\n三角函数 sin²+cos²=1', phys: '速度 v=s/t\n牛顿第二定律 F=ma\n动能 E=½mv²\n功 W=Fs\n功率 P=W/t\n密度 ρ=m/V\n欧姆定律 U=IR', chem: '物质的量 n=m/M\n理想气体 PV=nRT\n质量守恒 反应前后质量相等\n溶液浓度 c=n/V\n摩尔质量 M=m/n' };
+    return { out: F[v.cat] };
+  } });
+
+tool({ id: 'learn-exam', n: '考试倒计时', c: 'learn', d: '输入考试日，显示剩余复习天数',
+  f: [{ k: 'date', t: '考试日期', type: 'text', v: '2026-12-31' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }], auto: false,
+  run: function (v) { var m = (v.date || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (!m) return { out: '', note: '格式如 2026-12-31', warn: true }; var d = new Date(+m[1], +m[2] - 1, +m[3]); var days = Math.floor((d - new Date()) / 86400000); return { out: days >= 0 ? '还有 ' + days + ' 天' : '已过期', metrics: [{ t: '剩余', v: days + ' 天' }, { t: '建议', v: days > 0 ? '每天复习 ' + Math.ceil(1) + ' 小时' : '—' }] }; } });
+
+tool({ id: 'learn-quiz', n: '随机抽题', c: 'learn', d: '从题库随机抽 N 道（每行一题）',
+  f: [{ k: 'bank', t: '题库（一行一题）', type: 'textarea', rows: 8, ph: '1+1=?\n中国的首都是？' }, { k: 'n', t: '抽取数量', type: 'number', v: 3, min: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }], auto: false,
+  run: function (v) { var arr = (v.bank || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (arr.length < v.n) return { out: '', note: '题库数量不足', warn: true }; for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return { out: arr.slice(0, v.n).map(function (x, i) { return (i + 1) + '. ' + x; }).join('\n'), metrics: [{ t: '抽取', v: v.n + ' 道' }] }; } });
+
+tool({ id: 'learn-makecard', n: '卡片生成', c: 'learn', d: '生成可打印的问答卡片文本',
+  f: [{ k: 'pairs', t: '每行 正面|背面', type: 'textarea', rows: 6, ph: '法国首都是？|巴黎\n2+3=?|5' }, { k: 'out', t: '卡片', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var lines = (v.pairs || '').split('\n').filter(function (l) { return l.trim(); }); var r = lines.map(function (l, i) { var p = l.split('|'); return '【卡 ' + (i + 1) + '】\nQ: ' + (p[0] || '').trim() + '\nA: ' + (p[1] || '').trim() + '\n'; }).join('\n'); return { out: r || '（空）' }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "learn-flow"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: learn-flow'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

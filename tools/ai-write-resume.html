@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 简历摘要 - 超有用的工具箱</title>
+<meta name="description" content="成就风：动作+结果。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI写作</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 简历摘要</h1>
+<p class="lede">成就风：动作+结果。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-write-xhs.html"><div class="card-t"><span class="card-name">AI 小红书文案</span></div><div class="card-desc">种草风：表情符号+口语+痛点+安利。</div></a><a class="card" href="ai-write-gzh.html"><div class="card-t"><span class="card-name">AI 公众号推文</span></div><div class="card-desc">干货风：标题党+引言+分点+金句收尾。</div></a><a class="card" href="ai-write-dy.html"><div class="card-t"><span class="card-name">AI 抖音脚本</span></div><div class="card-desc">短平快：钩子+反转+行动号召。</div></a><a class="card" href="ai-write-ds.html"><div class="card-t"><span class="card-name">AI 电商描述</span></div><div class="card-desc">卖点风：场景+参数+促销。</div></a><a class="card" href="ai-write-pyq.html"><div class="card-t"><span class="card-name">AI 朋友圈文案</span></div><div class="card-desc">随性风：短句+心情+emoji。</div></a><a class="card" href="ai-write-zc.html"><div class="card-t"><span class="card-name">AI 种草笔记</span></div><div class="card-desc">体验风：真实使用+对比+推荐。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 简历摘要<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   21-ai-write.js — AI 写作（模板引擎 + 本地续写/润色，离线真实可用）
+   ============================================================ */
+function seg(s) { s = (s || '').replace(/\s+/g, ''); var out = [], re = /[a-zA-Z0-9]+|[一-龥]/g, m; while ((m = re.exec(s))) out.push(m[0]); return out; }
+function sents(s) { var parts = (s || '').split(/([。！？!?；;])/), out = [], i; for (i = 0; i < parts.length; i += 2) { var x = (parts[i] || '') + (parts[i + 1] || ''); x = x.trim(); if (x) out.push(x); } return out; }
+function freq(words) { var m = {}, st = '的 了 和 是 在 我 有 就 不 人 都 一 上 也 很 到 说 要 去 你 会 着 没有 看 好 这 那 与 及 或 但 而 因为 所以 如果 我们 他们 什么 怎么 这个 那个 可以 应该 已经 就是 一些 这些 那些 一种 时候 知道 现在 通过 对于 以及 并且 然后 但是 比如 例如 同时 其实 不过 只是 虽然 或者 之后 之前 其中 各个 各种 不少'.split(/\s+/); words.forEach(function (w) { if (st.indexOf(w) >= 0) return; if (w.length < 2 && /[一-龥]/.test(w)) return; m[w] = (m[w] || 0) + 1; }); return m; }
+function summarize(text, ratio) {
+  var ss = sents(text); if (ss.length <= 1) return text || '';
+  var fr = freq(seg(text)); var scores = ss.map(function (s, i) { var w = seg(s).filter(function (x) { return fr[x]; }); var sc = 0; w.forEach(function (x) { sc += fr[x] || 0; }); sc = sc / (w.length || 1); sc *= (1 - Math.abs(i / ss.length - 0.3)); if (s.length > 12 && s.length < 70) sc *= 1.25; return sc; });
+  var n = Math.max(1, Math.round(ss.length * (ratio || 0.3))); var idx = scores.map(function (s, i) { return [i, s]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, n).map(function (x) { return x[0]; }).sort(function (a, b) { return a - b; });
+  return idx.map(function (i) { return ss[i]; }).join(' ');
+}
+var SYN = { '漂亮': '好看', '好看': '养眼', '非常': '格外', '很多': '众多', '重要': '关键', '问题': '难题', '解决': '处理', '使用': '采用', '优秀': '出色', '快乐': '开心', '美丽': '迷人', '巨大': '庞大', '简单': '简便', '快速': '迅速', '帮助': '助力', '提高': '提升', '降低': '下降', '增加': '增长', '喜欢': '喜爱', '讨厌': '反感' };
+function tplFill(s, v) {
+  return String(s)
+    .replace(/\{主题\}/g, v.topic || '（请填写主题）')
+    .replace(/\{关键词\}/g, v.kw || '')
+    .replace(/\{要点\}/g, v.point || '')
+    .replace(/\{语气\}/g, v.tone || '自然')
+    .replace(/\{长度\}/g, v.len || '适中');
+}
+var STYLES = [
+  { s: 'xhs', n: '小红书文案', d: '种草风：表情符号+口语+痛点+安利。', tpl: '✨宝藏分享｜{主题}\n\n最近真的被「{关键词}」惊艳到了！😍\n{要点}\n\n姐妹们信我，这个真的绝绝子，闭眼冲不踩雷～💕\n#好物分享 #{关键词}' },
+  { s: 'gzh', n: '公众号推文', d: '干货风：标题党+引言+分点+金句收尾。', tpl: '{主题}：你不可错过的干货\n\n引言：今天想和大家认真聊聊「{关键词}」。\n\n核心要点：\n1. {要点}\n2. 关键在于持续行动，而非一时兴起。\n3. 方法对了，结果只是时间问题。\n\n结语：愿你我都成为长期主义者。' },
+  { s: 'dy', n: '抖音脚本', d: '短平快：钩子+反转+行动号召。', tpl: '【开头钩子】你还在为{主题}发愁吗？\n【正文】其实只要搞定{关键词}这一件事：{要点}\n【反转】别再说做不到，普通人也能上手！\n【号召】点赞收藏，下次不迷路🔥' },
+  { s: 'ds', n: '电商描述', d: '卖点风：场景+参数+促销。', tpl: '【{主题}】限时好物\n卖点：{关键词}\n适用场景：{要点}\n现在下单立享优惠，手慢无！' },
+  { s: 'pyq', n: '朋友圈文案', d: '随性风：短句+心情+emoji。', tpl: '今天想说说「{主题}」🌿\n{要点}\n生活嘛，慢慢来比较快。☕' },
+  { s: 'zc', n: '种草笔记', d: '体验风：真实使用+对比+推荐。', tpl: '真实测评｜{主题}\n用了{关键词}之后的变化：{要点}\n对比之前真的好太多，真心推荐给同好～' },
+  { s: 'td', n: '探店文案', d: '探店风：环境+口味+人均。', tpl: '探店｜{主题}\n📍关键词：{关键词}\n体验：{要点}\n一句话总结：值得专程来一趟！' },
+  { s: 'zp', n: '招聘文案', d: '招募风：岗位+要求+福利。', tpl: '【招人】{主题}\n岗位职责：{要点}\n任职要求：熟悉{关键词}\n我们提供有竞争力的薪资和成长空间，欢迎自荐/推荐！' },
+  { s: 'cz', n: '辞职信', d: '得体风：感谢+原因+交接。', tpl: '尊敬的领导：\n因个人{主题}规划，现提出离职。感谢公司培养，在岗期间负责{关键词}，后续将妥善交接{要点}。祝公司越来越好。' },
+  { s: 'qj', n: '请假条', d: '简洁风：事由+时间+工作安排。', tpl: '请假申请：因{主题}需请假，涉及{关键词}的工作已委托同事跟进（{要点}）。望批准。' },
+  { s: 'dp', n: '道歉信', d: '诚恳风：认错+原因+补救。', tpl: '关于{主题}一事，我深感抱歉。问题在于{关键词}，已采取{要点}补救。恳请谅解。' },
+  { s: 'gx', n: '感谢信', d: '温暖风：致谢+具体+祝福。', tpl: '感谢您在{主题}上的{关键词}。尤其{要点}，让我深受触动。谨致谢意，祝一切顺遂。' },
+  { s: 'yq', n: '邀请函', d: '正式风：目的+时间+期待。', tpl: '诚邀您参加{主题}。时间待定，主题围绕{关键词}。议程含{要点}。期待您的到来。' },
+  { s: 'yj', n: '演讲稿', d: '结构风：开场+主体+呼吁。', tpl: '各位好，今天分享{主题}。\n为何重要？因为{关键词}。\n我的三点看法：{要点}\n愿我们从此刻行动。' },
+  { s: 'xw', n: '新闻稿', d: '客观风：5W1H+引语。', tpl: '【讯】近日，{主题}引发关注。据悉，{关键词}。相关人士表示："{要点}"。事件仍在持续跟进。' },
+  { s: 'cp', n: '产品描述', d: '价值风：痛点+方案+收益。', tpl: '{主题}——为你解决{关键词}的烦恼。\n核心能力：{要点}\n用了它，效率提升看得见。' },
+  { s: 'slogan', n: 'Slogan 生成', d: '短句风：押韵+记忆点。', tpl: '「{主题}，{关键词}就选它」\n「不止{要点}，更是态度」' },
+  { s: 'brand', n: '品牌故事', d: '叙事风：初心+历程+愿景。', tpl: '我们因{主题}而出发。一路走来，始终相信{关键词}。{要点}是我们交给用户的答案。未来，继续向前。' },
+  { s: 'love', n: '土味情话', d: '甜风：比喻+反转。', tpl: '你知道{主题}为什么好看吗？因为里面有你。\n我对你的喜欢，就像{关键词}一样{要点}。' },
+  { s: 'zhufu', n: '祝福语', d: '喜庆风：吉祥+成双。', tpl: '愿你{主题}皆如愿，{关键词}常相伴。{要点}顺顺利利，岁岁平安。' },
+  { s: 'mail', n: '商务邮件', d: '规范风：主题+正文+落款。', tpl: '主题：关于{主题}\n您好，就{关键词}一事，盼复：{要点}。\n祝商祺。' },
+  { s: 'weekly', n: '周报生成', d: '汇报风：本周+下周+风险。', tpl: '【本周】{主题}：完成{关键词}。\n【下周】计划{要点}。\n【风险】需关注资源与排期。' },
+  { s: 'resume', n: '简历摘要', d: '成就风：动作+结果。', tpl: '本人专注{主题}领域，擅长{关键词}。主导{要点}，取得可量化成果。' },
+  { s: 'intro', n: '自我介绍', d: '亲和风：身份+特长+期待。', tpl: '你好，我是做{主题}的，擅长{关键词}。平时喜欢{要点}。很高兴认识你！' }
+];
+var T = [];
+function tool(o) { T.push(o); }
+var WF = [{ k: 'topic', t: '主题/场景', type: 'text' }, { k: 'kw', t: '关键词', type: 'text' }, { k: 'point', t: '要点', type: 'textarea' }, { k: 'len', t: '篇幅', type: 'select', opts: ['短', '适中', '长'], v: '适中' }, { k: 'out', t: '生成文案', type: 'out' }];
+
+STYLES.forEach(function (st) {
+  tool({ id: 'ai-write-' + st.s, n: 'AI ' + st.n, c: 'ai-write', d: st.d, f: WF.slice(),
+    run: function (v) { return { out: tplFill(st.tpl, v) }; } });
+});
+
+/* 25 AI 续写（本地 Markov bigram 生成） */
+tool({ id: 'ai-continue', n: 'AI 文本续写', c: 'ai-write', d: '基于上文训练 2-gram 模型生成本地续写（离线）。',
+  f: [{ k: 'seed', t: '上文', type: 'textarea' }, { k: 'n', t: '续写字数', type: 'number', v: 40 }, { k: 'out', t: '续写', type: 'out' }],
+  run: function (v) {
+    var txt = v.seed || '', seg2 = seg(txt); if (seg2.length < 4) return { out: '上文太短，至少输入几个词' };
+    var map = {}; for (var i = 0; i < seg2.length - 1; i++) { (map[seg2[i]] = map[seg2[i]] || []).push(seg2[i + 1]); }
+    var cur = seg2[seg2.length - 1], out = [], N = v.n || 40;
+    for (var j = 0; j < N; j++) { var nxt = map[cur]; if (!nxt || !nxt.length) break; cur = nxt[Math.floor(Math.random() * nxt.length)]; out.push(cur); }
+    return { out: out.join(''), note: '本地 2-gram 生成，仅供参考' };
+  } });
+
+/* 26 AI 改写润色 */
+tool({ id: 'ai-rewrite', n: 'AI 改写润色', c: 'ai-write', d: '同义词替换+句式整理，生成通顺改写版。',
+  f: [{ k: 'txt', t: '原文', type: 'textarea' }, { k: 'out', t: '改写', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '';
+    for (var w in SYN) s = s.split(w).join(SYN[w]);
+    s = s.replace(/([，。])\1+/g, '$1').replace(/\s+/g, '');
+    return { out: s || '请输入原文' };
+  } });
+
+/* 27 AI 扩写 */
+tool({ id: 'ai-expand', n: 'AI 扩写', c: 'ai-write', d: '围绕要点展开成段落（模板扩写）。',
+  f: [{ k: 'point', t: '要点', type: 'textarea' }, { k: 'topic', t: '主题', type: 'text' }, { k: 'out', t: '扩写', type: 'out' }],
+  run: function (v) {
+    var pts = (v.point || '').split(/[。\n]/).filter(Boolean);
+    var out = '关于' + (v.topic || '该主题') + '，可以从以下几个方面展开：\n';
+    pts.forEach(function (p, i) { out += (i + 1) + '. ' + p.trim() + '。具体而言，它在实践中表现为可落地的方法，值得进一步细化与执行。\n'; });
+    return { out: out };
+  } });
+
+/* 28 AI 缩写 */
+tool({ id: 'ai-abridge', n: 'AI 缩写', c: 'ai-write', d: '抽取式保留核心句，压缩篇幅。',
+  f: [{ k: 'txt', t: '原文', type: 'textarea' }, { k: 'r', t: '压缩比', type: 'number', v: 0.4 }, { k: 'out', t: '缩写', type: 'out' }],
+  run: function (v) { return { out: summarize(v.txt || '', Math.min(0.6, Math.max(0.1, v.r || 0.4))) || '请输入原文' }; } });
+
+/* 29 AI 语气转换-正式 */
+tool({ id: 'ai-tone-formal', n: 'AI 转正式语气', c: 'ai-write', d: '把口语化表达转为书面正式风。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '正式版', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '';
+    [['咋', '如何'], ['啥', '什么'], ['搞定', '完成'], ['牛', '出色'], ['贼', '非常'], ['咱', '我们'], ['帅', '优秀'], ['棒', '良好']].forEach(function (p) { s = s.split(p[0]).join(p[1]); });
+    return { out: s };
+  } });
+
+/* 30 AI 语气转换-口语 */
+tool({ id: 'ai-tone-casual', n: 'AI 转口语化', c: 'ai-write', d: '把书面语转成轻松口语风。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '口语版', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '';
+    [['因此', '所以'], ['此外', '而且'], ['然而', '不过'], ['故而', '于是'], ['诸多', '很多'], ['获悉', '知道'], ['予以', '给']].forEach(function (p) { s = s.split(p[0]).join(p[1]); });
+    return { out: s };
+  } });
+
+/* 31 AI 大纲生成 */
+tool({ id: 'ai-outline', n: 'AI 大纲生成', c: 'ai-write', d: '从主题与要点生成文章大纲。',
+  f: [{ k: 'topic', t: '主题', type: 'text' }, { k: 'point', t: '要点', type: 'textarea' }, { k: 'out', t: '大纲', type: 'out' }],
+  run: function (v) {
+    var pts = (v.point || '').split(/[。\n]/).filter(Boolean);
+    var o = '# ' + (v.topic || '未命名主题') + '\n## 一、背景\n## 二、核心\n';
+    pts.forEach(function (p, i) { o += '### 2.' + (i + 1) + ' ' + p.trim() + '\n'; });
+    o += '## 三、总结\n';
+    return { out: o };
+  } });
+
+/* 32 AI 金句生成 */
+tool({ id: 'ai-quote-gen', n: 'AI 金句生成', c: 'ai-write', d: '围绕主题生成排比/对仗金句。',
+  f: [{ k: 'topic', t: '主题', type: 'text' }, { k: 'out', t: '金句', type: 'out' }],
+  run: function (v) {
+    var t = v.topic || '努力';
+    return { out: '所谓' + t + '，不过是日复一日的坚持。\n' + t + '不是终点，而是出发的理由。\n愿你我所求皆所愿，所行皆' + t + '。' };
+  } });
+
+/* 33 AI 排比句 */
+tool({ id: 'ai-parallel', n: 'AI 排比句', c: 'ai-write', d: '生成三组排比增强气势。',
+  f: [{ k: 'topic', t: '主题', type: 'text' }, { k: 'out', t: '排比', type: 'out' }],
+  run: function (v) {
+    var t = v.topic || '梦想';
+    return { out: '因为' + t + '，我们敢于出发；\n因为' + t + '，我们无惧跌倒；\n因为' + t + '，我们终将抵达。' };
+  } });
+
+/* 34 AI 短视频标题 */
+tool({ id: 'ai-vtitle', n: 'AI 爆款标题', c: 'ai-write', d: '生成 5 个带钩子的标题候选。',
+  f: [{ k: 'topic', t: '主题', type: 'text' }, { k: 'out', t: '标题', type: 'out' }],
+  run: function (v) {
+    var t = v.topic || '这个技巧';
+    return { out: ['没想到' + t + '这么简单', '90%的人都不知道的' + t, '用了' + t + '后我后悔了', t + '｜新手必看', '一条视频讲透' + t].join('\n') };
+  } });
+
+/* 35 AI 邮件主题行 */
+tool({ id: 'ai-mailsubj', n: 'AI 邮件主题', c: 'ai-write', d: '生成高打开率邮件主题候选。',
+  f: [{ k: 'topic', t: '邮件主题', type: 'text' }, { k: 'out', t: '主题行', type: 'out' }],
+  run: function (v) {
+    var t = v.topic || '项目进度';
+    return { out: ['【重要】' + t + '更新', t + '，请查收', '关于' + t + '的一个好消息', t + '·本周速览', '3 分钟看懂' + t].join('\n') };
+  } });
+
+/* 36 AI 段落重排 */
+tool({ id: 'ai-reorder', n: 'AI 段落重排', c: 'ai-write', d: '按"总-分-总"逻辑重排段落顺序。',
+  f: [{ k: 'txt', t: '多段文本(空行分隔)', type: 'textarea' }, { k: 'out', t: '重排', type: 'out' }],
+  run: function (v) {
+    var ps = (v.txt || '').split(/\n\s*\n/).filter(Boolean); if (ps.length < 3) return { out: '至少 3 段' };
+    return { out: [ps[0], '——分述——'].concat(ps.slice(1, -1)).concat(['——总结——', ps[ps.length - 1]]).join('\n\n') };
+  } });
+
+/* 37 AI 标题党 */
+tool({ id: 'ai-click', n: 'AI 震惊体', c: 'ai-write', d: '生成标题党风格（娱乐用，谨慎发布）。',
+  f: [{ k: 'topic', t: '主题', type: 'text' }, { k: 'out', t: '标题', type: 'out' }],
+  run: function (v) {
+    var t = v.topic || '这件事';
+    return { out: ['震惊！' + t + '竟然……', '千万别再' + t + '了！', t + '的真相，第3点太重要', '我试了' + t + '，结果……', '所有人都该知道的' + t].join('\n') };
+  } });
+
+/* 38 AI 公文模板 */
+tool({ id: 'ai-gongwen', n: 'AI 公文模板', c: 'ai-write', d: '生成通知类公文骨架。',
+  f: [{ k: 'topic', t: '事项', type: 'text' }, { k: 'point', t: '内容要点', type: 'textarea' }, { k: 'out', t: '公文', type: 'out' }],
+  run: function (v) {
+    var pts = (v.point || '').split(/[。\n]/).filter(Boolean).map(function (p) { return '（' + (pts.indexOf(p) + 1) + '）' + p.trim() + '。'; });
+    return { out: '关于' + (v.topic || '有关事项') + '的通知\n\n各相关单位：\n现将' + (v.topic || '有关事项') + '通知如下：\n' + pts.join('\n') + '\n\n特此通知。\n\n' + (new Date().getFullYear()) + '年' + (new Date().getMonth() + 1) + '月' + new Date().getDate() + '日' };
+  } });
+
+/* 39 AI 借条/合同模板 */
+tool({ id: 'ai-iou', n: 'AI 借条模板', c: 'ai-write', d: '生成规范借条文本。',
+  f: [{ k: 'a', t: '出借人', type: 'text' }, { k: 'b', t: '借款人', type: 'text' }, { k: 'amt', t: '金额(元)', type: 'number', v: 1000 }, { k: 'out', t: '借条', type: 'out' }],
+  run: function (v) {
+    return { out: '借条\n今借到' + (v.a || '（出借人）') + '人民币' + (v.amt || 0) + '元整。借款人：' + (v.b || '（借款人）') + '。于约定日期归还。\n借款人签字：______  日期：____年__月__日' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-write-resume"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-write-resume'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-write-resume")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-write-resume");
+if(i>=0)f.splice(i,1);else f.push("ai-write-resume");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-write-resume"});u.unshift("ai-write-resume");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

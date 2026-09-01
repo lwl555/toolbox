@@ -20,7 +20,19 @@ var CATS = [
   { id: 'office', n: '办公文档', i: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/>' },
   { id: 'media', n: '音视频', i: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M10 9l5 3-5 3z"/>' },
   { id: 'network', n: '网络信息', i: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/>' },
-  { id: 'file', n: '文件工具', i: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h8"/>' }
+  { id: 'file', n: '文件工具', i: '<path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/><path d="M8 13h8M8 17h8"/>' },
+  { id: 'ai-text', n: 'AI文本', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-write', n: 'AI写作', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-code', n: 'AI代码', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-data', n: 'AI数据', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-life', n: 'AI生活', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-media', n: 'AI影音', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-chat', n: 'AI对话', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-prompt', n: '提示词', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-biz', n: 'AI商业', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-design', n: 'AI设计', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-legal', n: 'AI文书', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-study', n: 'AI学习', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' }
 ];
 
 var FAV_KEY = 'toolbox_fav_v2';

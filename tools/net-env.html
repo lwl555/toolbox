@@ -31,14 +31,80 @@
 var Nt = {};
 Nt.cidr = function (ip, bits) { var p = ip.split('.').map(Number); var mask = bits === 32 ? 0xffffffff : (0xffffffff << (32 - bits)) >>> 0; var ipn = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3]; var net = (ipn & mask) >>> 0; var broad = (net | (~mask >>> 0)) >>> 0; function toIp(n) { return [(n >>> 24) & 255, (n >> 16) & 255, (n >> 8) & 255, n & 255].join('.'); } return { net: toIp(net), broad: toIp(broad), first: toIp(net + 1), last: toIp(broad - 1), hosts: bits >= 31 ? 0 : (broad - net - 1) }; };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "net-env", n: "本机环境信息", c: "network", d: "显示浏览器/系统/语言等环境参数",
-  custom: null,
-  fields: [{"k":"cv","t":"信息","type":"custom","html":"<div id=\"envBox\" style=\"font-size:13px;line-height:1.9\"></div>"}],
-  auto: true,
-  first: true,
-  init: function () { var box = document.getElementById('envBox'); var info = [['浏览器', navigator.appName + ' ' + (navigator.appVersion.match(/Chrome\/[\d.]+/) || [''])[0]], ['内核', navigator.userAgent], ['语言', navigator.language], ['平台', navigator.platform], ['Cookie 启用', navigator.cookieEnabled ? '是' : '否'], ['在线状态', navigator.onLine ? '在线' : '离线'], ['CPU 核心', navigator.hardwareConcurrency || '未知'], ['内存(GB)', navigator.deviceMemory || '未知']]; box.innerHTML = info.map(function (r) { return '<div style="display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--ink-1);padding:4px 0"><span style="color:var(--ink-3)">' + r[0] + '</span><b style="text-align:right;word-break:break-all">' + RT.esc(r[1]) + '</b></div>'; }).join(''); },
-  run: function () {} };
+tool({ id: 'net-env', n: '本机环境信息', c: 'network', d: '显示浏览器/系统/语言等环境参数',
+  f: [{ k: 'cv', t: '信息', type: 'custom', html: '<div id="envBox" style="font-size:13px;line-height:1.9"></div>' }],
+  run: function () {}, init: function () { var box = document.getElementById('envBox'); var info = [['浏览器', navigator.appName + ' ' + (navigator.appVersion.match(/Chrome\/[\d.]+/) || [''])[0]], ['内核', navigator.userAgent], ['语言', navigator.language], ['平台', navigator.platform], ['Cookie 启用', navigator.cookieEnabled ? '是' : '否'], ['在线状态', navigator.onLine ? '在线' : '离线'], ['CPU 核心', navigator.hardwareConcurrency || '未知'], ['内存(GB)', navigator.deviceMemory || '未知']]; box.innerHTML = info.map(function (r) { return '<div style="display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--ink-1);padding:4px 0"><span style="color:var(--ink-3)">' + r[0] + '</span><b style="text-align:right;word-break:break-all">' + RT.esc(r[1]) + '</b></div>'; }).join(''); } });
+
+tool({ id: 'net-screen', n: '屏幕显示器信息', c: 'network', d: '分辨率/DPI/色彩深度一览',
+  f: [{ k: 'cv', t: '屏幕', type: 'custom', html: '<div id="scrBox" style="font-size:13px;line-height:1.9"></div>' }],
+  run: function () {}, init: function () { var box = document.getElementById('scrBox'); var info = [['分辨率', screen.width + ' × ' + screen.height], ['可用区域', screen.availWidth + ' × ' + screen.availHeight], ['色彩深度', screen.colorDepth + ' bit'], ['DPI', window.devicePixelRatio + 'x'], ['方向', screen.orientation ? screen.orientation.type : '未知']]; box.innerHTML = info.map(function (r) { return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ink-1);padding:4px 0"><span style="color:var(--ink-3)">' + r[0] + '</span><b>' + RT.esc('' + r[1]) + '</b></div>'; }).join(''); } });
+
+tool({ id: 'net-type', n: '网络类型检测', c: 'network', d: '检测当前是 WiFi/4G/5G 等',
+  f: [{ k: 'cv', t: '网络', type: 'custom', html: '<div id="ntBox" style="font-size:14px;line-height:2"></div>' }],
+  run: function () {}, init: function (RT) { var box = document.getElementById('ntBox'); var c = navigator.connection || navigator.webkitConnection; if (!c) { box.innerHTML = '<div style="color:var(--ink-3)">浏览器不支持网络信息 API（试试 Chrome/Edge 手机端）</div>'; return; } function upd() { box.innerHTML = [['类型', c.effectiveType || '未知'], ['下行(Mbps)', c.downlink || '未知'], ['往返(ms)', c.rtt || '未知'], ['省流模式', c.saveData ? '开启' : '关闭']].map(function (r) { return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ink-1);padding:4px 0"><span style="color:var(--ink-3)">' + r[0] + '</span><b>' + RT.esc('' + r[1]) + '</b></div>'; }).join(''); } upd(); c.addEventListener && c.addEventListener('change', upd); } });
+
+tool({ id: 'net-public-ip', n: '公网 IP 查询', c: 'network', d: '查询你的公网出口 IP（需联网）',
+  f: [{ k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }], auto: false,
+  run: function () { return RT.lib('https://api.ipify.org?format=json').then(function () { return fetch('https://api.ipify.org?format=json'); }).then(function (r) { return r.json(); }).then(function (d) { return { out: d.ip }; }).catch(function (e) { return { out: '', note: '查询失败（可能离线或被浏览器限制）：' + e.message, warn: true }; }); } });
+
+tool({ id: 'net-subnet', n: '子网划分计算', c: 'network', d: 'CIDR 算网络地址/广播/可用主机',
+  f: [{ k: 'ip', t: 'IP', type: 'text', v: '192.168.1.10' }, { k: 'bits', t: '掩码位', type: 'number', v: 24, min: 0, max: 32 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { try { var r = Nt.cidr(v.ip, v.bits); return { out: '网络地址：' + r.net + '\n广播地址：' + r.broad + '\n可用范围：' + r.first + ' ~ ' + r.last, metrics: [{ t: '网络', v: r.net }, { t: '广播', v: r.broad }, { t: '可用主机', v: r.hosts }] }; } catch (e) { return { out: '', note: 'IP 格式有误', warn: true }; } } });
+
+tool({ id: 'net-cidr-range', n: 'CIDR 转范围', c: 'network', d: '把 /24 等展开成 IP 区间描述',
+  f: [{ k: 'cidr', t: 'CIDR', type: 'text', v: '10.0.0.0/24' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var m = (v.cidr || '').match(/^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/); if (!m) return { out: '', note: '格式如 10.0.0.0/24', warn: true }; var r = Nt.cidr(m[1], +m[2]); return { out: '范围：' + r.first + ' ~ ' + r.last + '\n共 ' + r.hosts + ' 个可用地址' }; } });
+
+tool({ id: 'net-mask', n: '子网掩码换算', c: 'network', d: '掩码与 CIDR 位数互转',
+  f: [{ k: 'in', t: '掩码(如 255.255.255.0) 或 /24', type: 'text', v: '255.255.255.0' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = v.in.trim(); if (s[0] === '/') { var b = +s.slice(1); var mask = (b === 32 ? 0xffffffff : (0xffffffff << (32 - b)) >>> 0); var ip = [(mask >>> 24) & 255, (mask >> 16) & 255, (mask >> 8) & 255, mask & 255].join('.'); return { out: '掩码：' + ip + '（/' + b + '）' }; } var p = s.split('.').map(Number); var n = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3]; var bits = 0; for (var i = 31; i >= 0; i--) if (n & (1 << i)) bits++; else break; return { out: s + ' 对应 /' + bits }; } });
+
+tool({ id: 'net-domain', n: '域名合法性校验', c: 'network', d: '检查域名格式是否正确',
+  f: [{ k: 'in', t: '域名', type: 'text', v: 'example.com' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var re = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i; var ok = re.test(v.in); return { out: ok ? '✓ 合法域名' : '✗ 格式有误', metrics: [{ t: '判断', v: ok ? '合法' : '非法' }, { t: '提示', v: ok ? '' : '如 example.com，不能含下划线/空格' }] }; } });
+
+tool({ id: 'net-email', n: '邮箱合法性校验', c: 'network', d: '检查邮箱格式是否规范',
+  f: [{ k: 'in', t: '邮箱', type: 'text', v: 'user@example.com' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var re = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/; var ok = re.test(v.in); return { out: ok ? '✓ 合法邮箱' : '✗ 格式有误', metrics: [{ t: '判断', v: ok ? '合法' : '非法' }, { t: '本地名', v: ok ? v.in.split('@')[0] : '-' }, { t: '域名', v: ok ? v.in.split('@')[1] : '-' }] }; } });
+
+tool({ id: 'net-ports', n: '端口服务对照', c: 'network', d: '查常用端口对应的服务',
+  f: [{ k: 'out', t: '对照表', type: 'out', dl: 1, mono: 1 }], auto: false, run: function () { var P = [[80, 'HTTP'], [443, 'HTTPS'], [21, 'FTP'], [22, 'SSH'], [25, 'SMTP'], [53, 'DNS'], [110, 'POP3'], [143, 'IMAP'], [3306, 'MySQL'], [5432, 'PostgreSQL'], [6379, 'Redis'], [27017, 'MongoDB'], [8080, 'HTTP备用'], [1521, 'Oracle'], [1433, 'SQLServer'], [389, 'LDAP']]; return { out: P.map(function (p) { return p[0] + '  ' + p[1]; }).join('\n') }; } });
+
+tool({ id: 'net-cookie', n: 'Cookie 读取', c: 'network', d: '读取当前域名下的 Cookie',
+  f: [{ k: 'out', t: 'Cookie', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function () { var c = document.cookie || ''; return { out: c || '（无 Cookie 或无权限）', metrics: [{ t: '条数', v: c ? c.split(';').length : 0 }] }; } });
+
+tool({ id: 'net-localstore', n: '本地存储查看', c: 'network', d: '查看本页 localStorage 内容',
+  f: [{ k: 'out', t: '存储', type: 'out', dl: 1, mono: 1, metrics: 1 }], auto: false,
+  run: function () { try { var s = JSON.stringify(localStorage, null, 2); var n = 0; for (var k in localStorage) n++; return { out: n ? s : '（空）', metrics: [{ t: '键数', v: n }] }; } catch (e) { return { out: '', note: e.message, warn: true }; } } });
+
+tool({ id: 'net-timezone', n: '时区详情', c: 'network', d: '显示本机时区与 UTC 偏移',
+  f: [{ k: 'cv', t: '时区', type: 'custom', html: '<div id="tzBox" style="font-size:13px;line-height:1.9"></div>' }],
+  run: function () {}, init: function () { var box = document.getElementById('tzBox'); var tz = Intl.DateTimeFormat().resolvedOptions().timeZone; var off = -new Date().getTimezoneOffset() / 60; var info = [['时区', tz], ['UTC 偏移', 'UTC' + (off >= 0 ? '+' : '') + off], ['本地时间', new Date().toLocaleString()], ['Locale', navigator.language]]; box.innerHTML = info.map(function (r) { return '<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--ink-1);padding:4px 0"><span style="color:var(--ink-3)">' + r[0] + '</span><b>' + RT.esc('' + r[1]) + '</b></div>'; }).join(''); } });
+
+tool({ id: 'net-fingerprint', n: '浏览器指纹', c: 'network', d: '综合环境生成简易指纹（仅本机）',
+  f: [{ k: 'cv', t: '指纹', type: 'custom', html: '<div id="fpBox" style="font-size:13px"></div><button id="fpCopy" class="btn btn-sec" style="margin-top:8px">复制指纹</button>' }],
+  run: function () {}, init: function (RT) { var box = document.getElementById('fpBox'); var raw = navigator.userAgent + '|' + screen.width + 'x' + screen.height + '|' + navigator.language + '|' + (navigator.hardwareConcurrency || 0) + '|' + (navigator.deviceMemory || 0); var fp = (function () { var h = 0; for (var i = 0; i < raw.length; i++) { h = (h * 31 + raw.charCodeAt(i)) >>> 0; } return h.toString(16); })(); var hex = ''; for (var j = 0; j < 16; j++) hex += '0123456789abcdef'[(fp.charCodeAt(j % fp.length) + j) % 16]; box.innerHTML = '<div style="font-family:var(--mono);font-size:15px;word-break:break-all">' + hex + '</div><div style="color:var(--ink-3);margin-top:6px">基于 UA+屏幕+语言+CPU 简易哈希，非精准指纹</div>'; document.getElementById('fpCopy').onclick = function () { RT.copy(hex); }; } });
+
+tool({ id: 'net-lan-suggest', n: '局域网网段建议', c: 'network', d: '给出常用内网网段规划',
+  f: [{ k: 'out', t: '建议', type: 'out', dl: 1, mono: 1 }], auto: false, run: function () { return { out: ['家庭常用：192.168.1.0/24（254 台）', '小型办公：192.168.0.0/24', '多级网络：10.0.0.0/8（超大规模）', '172.16.0.0/12（中大型）', '物联网隔离：192.168.88.0/24'].join('\n') }; } });
+
+tool({ id: 'net-ws', n: 'WebSocket 测试', c: 'network', d: '连接测试 echo 服务（需联网）',
+  f: [{ k: 'url', t: 'WebSocket 地址', type: 'text', v: 'wss://echo.websocket.events' }, { k: 'msg', t: '发送内容', type: 'text', v: 'hello' }, { k: 'out', t: '回显', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  auto: false, run: function (v) {
+    return new Promise(function (resolve) { try { var ws = new WebSocket(v.url); var done = false; var t = setTimeout(function () { if (!done) { done = true; ws.close(); resolve({ out: '', note: '连接超时（3秒）', warn: true }); } }, 3000); ws.onopen = function () { ws.send(v.msg || 'hello'); }; ws.onmessage = function (e) { if (done) return; done = true; clearTimeout(t); ws.close(); resolve({ out: '收到回显：' + e.data, metrics: [{ t: '状态', v: '成功' }] }); }; ws.onerror = function () { if (done) return; done = true; clearTimeout(t); resolve({ out: '', note: '连接失败（可能被网络拦截）', warn: true }); }; } catch (e) { resolve({ out: '', note: e.message, warn: true }); } });
+  } });
+
+tool({ id: 'net-url-safe', n: 'URL 安全检测', c: 'network', d: '检查网址是否含危险字符/可疑协议',
+  f: [{ k: 'in', t: 'URL', type: 'text', ph: 'https://example.com' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = v.in || ''; var proto = (s.match(/^(\w+):/i) || [])[1] || ''; var danger = ['javascript', 'data', 'vbscript'].indexOf(proto.toLowerCase()) >= 0; var warn = /[<>\"' ]/.test(s); return { out: danger ? '⚠️ 危险协议：' + proto : (warn ? '⚠️ 含特殊字符，建议编码' : '✓ 协议正常（' + proto + '）'), metrics: [{ t: '协议', v: proto || '无' }, { t: '危险', v: danger ? '是' : '否' }] }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "net-env"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: net-env'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 结构化提示词 - 超有用的工具箱</title>
+<meta name="description" content="Role+Task+Format 三段式专业提示词。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">提示词</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 结构化提示词</h1>
+<p class="lede">Role+Task+Format 三段式专业提示词。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-prompt-gen.html"><div class="card-t"><span class="card-name">AI 通用提示词</span></div><div class="card-desc">输入任务，生成结构清晰的高质量提示词。</div></a><a class="card" href="ai-prompt-role.html"><div class="card-t"><span class="card-name">AI 角色提示词</span></div><div class="card-desc">生成角色设定类 system prompt。</div></a><a class="card" href="ai-prompt-few.html"><div class="card-t"><span class="card-name">AI 少样本提示词</span></div><div class="card-desc">附带示例的 few-shot 提示词。</div></a><a class="card" href="ai-prompt-cot.html"><div class="card-t"><span class="card-name">AI 思维链提示词</span></div><div class="card-desc">引导逐步推理的 Chain-of-Thought 提示词。</div></a><a class="card" href="ai-prompt-cls.html"><div class="card-t"><span class="card-name">AI 分类提示词</span></div><div class="card-desc">零样本文本分类提示词。</div></a><a class="card" href="ai-prompt-trans.html"><div class="card-t"><span class="card-name">AI 翻译提示词</span></div><div class="card-desc">高质量翻译提示词模板。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 结构化提示词<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   27-ai-prompt.js — 提示词工程（本地模板引擎，真实生成，共 26 个）
+   ============================================================ */
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 占位填充 */
+function fill(tpl, map) {
+  return tpl.replace(/\{(\w+)\}/g, function (m, k) { return map[k] != null ? map[k] : ''; });
+}
+
+/* 1 通用提示词生成器 */
+tool({ id: 'ai-prompt-gen', n: 'AI 通用提示词', c: 'ai-prompt', d: '输入任务，生成结构清晰的高质量提示词。',
+  f: [{ k: 'task', t: '你要 AI 做什么', type: 'textarea' }, { k: 'role', t: '希望 AI 扮演的角色(可选)', type: 'text' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    var t = v.task || ''; if (!t) return { out: '请描述任务' };
+    var r = v.role ? ('你是' + v.role + '。\n') : '你是一个能力强、严谨的AI助手。\n';
+    return { out: r + '任务：' + t + '\n要求：1) 先理解意图再作答；2) 条理清晰、用中文；3) 不确定时说明，不编造；4) 必要时给出示例。' };
+  } });
+
+/* 2 角色提示词 */
+tool({ id: 'ai-prompt-role', n: 'AI 角色提示词', c: 'ai-prompt', d: '生成角色设定类 system prompt。',
+  f: [{ k: 'who', t: '角色身份', type: 'text' }, { k: 'goal', t: '目标/职责', type: 'textarea' }, { k: 'style', t: '语气风格', type: 'text', v: '专业耐心' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.who) return { out: '请填写角色身份' };
+    return { out: '你是' + v.who + '。\n职责：' + (v.goal || '完成用户交待的任务') + '。\n风格：' + (v.style || '专业耐心') + '。\n约束：保持人设一致，用第一人称，不跳出角色。' };
+  } });
+
+/* 3 结构化提示词(RTF) */
+tool({ id: 'ai-prompt-rtf', n: 'AI 结构化提示词', c: 'ai-prompt', d: 'Role+Task+Format 三段式专业提示词。',
+  f: [{ k: 'role', t: '角色', type: 'text', v: '资深分析师' }, { k: 'task', t: '任务', type: 'textarea' }, { k: 'fmt', t: '输出格式', type: 'text', v: '要点列表' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.task) return { out: '请填写任务' };
+    return { out: '# 角色\n' + (v.role || '专家') + '\n\n# 任务\n' + v.task + '\n\n# 输出格式\n' + (v.fmt || '简洁要点') + '\n\n# 约束\n- 基于事实，标注不确定项\n- 先结论后展开' };
+  } });
+
+/* 4 少样本提示词 */
+tool({ id: 'ai-prompt-few', n: 'AI 少样本提示词', c: 'ai-prompt', d: '附带示例的 few-shot 提示词。',
+  f: [{ k: 'task', t: '任务说明', type: 'textarea' }, { k: 'ex', t: '示例(每行 输入=>输出)', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    var body = '任务：' + (v.task || '') + '\n\n示例：\n' + (v.ex || '（输入）=> （输出）') + '\n\n请按上述示例的模式处理新的输入。';
+    return { out: body };
+  } });
+
+/* 5 思维链提示词(CoT) */
+tool({ id: 'ai-prompt-cot', n: 'AI 思维链提示词', c: 'ai-prompt', d: '引导逐步推理的 Chain-of-Thought 提示词。',
+  f: [{ k: 'task', t: '复杂问题', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.task) return { out: '请填写问题' };
+    return { out: '请一步步思考下面问题，并给出最终答案。\n\n问题：' + v.task + '\n\n要求：1) 先重述问题；2) 分解子问题；3) 逐步推导，每步说明依据；4) 最后用"结论："给出答案。' };
+  } });
+
+/* 6 零样本分类提示词 */
+tool({ id: 'ai-prompt-cls', n: 'AI 分类提示词', c: 'ai-prompt', d: '零样本文本分类提示词。',
+  f: [{ k: 'text', t: '待分类文本', type: 'textarea' }, { k: 'labels', t: '候选标签(逗号分隔)', type: 'text', v: '正面,负面,中性' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.text) return { out: '请填写文本' };
+    return { out: '将以下文本分到最合适的类别，只输出类别名。\n类别：' + (v.labels || '正面,负面,中性') + '\n文本：' + v.text };
+  } });
+
+/* 7 翻译提示词 */
+tool({ id: 'ai-prompt-trans', n: 'AI 翻译提示词', c: 'ai-prompt', d: '高质量翻译提示词模板。',
+  f: [{ k: 'src', t: '原文', type: 'textarea' }, { k: 'to', t: '目标语言', type: 'text', v: '英文' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.src) return { out: '请填写原文' };
+    return { out: '把下面内容翻译成' + (v.to || '英文') + '，保留专有名词与语气，只输出译文：\n"""' + v.src + '"""' };
+  } });
+
+/* 8 摘要提示词 */
+tool({ id: 'ai-prompt-sum', n: 'AI 摘要提示词', c: 'ai-prompt', d: '长文结构化摘要提示词。',
+  f: [{ k: 'text', t: '长文', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.text) return { out: '请填写长文' };
+    return { out: '请阅读下文并输出结构化摘要：\n1) 一句话核心；2) 3-5 个要点；3) 结论。\n原文：\n' + v.text };
+  } });
+
+/* 9 改写提示词 */
+tool({ id: 'ai-prompt-rewrite', n: 'AI 改写提示词', c: 'ai-prompt', d: '按指定风格改写提示词。',
+  f: [{ k: 'text', t: '原文', type: 'textarea' }, { k: 'style', t: '目标风格', type: 'text', v: '更口语化' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.text) return { out: '请填写原文' };
+    return { out: '把下面文字改写为"' + (v.style || '更口语化') + '"风格，保持原意：\n' + v.text };
+  } });
+
+/* 10 代码生成提示词 */
+tool({ id: 'ai-prompt-code', n: 'AI 代码提示词', c: 'ai-prompt', d: '写代码类提示词模板。',
+  f: [{ k: 'req', t: '功能需求', type: 'textarea' }, { k: 'lang', t: '语言', type: 'text', v: 'Python' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.req) return { out: '请填写需求' };
+    return { out: '用' + (v.lang || 'Python') + '实现：' + v.req + '\n要求：代码可直接运行、含必要注释、说明输入输出与边界情况。' };
+  } });
+
+/* 11 调试提示词 */
+tool({ id: 'ai-prompt-debug', n: 'AI 调试提示词', c: 'ai-prompt', d: '报 Bug 求修的提示词。',
+  f: [{ k: 'code', t: '代码', type: 'textarea' }, { k: 'err', t: '报错/现象', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    return { out: '下面代码有问题，请定位原因并给出修复后的完整代码。\n报错/现象：' + (v.err || '（描述现象）') + '\n代码：\n```\n' + (v.code || '') + '\n```' };
+  } });
+
+/* 12 文案提示词 */
+tool({ id: 'ai-prompt-copy', n: 'AI 文案提示词', c: 'ai-prompt', d: '营销/种草文案提示词。',
+  f: [{ k: 'prod', t: '产品/卖点', type: 'textarea' }, { k: 'plat', t: '平台', type: 'text', v: '小红书' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.prod) return { out: '请填写产品' };
+    return { out: '为"' + (v.plat || '小红书') + '"写一篇种草文案，卖点是：' + v.prod + '。要求：有标题、有场景感、带 emoji、结尾引导互动，口语化不硬广。' };
+  } });
+
+/* 13 角色卡生成 */
+tool({ id: 'ai-prompt-card', n: 'AI 角色卡', c: 'ai-prompt', d: '生成可用于角色 AI 的设定卡。',
+  f: [{ k: 'name', t: '名字', type: 'text' }, { k: 'desc', t: '外貌/性格/背景', type: 'textarea' }, { k: 'out', t: '角色卡', type: 'out' }],
+  run: function (v) {
+    if (!v.name) return { out: '请填写名字' };
+    return { out: '【角色卡】\n姓名：' + v.name + '\n设定：' + (v.desc || '') + '\n对话示例：\n用户：你好\n' + v.name + '：嗨～' };
+  } });
+
+/* 14 文生图提示词(中文) */
+tool({ id: 'ai-prompt-img', n: 'AI 图像提示词', c: 'ai-prompt', d: '生成文生图( Midjourney/SD )提示词。',
+  f: [{ k: 'subj', t: '主体', type: 'text' }, { k: 'style', t: '风格', type: 'text', v: '写实摄影' }, { k: 'light', t: '光线/氛围', type: 'text', v: '电影感打光' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.subj) return { out: '请填写主体' };
+    return { out: v.subj + '，' + (v.style || '写实摄影') + '，' + (v.light || '电影感打光') + '，高细节，8k，构图平衡，色彩协调。' };
+  } });
+
+/* 15 视频提示词 */
+tool({ id: 'ai-prompt-video', n: 'AI 视频提示词', c: 'ai-prompt', d: '生成文生视频提示词(镜头/运镜)。',
+  f: [{ k: 'subj', t: '画面内容', type: 'textarea' }, { k: 'cam', t: '运镜', type: 'text', v: '缓慢推近' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.subj) return { out: '请填写画面' };
+    return { out: '镜头：' + v.subj + '。运镜：' + (v.cam || '缓慢推近') + '。时长 5 秒，节奏平稳，光线自然，风格统一。' };
+  } });
+
+/* 16 提示词优化器 */
+tool({ id: 'ai-prompt-opt', n: 'AI 提示词优化', c: 'ai-prompt', d: '诊断并改进已有提示词。',
+  f: [{ k: 'p', t: '原提示词', type: 'textarea' }, { k: 'out', t: '优化结果', type: 'out' }, { k: 'outhtml', t: '说明', type: 'outhtml' }],
+  run: function (v) {
+    var p = v.p || ''; if (!p) return { out: '请粘贴原提示词' };
+    var tips = [];
+    if (p.length < 20) tips.push('过短，补充角色与目标');
+    if (!/角色|你是|role/i.test(p)) tips.push('建议加入角色设定');
+    if (!/格式|输出|要求/i.test(p)) tips.push('建议明确输出格式与约束');
+    if (!/示例|例子/i.test(p)) tips.push('复杂任务可加示例');
+    var better = '你是专家。\n任务：' + p + '\n要求：先理解意图，再分步给出准确结果；不确定处说明；用中文、条理清晰。';
+    return { out: better, outhtml: '<p>改进点：' + (tips.join('；') || '已较完整') + '</p>' };
+  } });
+
+/* 17 提示词变体 */
+tool({ id: 'ai-prompt-variant', n: 'AI 提示词变体', c: 'ai-prompt', d: '对提示词生成多种表达变体。',
+  f: [{ k: 'p', t: '原提示词', type: 'textarea' }, { k: 'n', t: '变体数量', type: 'number', v: 3 }, { k: 'out', t: '变体', type: 'out' }],
+  run: function (v) {
+    var p = v.p || ''; if (!p) return { out: '请填写提示词' };
+    var n = Math.max(1, Math.min(8, v.n || 3));
+    var arr = [];
+    for (var i = 1; i <= n; i++) arr.push('【变体' + i + '】' + p + '（角度：' + ['更简洁', '更严谨', '更口语', '更结构化', '更创意', '更正式', '更具体', '更友好'][i - 1] + '）');
+    return { out: arr.join('\n\n') };
+  } });
+
+/* 18 反幻觉提示词 */
+tool({ id: 'ai-prompt-nohallu', n: 'AI 反幻觉提示词', c: 'ai-prompt', d: '降低编造的提示词框架。',
+  f: [{ k: 'task', t: '任务', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.task) return { out: '请填写任务' };
+    return { out: v.task + '\n\n约束（请严格遵守）：\n- 仅基于你确定知道的事实作答\n- 不确定的内容明确写"不确定"，不得编造数据、引用或事件\n- 如信息不足，先说明缺失，再给合理推测并标注' };
+  } });
+
+/* 19 安全审查提示词 */
+tool({ id: 'ai-prompt-safety', n: 'AI 安全审查提示词', c: 'ai-prompt', d: '让 AI 自我审查输出的安全提示词。',
+  f: [{ k: 'task', t: '待审查任务', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    return { out: '完成任务：' + (v.task || '') + '\n在输出前先做安全检查：是否含违法、歧视、隐私泄露或误导内容；如有，改为安全表述并简述理由。' };
+  } });
+
+/* 20 对话系统提示词 */
+tool({ id: 'ai-prompt-bot', n: 'AI 对话系统提示词', c: 'ai-prompt', d: '面向客服/助手机器人的 system prompt。',
+  f: [{ k: 'name', t: '机器人名', type: 'text', v: '小助手' }, { k: 'scope', t: '服务范围', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    return { out: '你是' + (v.name || '小助手') + '，负责：' + (v.scope || '解答常见问题') + '。\n规则：语气友好、先共情；超出范围时引导转人工；不承诺无法确认的时效；记录关键信息后总结确认。' };
+  } });
+
+/* 21 知识库问答提示词(RAG) */
+tool({ id: 'ai-prompt-rag', n: 'AI 知识库问答提示词', c: 'ai-prompt', d: '带检索上下文的 RAG 提示词。',
+  f: [{ k: 'ctx', t: '检索到的资料', type: 'textarea' }, { k: 'q', t: '用户问题', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    return { out: '根据以下资料回答问题，资料未提及则回答"未找到相关信息"。\n\n资料：\n' + (v.ctx || '') + '\n\n问题：' + (v.q || '') };
+  } });
+
+/* 22 函数调用提示词 */
+tool({ id: 'ai-prompt-func', n: 'AI 函数调用提示词', c: 'ai-prompt', d: '引导模型输出结构化工具调用。',
+  f: [{ k: 'funcs', t: '可用函数(JSON)', type: 'textarea' }, { k: 'task', t: '用户意图', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    return { out: '可用函数：\n' + (v.funcs || '[]') + '\n\n用户意图：' + (v.task || '') + '\n请选择最合适的函数并输出 JSON：{"name":"...","arguments":{...}}。不要多余文字。' };
+  } });
+
+/* 23 多轮规划提示词 */
+tool({ id: 'ai-prompt-plan', n: 'AI 多步规划提示词', c: 'ai-prompt', d: '让模型拆分并执行多步任务。',
+  f: [{ k: 'goal', t: '目标', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.goal) return { out: '请填写目标' };
+    return { out: '目标：' + v.goal + '\n请制定执行计划：分步骤、每步明确动作与产出、标识依赖与风险，最后给出第一步可直接执行的指令。' };
+  } });
+
+/* 24 评估提示词 */
+tool({ id: 'ai-prompt-eval', n: 'AI 输出评估提示词', c: 'ai-prompt', d: '对模型输出打分与改进。',
+  f: [{ k: 'crit', t: '评估标准', type: 'textarea' }, { k: 'out2', t: '待评估内容', type: 'textarea' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    return { out: '按标准评估下面的内容，给出 0-10 分与理由，并指出最该改进的一点。\n标准：' + (v.crit || '准确性、清晰度') + '\n内容：\n' + (v.out2 || '') };
+  } });
+
+/* 25 教学提示词 */
+tool({ id: 'ai-prompt-teach', n: 'AI 教学提示词', c: 'ai-prompt', d: '针对知识点设计讲解与练习。',
+  f: [{ k: 'topic', t: '知识点', type: 'text' }, { k: 'lv', t: '学习者水平', type: 'text', v: '入门' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.topic) return { out: '请填写知识点' };
+    return { out: '面向' + (v.lv || '入门') + '水平讲解"' + v.topic + '"：先通俗类比建立直觉，再给定义，配 1 个例子，最后出 1 道自测题并附答案。' };
+  } });
+
+/* 26 营销提示词 */
+tool({ id: 'ai-prompt-mkt', n: 'AI 营销提示词', c: 'ai-prompt', d: '品牌/活动营销方案提示词。',
+  f: [{ k: 'brand', t: '品牌/活动', type: 'textarea' }, { k: 'aud', t: '目标人群', type: 'text', v: '年轻人' }, { k: 'out', t: '提示词', type: 'out' }],
+  run: function (v) {
+    if (!v.brand) return { out: '请填写品牌/活动' };
+    return { out: '为"' + v.brand + '"面向' + (v.aud || '年轻人') + '设计营销方案：含核心卖点、3 条 slogan、2 个渠道玩法与 1 个裂变点子。' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-prompt-rtf"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-prompt-rtf'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-prompt-rtf")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-prompt-rtf");
+if(i>=0)f.splice(i,1);else f.push("ai-prompt-rtf");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-prompt-rtf"});u.unshift("ai-prompt-rtf");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

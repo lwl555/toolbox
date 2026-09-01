@@ -31,14 +31,105 @@
    17-office.js — 表格 / 压缩包（SheetJS + JSZip，本地处理）
    ============================================================ */
 
-  
-window.TOOL = { id: "of-zip-extract", n: "解压 ZIP", c: "office", d: "列出压缩包内文件并可逐个下载。",
-  custom: null,
-  fields: [{"k":"file","t":"ZIP 文件","type":"file","accept":".zip"},{"k":"outfile","t":"输出","type":"outfile"}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) {
+  var T = [];
+  function tool(o) { T.push(o); }
+
+  function bufOf(f) { return RT.fileToBuf(f); }
+  function txtOf(f) { return RT.fileToText(f); }
+
+  /* 1 CSV -> XLSX */
+  tool({ id: 'of-csv-xlsx', n: 'CSV 转 Excel', c: 'office', d: 'CSV 转 .xlsx，可指定分隔符。',
+    f: [{ k: 'file', t: 'CSV 文件', type: 'file', accept: '.csv,.txt' }, { k: 'sep', t: '分隔符', type: 'select', opts: [{ v: ',', t: '逗号 ,' }, { v: '\t', t: '制表符' }, { v: ';', t: '分号 ;' }, { v: '|', t: '竖线 |' }], v: ',' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 CSV', outfile: [] };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return txtOf(v.file).then(function (text) {
+          var wb = XLSX.read(text, { type: 'string', FS: v.sep, RS: '\n' });
+          var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          return { outfile: [{ name: (v.file.name.replace(/\.\w+$/, '') || 'data') + '.xlsx', blob: new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), size: out.byteLength }] };
+        });
+      });
+    } });
+
+  /* 2 XLSX -> CSV */
+  tool({ id: 'of-xlsx-csv', n: 'Excel 转 CSV', c: 'office', d: '首个工作表导出为 CSV。',
+    f: [{ k: 'file', t: 'Excel 文件', type: 'file', accept: '.xlsx,.xls' }, { k: 'sep', t: '分隔符', type: 'select', opts: [{ v: ',', t: '逗号 ,' }, { v: ';', t: '分号 ;' }, { v: '\t', t: '制表符' }], v: ',' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 Excel', outfile: [] };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return bufOf(v.file).then(function (b) {
+          var wb = XLSX.read(b, { type: 'array' }), ws = wb.Sheets[wb.SheetNames[0]];
+          var csv = XLSX.utils.sheet_to_csv(ws, { FS: v.sep });
+          return { outfile: [{ name: (v.file.name.replace(/\.\w+$/, '') || 'data') + '.csv', blob: new Blob([csv], { type: 'text/csv' }), size: csv.length }] };
+        });
+      });
+    } });
+
+  /* 3 JSON -> XLSX */
+  tool({ id: 'of-json-xlsx', n: 'JSON 转 Excel', c: 'office', d: '数组型 JSON 转表格。',
+    f: [{ k: 'file', t: 'JSON 文件', type: 'file', accept: '.json' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 JSON', outfile: [] };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return txtOf(v.file).then(function (text) {
+          var data = JSON.parse(text);
+          if (!Array.isArray(data)) data = [data];
+          var ws = XLSX.utils.json_to_sheet(data), wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+          var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          return { outfile: [{ name: (v.file.name.replace(/\.\w+$/, '') || 'data') + '.xlsx', blob: new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), size: out.byteLength }] };
+        });
+      });
+    } });
+
+  /* 4 XLSX -> JSON */
+  tool({ id: 'of-xlsx-json', n: 'Excel 转 JSON', c: 'office', d: '首个工作表转为 JSON 数组。',
+    f: [{ k: 'file', t: 'Excel 文件', type: 'file', accept: '.xlsx,.xls' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 Excel', outfile: [] };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return bufOf(v.file).then(function (b) {
+          var wb = XLSX.read(b, { type: 'array' }), ws = wb.Sheets[wb.SheetNames[0]];
+          var json = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          var str = JSON.stringify(json, null, 2);
+          return { outfile: [{ name: (v.file.name.replace(/\.\w+$/, '') || 'data') + '.json', blob: new Blob([str], { type: 'application/json' }), size: str.length }] };
+        });
+      });
+    } });
+
+  /* 5 Excel 预览 */
+  tool({ id: 'of-xlsx-preview', n: 'Excel 预览', c: 'office', d: '展示工作表名与首张表前 50 行内容。',
+    f: [{ k: 'file', t: 'Excel 文件', type: 'file', accept: '.xlsx,.xls' }, { k: 'outhtml', t: '预览', type: 'outhtml' }],
+    run: function (v) {
+      if (!v.file) return { outhtml: '' };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return bufOf(v.file).then(function (b) {
+          var wb = XLSX.read(b, { type: 'array' });
+          var html = '<p>工作表：' + wb.SheetNames.join(' / ') + '</p>';
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }).slice(0, 50);
+          html += '<table class="tbl"><tbody>' + rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + RT.esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+          return { outhtml: html };
+        });
+      });
+    } });
+
+  /* 6 打包 ZIP */
+  tool({ id: 'of-zip-pack', n: '打包成 ZIP', c: 'office', d: '多个文件打包为一个 zip。',
+    f: [{ k: 'files', t: '文件(多选)', type: 'file', multi: true }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.files || !v.files.length) return { note: '请选择文件', outfile: [] };
+      return RT.lib(RT.CDN.JSZip).then(function () {
+        var zip = new JSZip();
+        v.files.forEach(function (f) { zip.file(f.name, f); });
+        return zip.generateAsync({ type: 'blob' }).then(function (b) { return { outfile: [{ name: 'archive.zip', blob: b, size: b.size }] }; });
+      });
+    } });
+
+  /* 7 解压 ZIP */
+  tool({ id: 'of-zip-extract', n: '解压 ZIP', c: 'office', d: '列出压缩包内文件并可逐个下载。',
+    f: [{ k: 'file', t: 'ZIP 文件', type: 'file', accept: '.zip' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
       if (!v.file) return { note: '请选择 ZIP', outfile: [] };
       return RT.lib(RT.CDN.JSZip).then(function () {
         return bufOf(v.file).then(function (b) { return JSZip.loadAsync(b); }).then(function (zip) {
@@ -48,7 +139,60 @@ window.TOOL = { id: "of-zip-extract", n: "解压 ZIP", c: "office", d: "列出�
           });
         });
       });
-    } };
+    } });
+
+  /* 8 批量重命名映射 */
+  tool({ id: 'of-rename', n: '批量重命名(生成清单)', c: 'office', d: '按规则生成 原名→新名 映射表，便于批量改。', auto: false,
+    f: [{ k: 'files', t: '文件(多选)', type: 'file', multi: true }, { k: 'prefix', t: '前缀', type: 'text', v: '' }, { k: 'suffix', t: '后缀', type: 'text', v: '' }, { k: 'find', t: '查找', type: 'text', v: '' }, { k: 'repl', t: '替换为', type: 'text', v: '' }, { k: 'pad', t: '序号补零(0=不补)', type: 'number', v: 0 }, { k: 'out', t: '映射清单', type: 'out', mono: true, dl: true, dlName: 'rename-map.txt' }],
+    run: function (v) {
+      if (!v.files || !v.files.length) return { out: '请先选择文件' };
+      var pad = v.pad || 0, list = [];
+      v.files.forEach(function (f, i) {
+        var base = f.name, dot = base.lastIndexOf('.');
+        var name = dot > 0 ? base.slice(0, dot) : base, ext = dot > 0 ? base.slice(dot) : '';
+        if (v.find) name = name.split(v.find).join(v.repl || '');
+        var idx = pad ? String(i + 1).padStart(pad, '0') : String(i + 1);
+        var nn = (v.prefix || '') + name + '_' + idx + (v.suffix || '') + ext;
+        list.push(f.name + '  ->  ' + nn);
+      });
+      return { out: list.join('\n') };
+    } });
+
+  /* 9 多sheet合并(仅列头相同简单纵向) */
+  tool({ id: 'of-merge-rows', n: 'Excel 多表合并', c: 'office', d: '同一文件多个工作表纵向合并成一个。',
+    f: [{ k: 'file', t: 'Excel 文件', type: 'file', accept: '.xlsx,.xls' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择 Excel', outfile: [] };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return bufOf(v.file).then(function (b) {
+          var wb = XLSX.read(b, { type: 'array' });
+          var all = [];
+          wb.SheetNames.forEach(function (nm) { XLSX.utils.sheet_to_json(wb.Sheets[nm], { defval: '' }).forEach(function (r) { all.push(r); }); });
+          var ws = XLSX.utils.json_to_sheet(all), nb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(nb, ws, 'Merged');
+          var out = XLSX.write(nb, { bookType: 'xlsx', type: 'array' });
+          return { outfile: [{ name: 'merged.xlsx', blob: new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), size: out.byteLength }], note: '合并 ' + all.length + ' 行' };
+        });
+      });
+    } });
+
+  /* 10 表格转 Markdown */
+  tool({ id: 'of-csv-md', n: '表格转 Markdown', c: 'office', d: 'CSV 转 Markdown 表格。',
+    f: [{ k: 'file', t: 'CSV 文件', type: 'file', accept: '.csv,.txt' }, { k: 'out', t: 'Markdown', type: 'out', mono: true, dl: true, dlName: 'table.md' }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return txtOf(v.file).then(function (text) {
+        var lines = text.trim().split(/\r?\n/); if (!lines.length) return { out: '' };
+        function cells(l) { return l.split(',').map(function (c) { return c.trim(); }); }
+        var head = cells(lines[0]), out = ['| ' + head.join(' | ') + ' |', '| ' + head.map(function () { return '---'; }).join(' | ') + ' |'];
+        for (var i = 1; i < lines.length; i++) out.push('| ' + cells(lines[i]).join(' | ') + ' |');
+        return { out: out.join('\n') };
+      });
+    } });
+
+  
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "of-zip-extract"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: of-zip-extract'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

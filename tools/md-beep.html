@@ -33,13 +33,71 @@
    元数据读取、WAV 音调/白噪声生成、蜂鸣、字幕时间轴处理。
    ============================================================ */
 
-  
-window.TOOL = { id: "md-beep", n: "蜂鸣器", c: "media", d: "用 WebAudio 直接播放提示音。",
-  custom: null,
-  fields: [{"k":"freq","t":"频率(Hz)","type":"number","v":880},{"k":"dur","t":"时长(秒)","type":"number","v":0.3},{"k":"out","t":"状态","type":"out"}],
-  auto: false,
-  first: true,
-  init: function (RT, host) {
+  var T = [];
+  function tool(o) { T.push(o); }
+
+  // 生成 WAV Blob（16bit PCM 单声道）
+  function makeWav(samples, rate) {
+    var n = samples.length, buf = new ArrayBuffer(44 + n * 2), dv = new DataView(buf);
+    function ws(o, s) { for (var i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); }
+    ws(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt ');
+    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, rate, true); dv.setUint32(28, rate * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+    ws(36, 'data'); dv.setUint32(40, n * 2, true);
+    for (var i = 0; i < n; i++) { var s = Math.max(-1, Math.min(1, samples[i])); dv.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true); }
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+
+  /* 1 音频元数据 */
+  tool({ id: 'md-audio', n: '音频信息', c: 'media', d: '读取时长 / 类型 / 体积。',
+    f: [{ k: 'file', t: '音频文件', type: 'file', accept: 'audio/*' }, { k: 'out', t: '信息', type: 'out', mono: true }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return new Promise(function (res) {
+        var a = document.createElement('audio'); a.preload = 'metadata';
+        a.onloadedmetadata = function () { res({ out: '文件名：' + v.file.name + '\n类型：' + (v.file.type || '未知') + '\n时长：' + (a.duration ? a.duration.toFixed(2) + ' 秒' : '无法读取') + '\n体积：' + RT.fmtSize(v.file.size) }); };
+        a.onerror = function () { res({ out: '无法读取该音频元数据' }); };
+        a.src = URL.createObjectURL(v.file);
+      });
+    } });
+
+  /* 2 视频元数据 */
+  tool({ id: 'md-video', n: '视频信息', c: 'media', d: '读取时长 / 分辨率 / 体积。',
+    f: [{ k: 'file', t: '视频文件', type: 'file', accept: 'video/*' }, { k: 'out', t: '信息', type: 'out', mono: true }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return new Promise(function (res) {
+        var vid = document.createElement('video'); vid.preload = 'metadata';
+        vid.onloadedmetadata = function () { res({ out: '文件名：' + v.file.name + '\n类型：' + (v.file.type || '未知') + '\n时长：' + (vid.duration ? vid.duration.toFixed(2) + ' 秒' : '无法读取') + '\n分辨率：' + vid.videoWidth + ' × ' + vid.videoHeight + '\n体积：' + RT.fmtSize(v.file.size) }); };
+        vid.onerror = function () { res({ out: '无法读取该视频元数据' }); };
+        vid.src = URL.createObjectURL(v.file);
+      });
+    } });
+
+  /* 3 生成音调 WAV */
+  tool({ id: 'md-tone', n: '生成音调', c: 'media', d: '生成指定频率/时长的正弦音 WAV。',
+    f: [{ k: 'freq', t: '频率(Hz)', type: 'number', v: 440 }, { k: 'dur', t: '时长(秒)', type: 'number', v: 2 }, { k: 'vol', t: '音量', type: 'range', min: 0.1, max: 1, step: 0.05, v: 0.6 }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      var rate = 44100, n = Math.round((v.dur || 2) * rate), s = new Float32Array(n);
+      for (var i = 0; i < n; i++) s[i] = (v.vol || 0.6) * Math.sin(2 * Math.PI * (v.freq || 440) * i / rate);
+      var b = makeWav(s, rate);
+      return { outfile: [{ name: 'tone-' + (v.freq || 440) + 'hz.wav', blob: b, size: b.size }] };
+    } });
+
+  /* 4 生成白噪声 */
+  tool({ id: 'md-noise', n: '生成白噪声', c: 'media', d: '生成随机白噪声 WAV，用于助眠/测试。',
+    f: [{ k: 'dur', t: '时长(秒)', type: 'number', v: 5 }, { k: 'vol', t: '音量', type: 'range', min: 0.1, max: 1, step: 0.05, v: 0.4 }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      var rate = 44100, n = Math.round((v.dur || 5) * rate), s = new Float32Array(n), vol = v.vol || 0.4;
+      for (var i = 0; i < n; i++) s[i] = vol * (Math.random() * 2 - 1);
+      var b = makeWav(s, rate);
+      return { outfile: [{ name: 'noise.wav', blob: b, size: b.size }] };
+    } });
+
+  /* 5 蜂鸣播放 */
+  tool({ id: 'md-beep', n: '蜂鸣器', c: 'media', d: '用 WebAudio 直接播放提示音。', auto: false,
+    f: [{ k: 'freq', t: '频率(Hz)', type: 'number', v: 880 }, { k: 'dur', t: '时长(秒)', type: 'number', v: 0.3 }, { k: 'out', t: '状态', type: 'out' }],
+    init: function (RT, host) {
       // 不自动播放，点击“执行”按钮触发
       var go = document.getElementById('go');
       function beep(freq, dur) {
@@ -51,7 +109,65 @@ window.TOOL = { id: "md-beep", n: "蜂鸣器", c: "media", d: "用 WebAudio 直�
       if (go) { var orig = go.onclick; go.onclick = function () { var f = +document.getElementById('f_freq').value, d = +document.getElementById('f_dur').value; beep(f || 880, d || 0.3); RT.toast('已播放'); }; }
       return { out: '点击“执行”播放提示音' };
     },
-  run: function (v) { return { out: '点击“执行”播放 ' + (v.freq || 880) + 'Hz 提示音' }; } };
+    run: function (v) { return { out: '点击“执行”播放 ' + (v.freq || 880) + 'Hz 提示音' }; } });
+
+  /* 6 字幕时间轴偏移 */
+  tool({ id: 'md-srt-shift', n: '字幕时间轴偏移', c: 'media', d: '整体平移 SRT 时间码（秒，可负）。',
+    f: [{ k: 'file', t: 'SRT 文件', type: 'file', accept: '.srt,.txt' }, { k: 'off', t: '偏移(秒,可负)', type: 'number', v: 0, step: 0.1 }, { k: 'out', t: '结果 SRT', type: 'out', mono: true, dl: true, dlName: 'shifted.srt' }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      function shift(t) {
+        var m = t.match(/(\d{2}):(\d{2}):(\d{2}),(\d{3})/); if (!m) return t;
+        var ms = (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]) + Math.round((v.off || 0) * 1000);
+        if (ms < 0) ms = 0; var h = Math.floor(ms / 3600000); ms %= 3600000; var mi = Math.floor(ms / 60000); ms %= 60000; var s = Math.floor(ms / 1000); var mm = ms % 1000;
+        function p(x, n) { return String(x).padStart(n, '0'); }
+        return p(h, 2) + ':' + p(mi, 2) + ':' + p(s, 2) + ',' + p(mm, 3);
+      }
+      return RT.fileToText(v.file).then(function (text) {
+        var out = text.replace(/(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/g, function (_, a, b) { return shift(a) + ' --> ' + shift(b); });
+        return { out: out };
+      });
+    } });
+
+  /* 7 SRT <-> VTT */
+  tool({ id: 'md-srt-vtt', n: 'SRT / VTT 互转', c: 'media', d: '字幕格式在 SRT 与 WebVTT 间转换。',
+    f: [{ k: 'file', t: '字幕文件', type: 'file', accept: '.srt,.vtt,.txt' }, { k: 'to', t: '转为', type: 'seg', opts: [{ v: 'vtt', t: '→ VTT' }, { v: 'srt', t: '→ SRT' }], v: 'vtt' }, { k: 'out', t: '结果', type: 'out', mono: true, dl: true, dlName: 'subtitle.vtt' }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.fileToText(v.file).then(function (text) {
+        if (v.to === 'vtt') {
+          var t = 'WEBVTT\n\n' + text.replace(/\r?\n\r?\n/g, '\n\n').replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+          return { out: t, note: '已转 VTT' };
+        } else {
+          var t2 = text.replace(/^WEBVTT[\s\S]*?\n\n/, '').replace(/(\d{2}:\d{2}:\d{2})\.(\d{3})/g, '$1,$2');
+          return { out: t2, note: '已转 SRT' };
+        }
+      });
+    } });
+
+  /* 8 批量时长统计 */
+  tool({ id: 'md-batch', n: '媒体时长批量统计', c: 'media', d: '多个音频/视频的时长汇总。',
+    f: [{ k: 'files', t: '媒体文件(多选)', type: 'file', multi: true, accept: 'audio/*,video/*' }, { k: 'out', t: '清单', type: 'out', mono: true }],
+    run: function (v) {
+      if (!v.files || !v.files.length) return { out: '' };
+      var proms = v.files.map(function (f) {
+        return new Promise(function (res) {
+          var el = f.type.indexOf('video') >= 0 ? document.createElement('video') : document.createElement('audio');
+          el.preload = 'metadata';
+          el.onloadedmetadata = function () { res(f.name + '\t' + (el.duration ? el.duration.toFixed(1) + 's' : '?')); };
+          el.onerror = function () { res(f.name + '\t读取失败'); };
+          el.src = URL.createObjectURL(f);
+        });
+      });
+      return Promise.all(proms).then(function (rows) {
+        var total = rows.reduce(function (s, r) { var m = r.match(/([\d.]+)s$/); return s + (m ? +m[1] : 0); }, 0);
+        return { out: rows.join('\n') + '\n合计时长：' + total.toFixed(1) + ' 秒' };
+      });
+    } });
+
+  
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "md-beep"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: md-beep'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

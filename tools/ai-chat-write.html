@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 写作助手 - 超有用的工具箱</title>
+<meta name="description" content="帮你起草、润色、扩写各类文章。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI对话</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 写作助手</h1>
+<p class="lede">帮你起草、润色、扩写各类文章。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-chat.html"><div class="card-t"><span class="card-name">AI 智能对话</span></div><div class="card-desc">填 Key 即用的真实大模型对话（流式），支持多家服务商。</div></a><a class="card" href="ai-chat-deepseek.html"><div class="card-t"><span class="card-name">AI 对话·DeepSeek</span></div><div class="card-desc">预设 DeepSeek 端点，填 Key 直接聊。</div></a><a class="card" href="ai-chat-role.html"><div class="card-t"><span class="card-name">AI 角色扮演</span></div><div class="card-desc">设定任意角色身份进行沉浸式对话。</div></a><a class="card" href="ai-chat-trans.html"><div class="card-t"><span class="card-name">AI 翻译助手</span></div><div class="card-desc">高质量多语种互译，保留语气与专有名词。</div></a><a class="card" href="ai-chat-code.html"><div class="card-t"><span class="card-name">AI 代码助手</span></div><div class="card-desc">写代码、改 Bug、解释原理，附可运行示例。</div></a><a class="card" href="ai-chat-sum.html"><div class="card-t"><span class="card-name">AI 长文总结</span></div><div class="card-desc">粘贴长文，AI 提炼要点与结论。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 写作助手<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   26-ai-chat.js — AI 对话（真实大模型，用户填 Key 前端 fetch OpenAI 兼容接口）
+   所有工具 init 模式，自渲染聊天 UI；支持流式输出。
+   ============================================================ */
+var PROVIDERS = {
+  deepseek: { base: 'https://api.deepseek.com/v1', models: ['deepseek-chat', 'deepseek-reasoner'] },
+  openai: { base: 'https://api.openai.com/v1', models: ['gpt-4o-mini', 'gpt-4o', 'o1-mini'] },
+  moonshot: { base: 'https://api.moonshot.cn/v1', models: ['moonshot-v1-8k', 'moonshot-v1-32k'] },
+  zhipu: { base: 'https://open.bigmodel.cn/api/paas/v4', models: ['glm-4-flash', 'glm-4-plus'] }
+};
+
+/* 流式对话核心 */
+function chatReq(base, key, model, sys, hist, onTok, onErr, onDone) {
+  fetch(base + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+    body: JSON.stringify({ model: model, stream: true, messages: [{ role: 'system', content: sys }].concat(hist) })
+  }).then(function (r) {
+    if (!r.ok) return r.text().then(function (t) { throw new Error('API ' + r.status + '：' + t.slice(0, 160)); });
+    var reader = r.body.getReader(), dec = new TextDecoder(), buf = '';
+    function step() {
+      return reader.read().then(function (res) {
+        if (res.done) { onDone && onDone(); return; }
+        buf += dec.decode(res.value, { stream: true });
+        var lines = buf.split('\n'); buf = lines.pop();
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line || line.indexOf('data:') !== 0) continue;
+          var d = line.slice(5).trim();
+          if (d === '[DONE]') { onDone && onDone(); return; }
+          try { var j = JSON.parse(d); var tok = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content; if (tok) onTok(tok); } catch (e) { }
+        }
+        return step();
+      });
+    }
+    return step();
+  }).catch(function (e) { onErr && onErr(e.message); });
+}
+
+/* 通用聊天 UI 构建 */
+function buildChat(host, RT, cfg) {
+  var sys = cfg.sys || '你是一个乐于助人的AI助手。';
+  host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+    '<div style="margin-bottom:8px"><label>服务商 </label><select id="prov" class="ipt">' +
+    '<option value="deepseek">DeepSeek</option><option value="openai">OpenAI</option><option value="moonshot">Kimi</option><option value="zhipu">智谱 GLM</option><option value="custom">自定义</option></select></div>' +
+    '<div style="margin-bottom:8px"><input id="key" class="ipt" type="password" placeholder="填入 API Key（仅本机，不上传）"></div>' +
+    '<div style="margin-bottom:8px" id="basebox" style="display:none"><input id="base" class="ipt" placeholder="自定义 base url，如 https://x/v1"></div>' +
+    '<div style="margin-bottom:8px"><label>模型 </label><input id="model" class="ipt" value="' + (PROVIDERS.deepseek.models[0]) + '"></div>' +
+    '<div id="log" style="border:1px solid var(--bd);border-radius:10px;padding:10px;height:240px;overflow:auto;background:var(--bg-soft);margin-bottom:8px"></div>' +
+    '<div style="display:flex;gap:6px"><textarea id="msg" class="ipt" rows="2" placeholder="输入消息，回车发送" style="flex:1"></textarea><button id="send" class="btn">发送</button></div>' +
+    '<div id="st" style="color:var(--ink-4);margin-top:6px"></div></div></div>';
+  function syncModel() {
+    var p = host.querySelector('#prov').value;
+    if (p === 'custom') { host.querySelector('#base').parentNode.style.display = ''; return; }
+    host.querySelector('#base').parentNode.style.display = 'none';
+    host.querySelector('#model').value = PROVIDERS[p].models[0];
+  }
+  host.querySelector('#prov').onchange = syncModel;
+  syncModel();
+  var hist = [];
+  function add(role, text) {
+    var box = host.querySelector('#log');
+    var d = document.createElement('div');
+    d.style.cssText = 'margin:6px 0;padding:8px 10px;border-radius:10px;max-width:90%;white-space:pre-wrap;line-height:1.5';
+    if (role === 'user') { d.style.cssText += 'margin-left:auto;background:var(--brand);color:#fff'; }
+    else { d.style.cssText += 'background:#fff;border:1px solid var(--bd)'; }
+    d.textContent = (role === 'user' ? '我：' : 'AI：') + text;
+    box.appendChild(d); box.scrollTop = box.scrollHeight;
+    return d;
+  }
+  host.querySelector('#msg').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); host.querySelector('#send').click(); } });
+  host.querySelector('#send').onclick = function () {
+    var key = host.querySelector('#key').value.trim();
+    var p = host.querySelector('#prov').value;
+    var base = p === 'custom' ? host.querySelector('#base').value.trim() : PROVIDERS[p].base;
+    var model = host.querySelector('#model').value.trim();
+    var text = host.querySelector('#msg').value.trim();
+    if (!key) { RT.toast('请先填入 API Key'); return; }
+    if (!text) return;
+    host.querySelector('#msg').value = '';
+    add('user', text); hist.push({ role: 'user', content: text });
+    var node = add('assistant', '');
+    host.querySelector('#st').textContent = '思考中…';
+    var full = '';
+    chatReq(base, key, model, sys, hist, function (tok) { full += tok; node.textContent = 'AI：' + full; host.querySelector('#log').scrollTop = 1e9; },
+      function (err) { node.textContent = 'AI：⚠️ ' + err; host.querySelector('#st').textContent = '出错'; },
+      function () { host.querySelector('#st').textContent = '完成'; hist.push({ role: 'assistant', content: full }); });
+  };
+}
+
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 通用 AI 对话 */
+tool({ id: 'ai-chat', n: 'AI 智能对话', c: 'ai-chat', d: '填 Key 即用的真实大模型对话（流式），支持多家服务商。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是一个乐于助人的中文AI助手，回答简洁准确。' }); } });
+
+/* 2 DeepSeek 专用 */
+tool({ id: 'ai-chat-deepseek', n: 'AI 对话·DeepSeek', c: 'ai-chat', d: '预设 DeepSeek 端点，填 Key 直接聊。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是 DeepSeek，一个严谨有用的助手。' }); } });
+
+/* 3 角色扮演 */
+tool({ id: 'ai-chat-role', n: 'AI 角色扮演', c: 'ai-chat', d: '设定任意角色身份进行沉浸式对话。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '请完全代入用户设定的角色，保持人设与语气一致，用第一人称回应。' }); } });
+
+/* 4 翻译助手 */
+tool({ id: 'ai-chat-trans', n: 'AI 翻译助手', c: 'ai-chat', d: '高质量多语种互译，保留语气与专有名词。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是专业翻译，只输出译文，除非用户要求说明。保持原意与格式。' }); } });
+
+/* 5 代码助手 */
+tool({ id: 'ai-chat-code', n: 'AI 代码助手', c: 'ai-chat', d: '写代码、改 Bug、解释原理，附可运行示例。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是资深工程师，给出简洁正确、可运行的代码，并解释关键点。' }); } });
+
+/* 6 写作助手 */
+tool({ id: 'ai-chat-write', n: 'AI 写作助手', c: 'ai-chat', d: '帮你起草、润色、扩写各类文章。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是写作教练，帮助用户把想法写成流畅有感染力的文字。' }); } });
+
+/* 7 长文总结 */
+tool({ id: 'ai-chat-sum', n: 'AI 长文总结', c: 'ai-chat', d: '粘贴长文，AI 提炼要点与结论。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '请仔细阅读用户提供的长文，输出结构化摘要：核心观点、关键论据、结论。' }); } });
+
+/* 8 头脑风暴 */
+tool({ id: 'ai-chat-brain', n: 'AI 头脑风暴', c: 'ai-chat', d: '围绕主题发散创意，给出多种方案。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是创意伙伴，针对用户主题给出大量不同角度的点子，不评判、不收敛。' }); } });
+
+/* 9 随身老师 */
+tool({ id: 'ai-chat-tutor', n: 'AI 随身老师', c: 'ai-chat', d: '循序渐进讲解知识点，配合例子与提问。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是耐心老师，用通俗语言讲解，先概念后例子，最后出一道小测验。' }); } });
+
+/* 10 模拟面试 */
+tool({ id: 'ai-chat-interview', n: 'AI 模拟面试', c: 'ai-chat', d: '按岗位模拟面试官，追问并给评价。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是严格的面试官，根据岗位连续追问，最后给出表现评价与改进建议。' }); } });
+
+/* 11 树洞倾听 */
+tool({ id: 'ai-chat-ear', n: 'AI 树洞倾听', c: 'ai-chat', d: '温柔倾听、共情回应，不评判。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是温暖的倾听者，先共情再轻建议，多用开放式回应，不急于给方案。' }); } });
+
+/* 12 诗人 */
+tool({ id: 'ai-chat-poet', n: 'AI 诗人', c: 'ai-chat', d: '按主题与风格创作诗词。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是一位诗人，按用户给定的主题、意象与格律创作中文诗词，可附简短赏析。' }); } });
+
+/* 13 法律咨询（模板） */
+tool({ id: 'ai-chat-law', n: 'AI 法律咨询(参考)', c: 'ai-chat', d: '通用法律常识问答（非正式意见，重大事宜请找律师）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是普法助手，解释法律常识并提示风险，但声明不构成正式法律意见，建议必要时咨询执业律师。' }); } });
+
+/* 14 健康问答（参考） */
+tool({ id: 'ai-chat-health', n: 'AI 健康问答(参考)', c: 'ai-chat', d: '健康常识科普（仅供参考，不替代医生）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) { buildChat(host, RT, { sys: '你是健康科普员，解释常识并强调仅供参考、急症请就医；不诊断、不开方。' }); } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-chat-write"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-chat-write'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-chat-write")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-chat-write");
+if(i>=0)f.splice(i,1);else f.push("ai-chat-write");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-chat-write"});u.unshift("ai-chat-write");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

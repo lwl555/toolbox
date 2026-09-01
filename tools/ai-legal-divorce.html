@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 离婚协议(参考) - 超有用的工具箱</title>
+<meta name="description" content="财产分割/抚养参考。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI文书</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 离婚协议(参考)</h1>
+<p class="lede">财产分割/抚养参考。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-legal-labor.html"><div class="card-t"><span class="card-name">AI 劳动合同</span></div><div class="card-desc">生成劳动合同主要条款。</div></a><a class="card" href="ai-legal-rent.html"><div class="card-t"><span class="card-name">AI 租赁合同</span></div><div class="card-desc">房屋租赁核心条款。</div></a><a class="card" href="ai-legal-iot.html"><div class="card-t"><span class="card-name">AI 借条</span></div><div class="card-desc">规范借条模板。</div></a><a class="card" href="ai-legal-sale.html"><div class="card-t"><span class="card-name">AI 买卖合同</span></div><div class="card-desc">货物买卖条款。</div></a><a class="card" href="ai-legal-nda.html"><div class="card-t"><span class="card-name">AI 保密协议</span></div><div class="card-desc">双向/单方保密条款。</div></a><a class="card" href="ai-legal-partner.html"><div class="card-t"><span class="card-name">AI 合伙协议</span></div><div class="card-desc">合伙出资与分工。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 离婚协议(参考)<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   30-ai-legal.js — AI 文书（合同/协议模板真实生成，共 22 个）
+   提示：均为模板草稿，正式签署前请咨询执业律师。
+   ============================================================ */
+var T = [];
+function tool(o) { T.push(o); }
+var WARN = '\n\n（本件为模板草稿，仅供参考，正式使用前请咨询执业律师并按当地法律调整。）';
+
+/* 1 劳动合同 */
+tool({ id: 'ai-legal-labor', n: 'AI 劳动合同', c: 'ai-legal', d: '生成劳动合同主要条款。',
+  f: [{ k: 'a', t: '用人单位', type: 'text' }, { k: 'b', t: '劳动者', type: 'text' }, { k: 'pos', t: '岗位', type: 'text' }, { k: 'sal', t: '月薪(元)', type: 'text' }, { k: 'out', t: '合同', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填写双方' };
+    return { out: '劳动合同\n甲方(用人单位)：' + v.a + '\n乙方(劳动者)：' + v.b + '\n一、岗位：' + (v.pos || '__') + '；试用期按法定执行。\n二、劳动报酬：月薪 ' + (v.sal || '__') + ' 元，每月__日发放。\n三、工时与社保：依法缴纳社会保险。\n四、合同期限：__年，自__至__。\n五、解除：依《劳动合同法》执行。' + WARN };
+  } });
+
+/* 2 租赁合同 */
+tool({ id: 'ai-legal-rent', n: 'AI 租赁合同', c: 'ai-legal', d: '房屋租赁核心条款。',
+  f: [{ k: 'a', t: '出租方', type: 'text' }, { k: 'b', t: '承租方', type: 'text' }, { k: 'addr', t: '房屋地址', type: 'text' }, { k: 'rent', t: '月租(元)', type: 'text' }, { k: 'out', t: '合同', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填写双方' };
+    return { out: '房屋租赁合同\n出租方：' + v.a + ' 承租方：' + v.b + '\n房屋：' + (v.addr || '__') + '\n租金：' + (v.rent || '__') + ' 元/月，押金__，每__付。\n租期：__至__。\n维修：正常使用损耗由出租方负责。\n违约：提前退租需提前__日通知并付违约金__。' + WARN };
+  } });
+
+/* 3 借条 */
+tool({ id: 'ai-legal-iot', n: 'AI 借条', c: 'ai-legal', d: '规范借条模板。',
+  f: [{ k: 'b', t: '借款人', type: 'text' }, { k: 'amt', t: '金额(元)', type: 'text' }, { k: 'out', t: '借条', type: 'out' }],
+  run: function (v) {
+    if (!v.b || !v.amt) return { out: '请填借款人与金额' };
+    return { out: '借条\n今借到（出借人）__ 人民币 ' + v.amt + ' 元（大写：__）。\n借款人：' + v.b + '，身份证号__，于__年__月__日前归还。\n借款利率（如有）__。\n借款人签字：______  日期：__' + WARN };
+  } });
+
+/* 4 买卖合同 */
+tool({ id: 'ai-legal-sale', n: 'AI 买卖合同', c: 'ai-legal', d: '货物买卖条款。',
+  f: [{ k: 'a', t: '卖方', type: 'text' }, { k: 'b', t: '买方', type: 'text' }, { k: 'goods', t: '标的物', type: 'text' }, { k: 'price', t: '总价', type: 'text' }, { k: 'out', t: '合同', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '买卖合同\n卖方：' + v.a + ' 买方：' + v.b + '\n标的：' + (v.goods || '__') + '\n总价：' + (v.price || '__') + '\n交货：__地点/时间；验收：__；付款：__。\n风险转移：交付时。\n争议：协商不成提交__法院。' + WARN };
+  } });
+
+/* 5 保密协议 NDA */
+tool({ id: 'ai-legal-nda', n: 'AI 保密协议', c: 'ai-legal', d: '双向/单方保密条款。',
+  f: [{ k: 'a', t: '披露方', type: 'text' }, { k: 'b', t: '接收方', type: 'text' }, { k: 'out', t: 'NDA', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '保密协议\n披露方：' + v.a + ' 接收方：' + v.b + '\n一、接收方对获悉的商业秘密负有保密义务，不得向第三方披露或用于约定外目的。\n二、保密期：__年。\n三、例外：已公开信息除外。\n四、违约赔偿：__。' + WARN };
+  } });
+
+/* 6 合伙协议 */
+tool({ id: 'ai-legal-partner', n: 'AI 合伙协议', c: 'ai-legal', d: '合伙出资与分工。',
+  f: [{ k: 'a', t: '合伙人A', type: 'text' }, { k: 'b', t: '合伙人B', type: 'text' }, { k: 'out', t: '协议', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '合伙协议\n合伙人：' + v.a + '、' + v.b + '\n出资：A__  B__；股权：A__% B__%。\n分工：A__ B__。\n决策：重大事项过半通过。\n利润分配：按出资/约定。\n退出：__。' + WARN };
+  } });
+
+/* 7 服务合同 */
+tool({ id: 'ai-legal-service', n: 'AI 服务合同', c: 'ai-legal', d: '委托服务条款。',
+  f: [{ k: 'a', t: '委托方', type: 'text' }, { k: 'b', t: '服务方', type: 'text' }, { k: 'scope', t: '服务内容', type: 'textarea' }, { k: 'fee', t: '费用', type: 'text' }, { k: 'out', t: '合同', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '服务合同\n委托方：' + v.a + ' 服务方：' + v.b + '\n服务内容：' + (v.scope || '__') + '\n费用：' + (v.fee || '__') + '；周期：__。\n验收标准：__。\n知识产权：成果归__。' + WARN };
+  } });
+
+/* 8 免责声明 */
+tool({ id: 'ai-legal-disclaim', n: 'AI 免责声明', c: 'ai-legal', d: '通用免责声明。',
+  f: [{ k: 'who', t: '声明主体', type: 'text' }, { k: 'out', t: '声明', type: 'out' }],
+  run: function (v) {
+    return { out: '免责声明\n' + (v.who || '本平台') + '尽力保证信息准确，但不保证完全无误；因使用本信息产生的损失不承担责任。用户应自行判断并风险自担。' + WARN };
+  } });
+
+/* 9 赠与合同 */
+tool({ id: 'ai-legal-gift', n: 'AI 赠与合同', c: 'ai-legal', d: '财产赠与条款。',
+  f: [{ k: 'a', t: '赠与人', type: 'text' }, { k: 'b', t: '受赠人', type: 'text' }, { k: 'thing', t: '赠与物', type: 'text' }, { k: 'out', t: '合同', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '赠与合同\n赠与人：' + v.a + ' 受赠人：' + v.b + '\n赠与物：' + (v.thing || '__') + '，于__交付。\n附义务（如有）：__。\n本赠与自交付时生效。' + WARN };
+  } });
+
+/* 10 授权委托书 */
+tool({ id: 'ai-legal-poal', n: 'AI 授权委托书', c: 'ai-legal', d: '代理权限委托。',
+  f: [{ k: 'a', t: '委托人', type: 'text' }, { k: 'b', t: '受托人', type: 'text' }, { k: 'pow', t: '权限范围', type: 'textarea' }, { k: 'out', t: '委托书', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '授权委托书\n委托人：' + v.a + ' 受托人：' + v.b + '\n委托事项与权限：' + (v.pow || '__') + '\n委托期限：__至__。\n受托人在权限内签署的文件委派人予认可。' + WARN };
+  } });
+
+/* 11 违约金条款 */
+tool({ id: 'ai-legal-penalty', n: 'AI 违约金条款', c: 'ai-legal', d: '生成违约金约定。',
+  f: [{ k: 'amt', t: '合同总额(元)', type: 'text' }, { k: 'out', t: '条款', type: 'out' }],
+  run: function (v) {
+    return { out: '违约金条款：任一方违约，应向守约方支付违约金，数额为合同总额(' + (v.amt || '__') + ')的__%（或实际损失）。迟延履约按日__%计。' + WARN };
+  } });
+
+/* 12 退款政策 */
+tool({ id: 'ai-legal-refund', n: 'AI 退款政策', c: 'ai-legal', d: '商家退款规则。',
+  f: [{ k: 'who', t: '店铺名', type: 'text' }, { k: 'out', t: '政策', type: 'out' }],
+  run: function (v) {
+    return { out: (v.who || '本店') + '退款政策：未发货/未使用可全额退；已使用按比例；质量问题包退。退款原路返回，时效__个工作日。定制类不支持无理由退。' + WARN };
+  } });
+
+/* 13 用户协议 */
+tool({ id: 'ai-legal-tos', n: 'AI 用户协议', c: 'ai-legal', d: '网站/App 用户协议要点。',
+  f: [{ k: 'name', t: '产品名', type: 'text' }, { k: 'out', t: '协议', type: 'out' }],
+  run: function (v) {
+    return { out: (v.name || '本产品') + '用户协议要点：\n1 账号实名与安保义务\n2 禁止发布违法/侵权内容\n3 服务按"现状"提供\n4 数据按隐私政策处理\n5 违约可封号\n6 责任限制与管辖法院' + WARN };
+  } });
+
+/* 14 隐私政策要点 */
+tool({ id: 'ai-legal-privacy', n: 'AI 隐私政策要点', c: 'ai-legal', d: '个人信息处理告知。',
+  f: [{ k: 'name', t: '产品名', type: 'text' }, { k: 'out', t: '要点', type: 'out' }],
+  run: function (v) {
+    return { out: (v.name || '本产品') + '隐私政策要点：\n收集：账号/设备/行为数据\n用途：提供服务与改进\n共享：除法定或授权外不对外\n保留：最短必要期限\n权利：查询/更正/删除\n安全：加密与访问控制' + WARN };
+  } });
+
+/* 15 催告函 */
+tool({ id: 'ai-legal-urge', n: 'AI 催告函', c: 'ai-legal', d: '欠款/履约催告。',
+  f: [{ k: 'a', t: '催告人', type: 'text' }, { k: 'b', t: '被催告人', type: 'text' }, { k: 'matter', t: '事项', type: 'textarea' }, { k: 'out', t: '催告函', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '催告函\n致：' + v.b + '\n自：' + v.a + '\n事由：' + (v.matter || '__') + '\n请于收到本函__日内履行，逾期将采取法律措施。\n' + (v.a) + '\n日期：__' + WARN };
+  } });
+
+/* 16 解除通知 */
+tool({ id: 'ai-legal-terminate', n: 'AI 解除通知', c: 'ai-legal', d: '合同/劳动关系解除。',
+  f: [{ k: 'a', t: '发出方', type: 'text' }, { k: 'b', t: '对方', type: 'text' }, { k: 'reason', t: '解除原因', type: 'text' }, { k: 'out', t: '通知', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '解除通知\n致：' + v.b + '\n因：' + (v.reason || '__') + '，现通知自__起解除双方关系/合同。请于__日前结清__。\n' + v.a + '\n日期：__' + WARN };
+  } });
+
+/* 17 调解协议 */
+tool({ id: 'ai-legal-mediate', n: 'AI 调解协议', c: 'ai-legal', d: '纠纷调解结果。',
+  f: [{ k: 'a', t: '甲方', type: 'text' }, { k: 'b', t: '乙方', type: 'text' }, { k: 'res', t: '调解结果', type: 'textarea' }, { k: 'out', t: '协议', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '调解协议\n甲方：' + v.a + ' 乙方：' + v.b + '\n经调解达成：' + (v.res || '__') + '\n双方放弃就此再诉。本协议签字生效。' + WARN };
+  } });
+
+/* 18 入职 Offer */
+tool({ id: 'ai-legal-offer', n: 'AI 入职 Offer', c: 'ai-legal', d: '录用通知要点。',
+  f: [{ k: 'co', t: '公司', type: 'text' }, { k: 'name', t: '候选人', type: 'text' }, { k: 'pos', t: '岗位', type: 'text' }, { k: 'sal', t: '薪资', type: 'text' }, { k: 'out', t: 'Offer', type: 'out' }],
+  run: function (v) {
+    if (!v.co || !v.name) return { out: '请填公司与候选人' };
+    return { out: '录用通知书\n' + v.name + ' 先生/女士：\n恭喜！' + v.co + ' 拟录用您为' + (v.pos || '__') + '，月薪 ' + (v.sal || '__') + '。\n报到：__；有效期__日。\n' + v.co + '\n日期：__' + WARN };
+  } });
+
+/* 19 竞业限制 */
+tool({ id: 'ai-legal-nocomp', n: 'AI 竞业限制', c: 'ai-legal', d: '离职后竞业条款。',
+  f: [{ k: 'a', t: '公司', type: 'text' }, { k: 'b', t: '员工', type: 'text' }, { k: 'out', t: '条款', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '竞业限制条款\n员工' + v.b + '离职后__个月内不得到与' + v.a + '有竞争关系单位任职或自营同类业务。\n补偿：按月支付离职前工资__%。\n范围：__行业/地区。' + WARN };
+  } });
+
+/* 20 知识产权归属 */
+tool({ id: 'ai-legal-ip', n: 'AI 知识产权条款', c: 'ai-legal', d: '成果权属约定。',
+  f: [{ k: 'a', t: '委托方', type: 'text' }, { k: 'b', t: '创作方', type: 'text' }, { k: 'out', t: '条款', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '知识产权条款：' + v.b + '为' + v.a + '完成的职务/委托成果，其著作权、专利等知识产权归' + v.a + '所有；' + v.b + '享有署名权（如适用）。' + WARN };
+  } });
+
+/* 21 离婚协议(参考) */
+tool({ id: 'ai-legal-divorce', n: 'AI 离婚协议(参考)', c: 'ai-legal', d: '财产分割/抚养参考。',
+  f: [{ k: 'a', t: '男方', type: 'text' }, { k: 'b', t: '女方', type: 'text' }, { k: 'out', t: '协议', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填双方' };
+    return { out: '离婚协议(参考)\n男方：' + v.a + ' 女方：' + v.b + '\n一、自愿离婚。\n二、子女抚养：__方直接抚养，另一方月付抚养费__至__岁。\n三、财产分割：__。\n四、债务：各自名下各自承担。\n（涉及重大财产请务必咨询律师并公证）' + WARN };
+  } });
+
+/* 22 情侣协议(趣味) */
+tool({ id: 'ai-legal-couple', n: 'AI 情侣小协议', c: 'ai-legal', d: '恋爱中的趣味约定（非法律文件）。',
+  f: [{ k: 'a', t: '我', type: 'text' }, { k: 'b', t: 'TA', type: 'text' }, { k: 'out', t: '协议', type: 'out' }],
+  run: function (v) {
+    return { out: '❤ 情侣小约定（娱乐，无法律效力）\n甲方：' + (v.a || '我') + ' 乙方：' + (v.b || 'TA') + '\n1 每天至少一个拥抱\n2 吵架不过夜\n3 重大事项商量着来\n4 互相支持各自热爱\n签字：__  __  日期：__' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-legal-divorce"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-legal-divorce'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-legal-divorce")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-legal-divorce");
+if(i>=0)f.splice(i,1);else f.push("ai-legal-divorce");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-legal-divorce"});u.unshift("ai-legal-divorce");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

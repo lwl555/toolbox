@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI Slogan 生成 - 超有用的工具箱</title>
+<meta name="description" content="生成多条品牌口号。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI商业</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI Slogan 生成</h1>
+<p class="lede">生成多条品牌口号。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-biz-swot.html"><div class="card-t"><span class="card-name">AI SWOT 分析</span></div><div class="card-desc">按内外部因素生成 SWOT 四象限。</div></a><a class="card" href="ai-biz-comp.html"><div class="card-t"><span class="card-name">AI 竞品分析</span></div><div class="card-desc">生成竞品对比维度框架。</div></a><a class="card" href="ai-biz-okr.html"><div class="card-t"><span class="card-name">AI OKR 制定</span></div><div class="card-desc">把目标拆成可衡量 KR。</div></a><a class="card" href="ai-biz-bp.html"><div class="card-t"><span class="card-name">AI 商业计划大纲</span></div><div class="card-desc">生成 BP 标准章节。</div></a><a class="card" href="ai-biz-persona.html"><div class="card-t"><span class="card-name">AI 用户画像</span></div><div class="card-desc">生成典型用户 Persona。</div></a><a class="card" href="ai-biz-price.html"><div class="card-t"><span class="card-name">AI 定价策略</span></div><div class="card-desc">给出定价思路与区间建议。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI Slogan 生成<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   28-ai-biz.js — AI 商业（模板引擎真实生成，共 24 个）
+   ============================================================ */
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 SWOT 分析 */
+tool({ id: 'ai-biz-swot', n: 'AI SWOT 分析', c: 'ai-biz', d: '按内外部因素生成 SWOT 四象限。',
+  f: [{ k: 'proj', t: '项目/产品', type: 'textarea' }, { k: 'out', t: 'SWOT', type: 'out' }],
+  run: function (v) {
+    if (!v.proj) return { out: '请填写项目' };
+    return { out: '【S 优势】列出你相对竞品的核心能力（技术/资源/团队/口碑）\n【W 劣势】当前短板与资源缺口\n【O 机会】市场趋势、政策、未被满足的需求\n【T 威胁】竞品、替代方案、外部风险\n\n针对：' + v.proj };
+  } });
+
+/* 2 竞品分析 */
+tool({ id: 'ai-biz-comp', n: 'AI 竞品分析', c: 'ai-biz', d: '生成竞品对比维度框架。',
+  f: [{ k: 'me', t: '你的产品', type: 'text' }, { k: 'rival', t: '竞品(逗号分隔)', type: 'text' }, { k: 'out', t: '分析框架', type: 'out' }],
+  run: function (v) {
+    var rivals = (v.rival || '竞品A,竞品B').split(',');
+    var head = '维度\t' + (v.me || '我') + '\t' + rivals.join('\t') + '\n';
+    var dims = ['定位', '价格', '核心功能', '目标用户', '渠道', '口碑', '差异化'];
+    var body = dims.map(function (d) { return d + '\t-\t' + rivals.map(function () { return '-'; }).join('\t'); }).join('\n');
+    return { out: head + body + '\n\n填写后找出空白象限即为机会。' };
+  } });
+
+/* 3 OKR 制定 */
+tool({ id: 'ai-biz-okr', n: 'AI OKR 制定', c: 'ai-biz', d: '把目标拆成可衡量 KR。',
+  f: [{ k: 'o', t: '目标 Objective', type: 'text' }, { k: 'n', t: 'KR 数量', type: 'number', v: 3 }, { k: 'out', t: 'OKR', type: 'out' }],
+  run: function (v) {
+    if (!v.o) return { out: '请填写目标' };
+    var n = Math.max(1, Math.min(6, v.n || 3));
+    var s = 'O：' + v.o + '\n';
+    for (var i = 1; i <= n; i++) s += 'KR' + i + '：可量化结果（当前__→目标__，衡量方式__）\n';
+    return { out: s };
+  } });
+
+/* 4 商业计划书大纲 */
+tool({ id: 'ai-biz-bp', n: 'AI 商业计划大纲', c: 'ai-biz', d: '生成 BP 标准章节。',
+  f: [{ k: 'biz', t: '一句话业务', type: 'textarea' }, { k: 'out', t: '大纲', type: 'out' }],
+  run: function (v) {
+    var sec = ['执行摘要', '痛点与市场', '解决方案', '商业模式', '市场规模', '竞争格局', '团队', '里程碑与 roadmap', '财务预测', '融资需求'];
+    return { out: '业务：' + (v.biz || '') + '\n\n' + sec.map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n') };
+  } });
+
+/* 5 用户画像 */
+tool({ id: 'ai-biz-persona', n: 'AI 用户画像', c: 'ai-biz', d: '生成典型用户 Persona。',
+  f: [{ k: 'who', t: '目标人群描述', type: 'textarea' }, { k: 'out', t: '画像', type: 'out' }],
+  run: function (v) {
+    if (!v.who) return { out: '请描述人群' };
+    return { out: '【姓名】小__  【年龄】__  【身份】' + v.who + '\n【痛点】__  【目标】__  【信息渠道】__  【付费意愿】__  【使用场景】__' };
+  } });
+
+/* 6 定价策略 */
+tool({ id: 'ai-biz-price', n: 'AI 定价策略', c: 'ai-biz', d: '给出定价思路与区间建议。',
+  f: [{ k: 'prod', t: '产品/成本', type: 'textarea' }, { k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    return { out: '基于：' + (v.prod || '') + '\n建议：\n1) 成本加成：成本×(1+毛利)\n2) 价值定价：按为客户省下的钱定\n3) 阶梯：免费-基础-专业，引导升级\n4) 锚定：展示高价版衬托主力款' };
+  } });
+
+/* 7 融资 Pitch */
+tool({ id: 'ai-biz-pitch', n: 'AI 融资 Pitch', c: 'ai-biz', d: '生成 1 分钟融资演讲稿。',
+  f: [{ k: 'biz', t: '业务', type: 'textarea' }, { k: 'out', t: 'Pitch', type: 'out' }],
+  run: function (v) {
+    if (!v.biz) return { out: '请填写业务' };
+    return { out: '我们做的：' + v.biz + '\n痛点：__ 市场有多大：__\n方案为何更好：__\n已验证：__\n团队为何能成：__\n要融__，用于__，18 个月后到__里程碑。' };
+  } });
+
+/* 8 电梯演讲 */
+tool({ id: 'ai-biz-elev', n: 'AI 电梯演讲', c: 'ai-biz', d: '30 秒说清你是干啥的。',
+  f: [{ k: 'what', t: '你做什么', type: 'textarea' }, { k: 'out', t: '演讲', type: 'out' }],
+  run: function (v) {
+    if (!v.what) return { out: '请填写' };
+    return { out: '我是做"' + v.what + '"的。我们帮__解决__问题，和别人不同在于__。目前已经__。希望能__。' };
+  } });
+
+/* 9 市场细分 */
+tool({ id: 'ai-biz-seg', n: 'AI 市场细分', c: 'ai-biz', d: '按多维度切分市场。',
+  f: [{ k: 'mkt', t: '市场', type: 'text' }, { k: 'out', t: '细分', type: 'out' }],
+  run: function (v) {
+    if (!v.mkt) return { out: '请填写市场' };
+    return { out: v.mkt + ' 可这样细分：\n- 地理：一线城市/下沉\n- 人群：年龄/职业/收入\n- 场景：日常/专业/应急\n- 需求强度：刚需/改善/尝鲜\n挑选 1 个最易切入的细分作为起点。' };
+  } });
+
+/* 10 价值主张 */
+tool({ id: 'ai-biz-vp', n: 'AI 价值主张', c: 'ai-biz', d: '生成 Value Proposition 画布要点。',
+  f: [{ k: 'prod', t: '产品', type: 'text' }, { k: 'pain', t: '客户痛点', type: 'textarea' }, { k: 'out', t: '主张', type: 'out' }],
+  run: function (v) {
+    return { out: '产品：' + (v.prod || '') + '\n客户痛点：' + (v.pain || '') + '\n我们提供的增益：__\n止痛方式：__\n差异化：__\n一句话主张：为__解决__，因为__。' };
+  } });
+
+/* 11 风险分析 */
+tool({ id: 'ai-biz-risk', n: 'AI 风险分析', c: 'ai-biz', d: '按概率/影响评估风险。',
+  f: [{ k: 'biz', t: '业务', type: 'textarea' }, { k: 'out', t: '风险表', type: 'out' }],
+  run: function (v) {
+    return { out: '业务：' + (v.biz || '') + '\n风险\t概率\t影响\t应对\n市场\t中\t高\t小步快跑验证\n资金\t中\t高\t预留跑道\n团队\t低\t高\t关键人备份\n合规\t低\t中\t提前咨询\n技术\t中\t中\t原型验证' };
+  } });
+
+/* 12 增长策略 */
+tool({ id: 'ai-biz-growth', n: 'AI 增长策略', c: 'ai-biz', d: 'AARRR 海盗模型拆解。',
+  f: [{ k: 'prod', t: '产品', type: 'text' }, { k: 'out', t: '策略', type: 'out' }],
+  run: function (v) {
+    return { out: '产品：' + (v.prod || '') + '\n获取：渠道+钩子\n激活：首次aha时刻\n留存：习惯回路\n变现：付费点\n推荐：裂变机制\n每步给 1 个可立即执行的动作。' };
+  } });
+
+/* 13 营销日历 */
+tool({ id: 'ai-biz-cal', n: 'AI 营销日历', c: 'ai-biz', d: '生成月度内容排期。',
+  f: [{ k: 'theme', t: '月度主题', type: 'text' }, { k: 'out', t: '日历', type: 'out' }],
+  run: function (v) {
+    var t = v.theme || '品牌推广';
+    var w = ['第1周 预热/悬念', '第2周 干货/种草', '第3周 活动/转化', '第4周 用户故事/复盘'];
+    return { out: '本月主题：' + t + '\n' + w.join('\n') };
+  } });
+
+/* 14 周报生成 */
+tool({ id: 'ai-biz-weekly', n: 'AI 周报生成', c: 'ai-biz', d: '把零散事项整理成周报。',
+  f: [{ k: 'done', t: '本周做了(逐行)', type: 'textarea' }, { k: 'out', t: '周报', type: 'out' }],
+  run: function (v) {
+    var lines = (v.done || '').split('\n').filter(function (x) { return x.trim(); });
+    if (!lines.length) return { out: '请填写本周事项' };
+    return { out: '【本周完成】\n' + lines.map(function (x) { return '· ' + x.trim(); }).join('\n') + '\n【下周计划】\n· __\n【风险/需协调】\n· __' };
+  } });
+
+/* 15 会议纪要 */
+tool({ id: 'ai-biz-meet', n: 'AI 会议纪要', c: 'ai-biz', d: '整理会议为结论+待办。',
+  f: [{ k: 'raw', t: '会议记录草稿', type: 'textarea' }, { k: 'out', t: '纪要', type: 'out' }],
+  run: function (v) {
+    if (!v.raw) return { out: '请粘贴草稿' };
+    var lines = v.raw.split('\n').filter(function (x) { return x.trim(); });
+    return { out: '【结论】\n· __\n【待办】(负责人-时间)\n' + lines.map(function (x) { return '· ' + x.trim() + ' — __ / __'; }).join('\n') };
+  } });
+
+/* 16 跟进邮件 */
+tool({ id: 'ai-biz-follow', n: 'AI 跟进邮件', c: 'ai-biz', d: '生成商务跟进邮件。',
+  f: [{ k: 'ctx', t: '背景/目的', type: 'textarea' }, { k: 'out', t: '邮件', type: 'out' }],
+  run: function (v) {
+    return { out: '主题：跟进：' + (v.ctx || '').slice(0, 12) + '\n\n您好，\n感谢上次的交流。关于' + (v.ctx || '') + '，想确认下一步：__。\n如有疑问随时回复，期待您的消息。\n祝好' };
+  } });
+
+/* 17 招聘 JD */
+tool({ id: 'ai-biz-jd', n: 'AI 招聘 JD', c: 'ai-biz', d: '生成岗位招聘描述。',
+  f: [{ k: 'role', t: '岗位', type: 'text' }, { k: 'duty', t: '职责要点', type: 'textarea' }, { k: 'out', t: 'JD', type: 'out' }],
+  run: function (v) {
+    if (!v.role) return { out: '请填岗位' };
+    return { out: '【' + v.role + '】\n职责：\n' + (v.duty || '· __').split('\n').map(function (x) { return '· ' + x.trim(); }).join('\n') + '\n要求：__年相关经验、__技能\n加分：__\n我们提供：__' };
+  } });
+
+/* 18 面试问题 */
+tool({ id: 'ai-biz-interq', n: 'AI 面试问题', c: 'ai-biz', d: '按岗位生成面试提纲。',
+  f: [{ k: 'role', t: '岗位', type: 'text' }, { k: 'out', t: '提纲', type: 'out' }],
+  run: function (v) {
+    if (!v.role) return { out: '请填岗位' };
+    return { out: v.role + ' 面试提纲：\n1) 自我介绍与动机\n2) 过往最相关项目（追问细节）\n3) 情景题：遇到__怎么办\n4) 专业硬技能考查\n5) 团队协作/冲突案例\n6) 你有什么想问我们' };
+  } });
+
+/* 19 复盘模板 */
+tool({ id: 'ai-biz-retro', n: 'AI 复盘模板', c: 'ai-biz', d: '生成项目复盘结构。',
+  f: [{ k: 'proj', t: '项目', type: 'text' }, { k: 'out', t: '复盘', type: 'out' }],
+  run: function (v) {
+    return { out: '项目：' + (v.proj || '') + '\n目标回顾：原定__ 实际__\n做得好：__\n待改进：__\n根因：__\n下一步行动(负责人/时间)：__' };
+  } });
+
+/* 20 商业点子 */
+tool({ id: 'ai-biz-idea', n: 'AI 商业点子', c: 'ai-biz', d: '围绕资源生成创业点子。',
+  f: [{ k: 'res', t: '你的资源/技能', type: 'textarea' }, { k: 'n', t: '数量', type: 'number', v: 5 }, { k: 'out', t: '点子', type: 'out' }],
+  run: function (v) {
+    var n = Math.max(1, Math.min(10, v.n || 5));
+    var s = '基于资源：' + (v.res || '') + '\n';
+    for (var i = 1; i <= n; i++) s += i + '. 点子__：面向__，提供__，变现__\n';
+    return { out: s };
+  } });
+
+/* 21 命名建议 */
+tool({ id: 'ai-biz-name', n: 'AI 命名建议', c: 'ai-biz', d: '给品牌/产品起名思路。',
+  f: [{ k: 'what', t: '是什么', type: 'textarea' }, { k: 'out', t: '命名', type: 'out' }],
+  run: function (v) {
+    if (!v.what) return { out: '请填写' };
+    return { out: '方向：' + v.what + '\n命名思路：\n· 意象法（自然/动物/动作）\n· 造词法（组合/缩写）\n· 价值法（直白传达利益）\n· 谐音法\n各列 3 个候选并标注含义。' };
+  } });
+
+/* 22 Slogan 生成 */
+tool({ id: 'ai-biz-slogan', n: 'AI Slogan 生成', c: 'ai-biz', d: '生成多条品牌口号。',
+  f: [{ k: 'brand', t: '品牌/卖点', type: 'textarea' }, { k: 'out', t: 'Slogan', type: 'out' }],
+  run: function (v) {
+    if (!v.brand) return { out: '请填写' };
+    return { out: '围绕：' + v.brand + '\n1) 简短有力型：__\n2) 价值承诺型：__\n3) 提问互动型：__\n4) 押韵记忆型：__\n5) 场景代入型：__' };
+  } });
+
+/* 23 痛点梳理 */
+tool({ id: 'ai-biz-pain', n: 'AI 痛点梳理', c: 'ai-biz', d: '把模糊抱怨转成可解决痛点。',
+  f: [{ k: 'complaint', t: '用户抱怨', type: 'textarea' }, { k: 'out', t: '痛点', type: 'out' }],
+  run: function (v) {
+    if (!v.complaint) return { out: '请填写抱怨' };
+    return { out: '原话：' + v.complaint + '\n拆解：\n· 表面问题：__\n· 深层需求：__\n· 发生场景：__\n· 现有替代方案的不足：__\n· 可产品化的机会：__' };
+  } });
+
+/* 24 商业模式画布 */
+tool({ id: 'ai-biz-bmc', n: 'AI 商业模式画布', c: 'ai-biz', d: '九宫格画布要点生成。',
+  f: [{ k: 'biz', t: '业务一句话', type: 'textarea' }, { k: 'out', t: '画布', type: 'out' }],
+  run: function (v) {
+    return { out: '业务：' + (v.biz || '') + '\n1 客户细分：__\n2 价值主张：__\n3 渠道：__\n4 客户关系：__\n5 收入来源：__\n6 核心资源：__\n7 关键业务：__\n8 重要伙伴：__\n9 成本结构：__' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-biz-slogan"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-biz-slogan'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-biz-slogan")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-biz-slogan");
+if(i>=0)f.splice(i,1);else f.push("ai-biz-slogan");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-biz-slogan"});u.unshift("ai-biz-slogan");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

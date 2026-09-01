@@ -36,14 +36,125 @@ Rh.words = '的了一是在不了有和人这中大为上个国我以要他时�
 Rh.uuid = function () { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; var v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
 Rh.hex = function (n) { var s = ''; for (var i = 0; i < n; i++) s += '0123456789abcdef'[Math.floor(Math.random() * 16)]; return s; };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "rnd-coin", n: "抛硬币", c: "random", d: "随机正反面",
-  custom: null,
-  fields: [{"k":"out","t":"结果","type":"out","dl":1}],
-  auto: false,
-  first: true,
-  init: null,
-  run: function (v) { return { out: Math.random() < 0.5 ? '正面（字）' : '反面（花）' }; } };
+tool({ id: 'rnd-int', n: '随机整数', c: 'random', d: '生成区间内的随机整数',
+  f: [{ k: 'a', t: '最小', type: 'number', v: 1 }, { k: 'b', t: '最大', type: 'number', v: 100 }, { k: 'n', t: '数量', type: 'number', v: 5, min: 1, max: 500 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) r.push(Math.floor(Math.random() * (v.b - v.a + 1)) + v.a); return { out: r.join(', ') }; } });
+
+tool({ id: 'rnd-float', n: '随机小数', c: 'random', d: '生成指定范围和精度的随机数',
+  f: [{ k: 'a', t: '最小', type: 'number', v: 0 }, { k: 'b', t: '最大', type: 'number', v: 1 }, { k: 'd', t: '小数位', type: 'number', v: 2, min: 0, max: 6 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = Math.random() * (v.b - v.a) + v.a; return { out: r.toFixed(v.d) }; } });
+
+tool({ id: 'rnd-str', n: '随机字符串', c: 'random', d: '生成指定长度和字符集的随机串',
+  f: [{ k: 'n', t: '长度', type: 'number', v: 12, min: 1, max: 128 }, { k: 'set', t: '字符集', type: 'select', opts: [{ v: 'alnum', t: '字母+数字' }, { v: 'alpha', t: '仅字母' }, { v: 'num', t: '仅数字' }, { v: 'hex', t: '十六进制' }, { v: 'all', t: '含符号' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var map = { alnum: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', alpha: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', num: '0123456789', hex: '0123456789abcdef', all: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*' }; var cs = map[v.set], r = ''; for (var i = 0; i < v.n; i++) r += cs[Math.floor(Math.random() * cs.length)]; return { out: r }; } });
+
+tool({ id: 'rnd-pwd', n: '强密码生成', c: 'random', d: '生成高强度随机密码，可指定规则',
+  f: [{ k: 'n', t: '长度', type: 'number', v: 16, min: 4, max: 64 }, { k: 'upper', t: '大写字母', type: 'checkbox', v: true }, { k: 'lower', t: '小写字母', type: 'checkbox', v: true }, { k: 'num', t: '数字', type: 'checkbox', v: true }, { k: 'sym', t: '符号', type: 'checkbox', v: true }, { k: 'out', t: '密码', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  auto: false, run: function (v) {
+    var cs = ''; if (v.upper) cs += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'; if (v.lower) cs += 'abcdefghijklmnopqrstuvwxyz'; if (v.num) cs += '0123456789'; if (v.sym) cs += '!@#$%^&*()-_=+';
+    if (!cs) return { out: '', note: '至少勾选一种字符', warn: true };
+    var r = ''; for (var i = 0; i < v.n; i++) r += cs[Math.floor(Math.random() * cs.length)];
+    var bits = Math.round(v.n * Math.log2(cs.length));
+    return { out: r, metrics: [{ t: '长度', v: v.n }, { t: '字符池', v: cs.length }, { t: '熵', v: bits + ' bits' }, { t: '强度', v: bits >= 60 ? '很强' : bits >= 40 ? '强' : '一般' }] };
+  } });
+
+tool({ id: 'rnd-uuid', n: 'UUID 生成', c: 'random', d: '生成 RFC4122 v4 随机 UUID',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 1, min: 1, max: 50 }, { k: 'up', t: '大写', type: 'checkbox' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) r.push(Rh.uuid()); if (v.up) r = r.map(function (x) { return x.toUpperCase(); }); return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-name', n: '随机中文姓名', c: 'random', d: '随机生成常见中文姓名',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 5, min: 1, max: 200 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) { var x = Rh.xing[Math.floor(Math.random() * Rh.xing.length)]; var len = Math.random() < 0.5 ? 1 : 2; var m = ''; for (var j = 0; j < len; j++) m += Rh.ming[Math.floor(Math.random() * Rh.ming.length)]; r.push(x + m); } return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-nick', n: '随机网名', c: 'random', d: '拼一个可爱风随机网名',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 8, min: 1, max: 50 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var pre = ['小', '大', '阿', '老', '萌', '酷', '甜', '软', '懒', '元气', '草莓', '奶', '布丁', '星', '云']; var mid = ['猫', '鱼', '兔', '熊', '鹿', '桃', '糖', '茶', '汽水', '团子', '仔', '宝', '酱', '柚', '月']; var suf = ['子', '酱', '呀', '吖', 'er', '_', '233', 'ing', '不会', '本人', '']; var r = []; for (var i = 0; i < v.n; i++) r.push(Rh.pick(pre) + Rh.pick(mid) + Rh.pick(suf)); return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-phone', n: '随机手机号', c: 'random', d: '生成符合规则的虚拟手机号',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 3, min: 1, max: 50 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, note: '仅为格式演示，非真实号码' }],
+  auto: false, run: function (v) { var pre = ['138', '139', '136', '135', '150', '151', '152', '158', '159', '188', '186', '187', '133', '177', '199']; var r = []; for (var i = 0; i < v.n; i++) { var s = Rh.pick(pre); for (var j = 0; j < 8; j++) s += Math.floor(Math.random() * 10); r.push(s); } return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-email', n: '随机邮箱', c: 'random', d: '生成随机测试邮箱',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 3, min: 1, max: 50 }, { k: 'dom', t: '域名', type: 'text', v: 'example.com' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) r.push('user' + Math.floor(Math.random() * 99999) + '@' + v.dom); return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-color', n: '随机颜色', c: 'random', d: '生成一个随机十六进制颜色',
+  f: [{ k: 'out', t: '颜色', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  auto: false, run: function (v) { var h = Rh.hex(6); return { out: '#' + h, metrics: [{ t: 'HEX', v: '#' + h }, { t: '预览', v: '■' }] }; } });
+
+tool({ id: 'rnd-date', n: '随机日期', c: 'random', d: '生成指定年份范围内的随机日期',
+  f: [{ k: 'y1', t: '起始年', type: 'number', v: 1990 }, { k: 'y2', t: '结束年', type: 'number', v: 2026 }, { k: 'n', t: '数量', type: 'number', v: 3, min: 1, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) { var y = v.y1 + Math.floor(Math.random() * (v.y2 - v.y1 + 1)); var m = Math.floor(Math.random() * 12) + 1; var d = Math.floor(Math.random() * 28) + 1; r.push(y + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d)); } return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-pick', n: '随机选择', c: 'random', d: '从列表中随机抽一个或几个',
+  f: [{ k: 'list', t: '列表（一行一个）', type: 'textarea', ph: '选项A\n选项B\n选项C' }, { k: 'n', t: '抽取个数', type: 'number', v: 1, min: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var arr = (v.list || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (!arr.length) return { out: '', note: '请输入列表', warn: true }; var r = []; var pool = arr.slice(); for (var i = 0; i < v.n && pool.length; i++) { var idx = Math.floor(Math.random() * pool.length); r.push(pool.splice(idx, 1)[0]); } return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-sample', n: '随机抽样', c: 'random', d: '从大列表里不重复抽 N 个',
+  f: [{ k: 'list', t: '列表（一行一个）', type: 'textarea', ph: '一行一个…' }, { k: 'n', t: '抽取个数', type: 'number', v: 5, min: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var arr = (v.list || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (arr.length < v.n) return { out: '', note: '列表数量不足', warn: true }; var pool = arr.slice(), r = []; for (var i = 0; i < v.n; i++) { var idx = Math.floor(Math.random() * pool.length); r.push(pool.splice(idx, 1)[0]); } return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-ip', n: '随机 IP', c: 'random', d: '生成随机内网/公网风格 IP',
+  f: [{ k: 't', t: '类型', type: 'seg', v: 'lan', opts: [{ v: 'lan', t: '内网 192.168' }, { v: 'pub', t: '公网随机' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { function o() { return Math.floor(Math.random() * 254) + 1; } if (v.t === 'lan') return { out: '192.168.' + o() + '.' + o() }; return { out: o() + '.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 255) + '.' + o() }; } });
+
+tool({ id: 'rnd-mac', n: '随机 MAC', c: 'random', d: '生成随机 MAC 地址',
+  f: [{ k: 'sep', t: '分隔符', type: 'select', opts: [{ v: ':', t: '冒号 :' }, { v: '-', t: '横线 -' }, { v: '', t: '无' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var b = []; for (var i = 0; i < 6; i++) b.push(Rh.hex(2)); return { out: b.join(v.sep) }; } });
+
+tool({ id: 'rnd-code', n: '随机验证码', c: 'random', d: '生成数字或字母验证码',
+  f: [{ k: 'n', t: '位数', type: 'number', v: 6, min: 4, max: 12 }, { k: 'm', t: '类型', type: 'seg', v: 'num', opts: [{ v: 'num', t: '纯数字' }, { v: 'alpha', t: '字母' }, { v: 'mix', t: '数字+字母' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var cs = v.m === 'num' ? '0123456789' : v.m === 'alpha' ? 'ABCDEFGHJKLMNPQRSTUVWXYZ' : '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'; var r = ''; for (var i = 0; i < v.n; i++) r += cs[Math.floor(Math.random() * cs.length)]; return { out: r }; } });
+
+tool({ id: 'rnd-palette', n: '随机配色', c: 'random', d: '生成一组协调的随机配色',
+  f: [{ k: 'n', t: '颜色数', type: 'number', v: 5, min: 2, max: 8 }, { k: 'out', t: '色板', type: 'outhtml' }],
+  auto: false, run: function (v) { var base = Math.floor(Math.random() * 360); var html = '<div style="display:flex;flex-wrap:wrap;gap:8px">'; for (var i = 0; i < v.n; i++) { var h = (base + i * (360 / v.n)) % 360; var c = 'hsl(' + Math.round(h) + ',65%,' + (45 + Math.random() * 20).toFixed(0) + '%)'; html += '<div style="flex:1;min-width:70px;height:64px;border-radius:10px;background:' + c + ';display:flex;align-items:flex-end;padding:6px;color:#fff;font-size:11px">' + c + '</div>'; } html += '</div>'; return { out: html }; } });
+
+tool({ id: 'rnd-bool', n: '随机布尔', c: 'random', d: '随机返回是/否，做决定用',
+  f: [{ k: 'out', t: '结果', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Math.random() < 0.5 ? '是 ✓' : '否 ✗' }; } });
+
+tool({ id: 'rnd-coupon', n: '优惠券码', c: 'random', d: '生成带前缀的随机优惠券码',
+  f: [{ k: 'pre', t: '前缀', type: 'text', v: 'SAVE' }, { k: 'n', t: '长度', type: 'number', v: 8, min: 4, max: 16 }, { k: 'cnt', t: '数量', type: 'number', v: 3, min: 1, max: 50 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.cnt; i++) r.push((v.pre || '') + '-' + Rh.hex(v.n).toUpperCase()); return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-hanzi', n: '随机汉字', c: 'random', d: '生成指定数量的随机常用汉字',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 10, min: 1, max: 500 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var r = ''; for (var i = 0; i < v.n; i++) r += Rh.ming[Math.floor(Math.random() * Rh.ming.length)]; return { out: r }; } });
+
+tool({ id: 'rnd-emoji', n: '随机 Emoji', c: 'random', d: '随机抽一个表情符号',
+  f: [{ k: 'cat', t: '类别', type: 'select', opts: [{ v: 'face', t: '表情' }, { v: 'animal', t: '动物' }, { v: 'food', t: '食物' }, { v: 'heart', t: '爱心' }, { v: 'all', t: '全部' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  auto: false, run: function (v) { var m = { face: '😀😂🥰😎🤔😭😡😴🤩😇🙃😋', animal: '🐱🐶🐰🦊🐻🐼🦁🐯🐸🐵🦄🐧', food: '🍎🍕🍔🍰🍦🍩🍓🍇🥑🌮🍣🍜', heart: '❤️💛💚💙💜🧡💖💗💝💞' }; var pool = v.cat === 'all' ? Object.values(m).join('') : m[v.cat]; var ch = pool[Math.floor(Math.random() * pool.length)]; return { out: ch, metrics: [{ t: 'Emoji', v: ch }] }; } });
+
+tool({ id: 'rnd-coin', n: '抛硬币', c: 'random', d: '随机正反面',
+  f: [{ k: 'out', t: '结果', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Math.random() < 0.5 ? '正面（字）' : '反面（花）' }; } });
+
+tool({ id: 'rnd-dice', n: '掷骰子', c: 'random', d: '掷一个 N 面骰子',
+  f: [{ k: 'n', t: '面数', type: 'number', v: 6, min: 2, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { return { out: String(Math.floor(Math.random() * v.n) + 1) }; } });
+
+tool({ id: 'rnd-port', n: '随机端口', c: 'random', d: '生成一个可用的高位随机端口',
+  f: [{ k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }], auto: false, run: function (v) { return { out: String(49152 + Math.floor(Math.random() * 16383)) }; } });
+
+tool({ id: 'rnd-weighted', n: '加权随机', c: 'random', d: '给每个选项设权重，按比例抽取',
+  f: [{ k: 'list', t: '选项与权重（每行 名称,权重）', type: 'textarea', ph: '红,3\n蓝,1\n绿,2' }, { k: 'n', t: '抽取个数', type: 'number', v: 1, min: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var lines = (v.list || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); var items = [], total = 0; lines.forEach(function (l) { var p = l.split(','); var w = parseFloat(p[1]); if (isNaN(w) || w <= 0) return; items.push({ name: p[0], w: w }); total += w; }); if (!items.length) return { out: '', note: '格式：名称,权重', warn: true }; var r = []; for (var i = 0; i < v.n; i++) { var x = Math.random() * total, s = 0, pick = items[0]; for (var j = 0; j < items.length; j++) { s += items[j].w; if (x < s) { pick = items[j]; break; } } r.push(pick.name); } return { out: r.join('\n') }; } });
+
+tool({ id: 'rnd-word', n: '随机词语', c: 'random', d: '随机抽取常用汉字组成词语',
+  f: [{ k: 'n', t: '词语数', type: 'number', v: 5, min: 1, max: 50 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) { var len = Math.random() < 0.5 ? 2 : 3; var w = ''; for (var j = 0; j < len; j++) w += Rh.ming[Math.floor(Math.random() * Rh.ming.length)]; r.push(w); } return { out: r.join(' / ') }; } });
+
+tool({ id: 'rnd-idcard', n: '随机身份证号', c: 'random', d: '生成格式合法的虚拟身份证号（18位）',
+  f: [{ k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, note: '纯格式演示，不对应真实人员' }],
+  auto: false, run: function (v) {
+    var region = ['110101', '310101', '440101', '510101', '320101']; var r = Rh.pick(region); var y = 1950 + Math.floor(Math.random() * 60); var m = (Math.floor(Math.random() * 12) + 1 + '').padStart(2, '0'); var d = (Math.floor(Math.random() * 28) + 1 + '').padStart(2, '0'); var seq = (Math.floor(Math.random() * 999) + '').padStart(3, '0'); var body = r + y + m + d + seq; var w = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2]; var sum = 0; for (var i = 0; i < 17; i++) sum += +body[i] * w[i]; var check = '10X98765432'[sum % 11]; return { out: body + check };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "rnd-coin"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: rnd-coin'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

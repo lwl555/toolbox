@@ -42,13 +42,80 @@ Th2.lorem = function (n, len) {
   var r = []; for (var i = 0; i < n; i++) { var t = ''; for (var j = 0; j < len; j++) t += s[Math.floor(Math.random() * s.length)]; r.push((i + 1) + '. ' + t + '。'); } return r.join('\n');
 };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "txt-md2html", n: "Markdown 转 HTML", c: "text2", d: "支持标题/列表/加粗/代码，轻量转换",
-  custom: null,
-  fields: [{"k":"in","t":"Markdown","type":"textarea","rows":8,"mono":1,"ph":"# 标题\n- 列表\n**粗体**"},{"k":"out","t":"HTML","type":"out","dl":1,"mono":1}],
-  auto: true,
-  first: true,
-  init: null,
+tool({ id: 'txt-csv', n: 'CSV 表格预览', c: 'text2', d: '把 CSV 文本渲染成可读表格（自动识别分隔）',
+  f: [{ k: 'in', t: 'CSV 文本', type: 'textarea', ph: '姓名,年龄,城市\n小明,18,北京' }, { k: 'sep', t: '分隔符', type: 'text', v: ',' }, { k: 'out', t: '预览', type: 'outhtml' }],
+  run: function (v) {
+    var rows = Th2.rows(v.in, v.sep || ','); if (!rows.length || !rows[0].length) return { out: '<span class="out-empty">没有数据</span>' };
+    var html = '<div style="overflow:auto"><table style="border-collapse:collapse;font-size:12.5px;min-width:100%">';
+    rows.forEach(function (r, i) { html += '<tr>' + r.map(function (c) { return '<td style="border:1px solid var(--ink-2);padding:4px 8px;' + (i === 0 ? 'background:var(--ink-1);font-weight:600' : '') + '">' + RT.esc(c) + '</td>'; }).join('') + '</tr>'; });
+    return { out: html + '</table></div>' };
+  } });
+
+tool({ id: 'txt-transpose', n: '文本转置', c: 'text2', d: '行变列、列变行，处理矩阵数据',
+  f: [{ k: 'in', t: '文本（按逗号或制表符分列）', type: 'textarea', ph: 'a,b,c\n1,2,3' }, { k: 'sep', t: '列分隔符', type: 'text', v: ',' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var rows = Th2.rows(v.in, v.sep || ','); var max = Math.max.apply(null, rows.map(function (r) { return r.length; })); var out = []; for (var c = 0; c < max; c++) { out.push(rows.map(function (r) { return r[c] != null ? r[c] : ''; }).join(v.sep || ',')); } return { out: out.join('\n') }; } });
+
+tool({ id: 'txt-align', n: '制表符对齐表', c: 'text2', d: '把不规则的分隔文本对齐成整齐表格',
+  f: [{ k: 'in', t: '文本（多空格/制表分隔）', type: 'textarea', ph: '张三  18  北京\n李四    20   上海' }, { k: 'out', t: '对齐结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var rows = Th2.lines(v.in).filter(function (l) { return l.trim(); }).map(function (l) { return l.trim().split(/\s+/); }); var cols = Math.max.apply(null, rows.map(function (r) { return r.length; })); var w = []; for (var c = 0; c < cols; c++) { w[c] = Math.max.apply(null, rows.map(function (r) { return (r[c] || '').length; })); } return { out: rows.map(function (r) { return r.map(function (cell, i) { return (cell || '').padEnd(w[i]); }).join('   '); }).join('\n') }; } });
+
+tool({ id: 'txt-keyword', n: '关键词提取', c: 'text2', d: '按词频抽取文章关键词（去停用词）',
+  f: [{ k: 'in', t: '文章', type: 'textarea', ph: '粘贴一段中文或英文…' }, { k: 'out', t: '关键词', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) { var top = Th2.tfidf(v.in, 20); if (!top.length) return { out: '', note: '文本太短或无有效词' }; return { out: top.map(function (x) { return x.w + ' (' + x.n + ')'; }).join('\n'), metrics: [{ t: '提取', v: top.length + ' 个' }, { t: 'Top1', v: top[0].w }] }; } });
+
+tool({ id: 'txt-cn-en-space', n: '中英加空格', c: 'text2', d: '在中英文/数字之间自动加空格，排版更舒服',
+  f: [{ k: 'in', t: '原文', type: 'textarea', ph: '今天weather真好18度' }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) { var s = v.in || ''; s = s.replace(/([一-龥])([a-zA-Z0-9])/g, '$1 $2').replace(/([a-zA-Z0-9])([一-龥])/g, '$1 $2'); return { out: s }; } });
+
+tool({ id: 'txt-sentences', n: '句子拆分', c: 'text2', d: '按中英文标点把段落拆成单句',
+  f: [{ k: 'in', t: '段落', type: 'textarea', ph: '今天天气好。我们去散步？好吗！' }, { k: 'out', t: '句子', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) { var s = (v.in || '').replace(/([。！？!?；;])/g, '$1\n').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); return { out: s.join('\n'), metrics: [{ t: '句数', v: s.length }] }; } });
+
+tool({ id: 'txt-sum-nums', n: '提取数字求和', c: 'text2', d: '从杂乱文本里抽出所有数字并求和',
+  f: [{ k: 'in', t: '含数字的文本', type: 'textarea', ph: '收入1200，支出300，余额900' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var nums = (v.in || '').match(/-?\d+(\.\d+)?/g) || []; var arr = nums.map(Number); var sum = arr.reduce(function (a, b) { return a + b; }, 0); return { out: '总和：' + sum, metrics: [{ t: '数字个数', v: arr.length }, { t: '总和', v: sum }, { t: '最大', v: Math.max.apply(null, arr) }, { t: '最小', v: Math.min.apply(null, arr) }] }; } });
+
+tool({ id: 'txt-split-cols', n: '文本分列预览', c: 'text2', d: '按分隔符把每行拆成多列查看',
+  f: [{ k: 'in', t: '文本', type: 'textarea', ph: 'a|b|c' }, { k: 'sep', t: '分隔符', type: 'text', v: '|' }, { k: 'out', t: '分列', type: 'outhtml' }],
+  run: function (v) { var rows = Th2.lines(v.in).filter(function (l) { return l.trim(); }).map(function (l) { return l.split(v.sep); }); if (!rows.length) return { out: '<span class="out-empty">无数据</span>' }; var html = '<div style="overflow:auto"><table style="border-collapse:collapse;font-size:12.5px">'; rows.forEach(function (r) { html += '<tr>' + r.map(function (c) { return '<td style="border:1px solid var(--ink-2);padding:4px 10px">' + RT.esc(c) + '</td>'; }).join('') + '</tr>'; }); return { out: html + '</table></div>' }; } });
+
+tool({ id: 'txt-to-csv', n: '多行转 CSV', c: 'text2', d: '把一列值转成带表头的 CSV 行',
+  f: [{ k: 'in', t: '列表', type: 'textarea', ph: '一行一条' }, { k: 'head', t: '表头', type: 'text', v: 'item' }, { k: 'out', t: 'CSV', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var arr = Th2.lines(v.in).map(function (l) { return l.trim(); }).filter(Boolean); var r = [v.head || 'col']; arr.forEach(function (x) { r.push('"' + x.replace(/"/g, '""') + '"'); }); return { out: r.join('\n') }; } });
+
+tool({ id: 'txt-dupcount', n: '重复次数统计', c: 'text2', d: '统计每行出现次数，找出重复项',
+  f: [{ k: 'in', t: '列表（一行一个）', type: 'textarea', ph: 'apple\nbanana\napple' }, { k: 'out', t: '统计', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var m = {}; Th2.lines(v.in).forEach(function (l) { l = l.trim(); if (l) m[l] = (m[l] || 0) + 1; }); var arr = Object.keys(m).map(function (k) { return m[k] + ' × ' + k; }).sort(function (a, b) { return b.localeCompare(a); }); var dup = Object.keys(m).filter(function (k) { return m[k] > 1; }).length; return { out: arr.join('\n'), metrics: [{ t: '去重后', v: Object.keys(m).length }, { t: '有重复', v: dup + ' 项' }] }; } });
+
+tool({ id: 'txt-rle', n: 'RLE 压缩', c: 'text2', d: '演示游程编码压缩（连续重复字符压缩）',
+  f: [{ k: 'in', t: '原文', type: 'textarea', ph: 'AAABBBCCCC' }, { k: 'out', t: '压缩结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = v.in || '', r = '', i = 0; while (i < s.length) { var c = s[i], n = 1; while (s[i + n] === c) n++; r += c + n; i += n; } return { out: r, metrics: [{ t: '压缩前', v: s.length }, { t: '压缩后', v: r.length }, { t: '比率', v: (s.length ? (r.length / s.length * 100).toFixed(0) : 0) + '%' }] }; } });
+
+tool({ id: 'txt-template', n: '模板填充', c: 'text2', d: '把 {占位符} 用给定值批量替换',
+  f: [{ k: 'tpl', t: '模板', type: 'textarea', rows: 3, ph: '你好 {name}，你的验证码是 {code}' }, { k: 'data', t: '数据（每行 name=值 或 name,值）', type: 'textarea', rows: 4, ph: 'name=小明\ncode=1234' }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var map = {}; Th2.lines(v.data).forEach(function (l) { var p = l.split(/[=,]/); if (p.length >= 2) map[p[0].trim()] = p.slice(1).join('=').trim(); });
+    var r = (v.tpl || '').replace(/\{(\w+)\}/g, function (_, k) { return map[k] != null ? map[k] : '{' + k + '}'; });
+    return { out: r || '（空）' };
+  } });
+
+tool({ id: 'txt-lorem', n: '中文假文生成', c: 'text2', d: '生成一段中文占位假文，写稿排版用',
+  f: [{ k: 'n', t: '段落数', type: 'number', v: 3, min: 1, max: 20 }, { k: 'len', t: '每句字数', type: 'number', v: 40, min: 10, max: 100 }, { k: 'out', t: '假文', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { return { out: Th2.lorem(v.n, v.len) }; } });
+
+tool({ id: 'txt-vertical', n: '文本竖排', c: 'text2', d: '把文字竖着排（适合标题/签名）',
+  f: [{ k: 'in', t: '文字（≤12字）', type: 'text', ph: '超有用的工具' }, { k: 'out', t: '竖排', type: 'outhtml' }],
+  run: function (v) { var s = (v.in || '').slice(0, 12); var html = '<div style="writing-mode:vertical-rl;font-size:28px;letter-spacing:4px;text-align:center;line-height:1.4;font-weight:600">' + RT.esc(s) + '</div>'; return { out: html }; } });
+
+tool({ id: 'txt-list-html', n: '生成 HTML 列表', c: 'text2', d: '把列表转成 <ul>/<ol> 代码',
+  f: [{ k: 'in', t: '列表（一行一个）', type: 'textarea', ph: '第一项\n第二项' }, { k: 'ord', t: '类型', type: 'seg', v: 'ul', opts: [{ v: 'ul', t: '无序' }, { v: 'ol', t: '有序' }] }, { k: 'out', t: 'HTML', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var arr = Th2.lines(v.in).map(function (l) { return l.trim(); }).filter(Boolean); var tag = v.ord; var html = '<' + tag + '>\n' + arr.map(function (x) { return '  <li>' + RT.esc(x) + '</li>'; }).join('\n') + '\n</' + tag + '>'; return { out: html }; } });
+
+tool({ id: 'txt-md2html', n: 'Markdown 转 HTML', c: 'text2', d: '支持标题/列表/加粗/代码，轻量转换',
+  f: [{ k: 'in', t: 'Markdown', type: 'textarea', rows: 8, mono: 1, ph: '# 标题\n- 列表\n**粗体**' }, { k: 'out', t: 'HTML', type: 'out', dl: 1, mono: 1 }],
   run: function (v) {
     var s = v.in || '';
     s = s.replace(/^###### (.*)$/gm, '<h6>$1</h6>').replace(/^##### (.*)$/gm, '<h5>$1</h5>').replace(/^#### (.*)$/gm, '<h4>$1</h4>').replace(/^### (.*)$/gm, '<h3>$1</h3>').replace(/^## (.*)$/gm, '<h2>$1</h2>').replace(/^# (.*)$/gm, '<h1>$1</h1>');
@@ -58,7 +125,24 @@ window.TOOL = { id: "txt-md2html", n: "Markdown 转 HTML", c: "text2", d: "支�
     s = s.replace(/(<li>[\s\S]*?<\/li>)/g, function (m) { return '<ul>' + m + '</ul>'; });
     s = s.replace(/\n{2,}/g, '\n').replace(/\n/g, '<br>\n');
     return { out: s.trim() };
-  } };
+  } });
+
+tool({ id: 'txt-rearrange', n: '段落随机重排', c: 'text2', d: '把若干段落顺序打乱（练习/测试用）',
+  f: [{ k: 'in', t: '段落（空行分隔）', type: 'textarea', ph: '第一段\n\n第二段\n\n第三段' }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false,
+  run: function (v) { var ps = (v.in || '').split(/\n\s*\n/).map(function (x) { return x.trim(); }).filter(Boolean); for (var i = ps.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = ps[i]; ps[i] = ps[j]; ps[j] = t; } return { out: ps.join('\n\n') }; } });
+
+tool({ id: 'txt-cn-num-sep', n: '中英数字分离', c: 'text2', d: '把中文、英文、数字分开提取出来',
+  f: [{ k: 'in', t: '混合文本', type: 'textarea', ph: '张三abc123' }, { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) { var s = v.in || ''; var cn = (s.match(/[一-龥]/g) || []).join(''); var en = (s.match(/[a-zA-Z]+/g) || []).join(' '); var num = (s.match(/\d+/g) || []).join(' '); return { out: '中文：' + cn + '\n英文：' + en + '\n数字：' + num, metrics: [{ t: '中文', v: cn.length + ' 字' }, { t: '英文词', v: en.split(' ').filter(Boolean).length }, { t: '数字', v: num.split(' ').filter(Boolean).length }] }; } });
+
+tool({ id: 'txt-fill-blank', n: '下划线填空生成', c: 'text2', d: '把指定关键词替换成下划线填空',
+  f: [{ k: 'in', t: '原文', type: 'textarea', ph: '北京的故宫很壮观' }, { k: 'words', t: '要挖空的关键词（逗号分隔）', type: 'text', ph: '北京,故宫' }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) { var s = v.in || ''; (v.words || '').split(',').map(function (w) { w = w.trim(); if (w) s = s.split(w).join('＿＿＿＿'); }); return { out: s }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "txt-md2html"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: txt-md2html'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

@@ -39,14 +39,120 @@ Cl.mix = function (a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a
 Cl.sw = function (c) { return '<span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:' + Cl.rgb2hex.apply(null, c) + ';vertical-align:middle;margin-right:4px;border:1px solid rgba(0,0,0,.1)"></span>'; };
 Cl.scheme = function (hex, type) { var rgb = Cl.hex2rgb(hex), hsl = Cl.rgb2hsl.apply(null, rgb), h = hsl[0], r = []; var adds = { comp: [180], analogic: [-30, 30], triadic: [120, 240], split: [150, 210], tetradic: [90, 180, 270], mono: [0, 0, 0] }; var list = type === 'mono' ? [hsl, [hsl[0], hsl[1], Math.min(95, hsl[2] + 20)], [hsl[0], hsl[1], Math.max(10, hsl[2] - 20)]] : adds[type].map(function (a) { return [((h + a) % 360 + 360) % 360, hsl[1], hsl[2]]; }); list.forEach(function (h2) { r.push(Cl.hsl2rgb.apply(null, h2)); }); return r; };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "cl-grad", n: "渐变生成器", c: "color", d: "生成 CSS 线性渐变代码",
-  custom: null,
-  fields: [{"k":"a","t":"起始色","type":"text","v":"#6366f1"},{"k":"b","t":"结束色","type":"text","v":"#ec4899"},{"k":"ang","t":"角度","type":"number","v":135,"min":0,"max":360},{"k":"out","t":"CSS","type":"outhtml"}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) { var css = 'linear-gradient(' + v.ang + 'deg, ' + v.a + ', ' + v.b + ')'; return { out: '<div style="padding:10px"><div style="height:60px;border-radius:10px;background:' + css + '"></div><div style="font-size:12px;margin-top:6px;font-family:var(--mono)">' + RT.esc(css) + '</div></div>' }; } };
+tool({ id: 'cl-hex-rgb', n: 'HEX 转 RGB', c: 'color', d: '十六进制颜色转 RGB',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#1a6b55', ph: '#1a6b55' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); return { out: 'rgb(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ')', metrics: [{ t: 'R', v: rgb[0] }, { t: 'G', v: rgb[1] }, { t: 'B', v: rgb[2] }, { t: '预览', v: Cl.rgb2hex.apply(null, rgb) }] }; } catch (e) { return { out: '', note: 'HEX 格式有误', warn: true }; } } });
+
+tool({ id: 'cl-rgb-hex', n: 'RGB 转 HEX', c: 'color', d: 'RGB 转十六进制',
+  f: [{ k: 'r', t: 'R', type: 'number', v: 26, min: 0, max: 255 }, { k: 'g', t: 'G', type: 'number', v: 107, min: 0, max: 255 }, { k: 'b', t: 'B', type: 'number', v: 85, min: 0, max: 255 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var hex = Cl.rgb2hex(v.r, v.g, v.b); return { out: hex, metrics: [{ t: 'HEX', v: hex }, { t: '预览', v: hex }] }; } });
+
+tool({ id: 'cl-rgb-hsl', n: 'RGB 转 HSL', c: 'color', d: 'RGB 转 HSL 色彩空间',
+  f: [{ k: 'r', t: 'R', type: 'number', v: 26, min: 0, max: 255 }, { k: 'g', t: 'G', type: 'number', v: 107, min: 0, max: 255 }, { k: 'b', t: 'B', type: 'number', v: 85, min: 0, max: 255 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var hsl = Cl.rgb2hsl(v.r, v.g, v.b); return { out: 'hsl(' + hsl[0] + ', ' + hsl[1] + '%, ' + hsl[2] + '%)' }; } });
+
+tool({ id: 'cl-hsl-rgb', n: 'HSL 转 RGB', c: 'color', d: 'HSL 转 RGB',
+  f: [{ k: 'h', t: 'H (0-360)', type: 'number', v: 160, min: 0, max: 360 }, { k: 's', t: 'S (%)', type: 'number', v: 61, min: 0, max: 100 }, { k: 'l', t: 'L (%)', type: 'number', v: 26, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var rgb = Cl.hsl2rgb(v.h, v.s, v.l); return { out: 'rgb(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ')\n' + Cl.rgb2hex.apply(null, rgb) }; } });
+
+tool({ id: 'cl-scheme', n: '配色方案生成', c: 'color', d: '按主色生成互补/类比/三角等配色',
+  f: [{ k: 'in', t: '主色 HEX', type: 'text', v: '#1a6b55' }, { k: 'type', t: '方案', type: 'select', opts: [{ v: 'comp', t: '互补色' }, { v: 'analogic', t: '邻近色' }, { v: 'triadic', t: '三角色' }, { v: 'split', t: '分裂互补' }, { v: 'tetradic', t: '四角色' }, { v: 'mono', t: '同色系' }] }, { k: 'out', t: '色板', type: 'outhtml' }],
+  run: function (v) { try { var cs = Cl.scheme(v.in, v.type); var html = '<div style="display:flex;flex-wrap:wrap;gap:8px">'; cs.forEach(function (c) { var hex = Cl.rgb2hex.apply(null, c); html += '<div style="flex:1;min-width:80px;text-align:center"><div style="height:60px;border-radius:10px;background:' + hex + '"></div><div style="font-size:11px;margin-top:4px">' + hex + '</div></div>'; }); return { out: html + '</div>' }; } catch (e) { return { out: '<span class="out-empty">HEX 格式有误</span>' }; } } });
+
+tool({ id: 'cl-contrast', n: '对比度检查', c: 'color', d: '按 WCAG 检查两色文字可读性',
+  f: [{ k: 'fg', t: '前景色', type: 'text', v: '#ffffff' }, { k: 'bg', t: '背景色', type: 'text', v: '#1a6b55' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { try { var c1 = Cl.hex2rgb(v.fg), c2 = Cl.hex2rgb(v.bg); var ratio = Cl.contrast(c1, c2); var aa = ratio >= 4.5, aaa = ratio >= 7; return { out: ratio.toFixed(2) + ':1', metrics: [{ t: '比值', v: ratio.toFixed(2) + ':1' }, { t: 'AA 标准', v: aa ? '✓ 通过' : '✗ 不通过' }, { t: 'AAA 标准', v: aaa ? '✓ 通过' : '✗ 不通过' }] }; } catch (e) { return { out: '', note: '颜色格式有误', warn: true }; } } });
+
+tool({ id: 'cl-mix', n: '颜色混合', c: 'color', d: '按比例混合两种颜色',
+  f: [{ k: 'a', t: '颜色 A', type: 'text', v: '#ff0000' }, { k: 'b', t: '颜色 B', type: 'text', v: '#0000ff' }, { k: 't', t: 'A 占比 %', type: 'number', v: 50, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'outhtml' }],
+  run: function (v) { try { var ca = Cl.hex2rgb(v.a), cb = Cl.hex2rgb(v.b); var m = Cl.mix(ca, cb, 1 - v.t / 100); var hex = Cl.rgb2hex.apply(null, m); return { out: '<div style="display:flex;align-items:center;gap:10px"><div style="width:50px;height:50px;border-radius:10px;background:' + hex + '"></div><div><b>' + hex + '</b><br><span style="font-size:12px;color:var(--ink-3)">' + Math.round(m[0]) + ',' + Math.round(m[1]) + ',' + Math.round(m[2]) + '</span></div></div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+tool({ id: 'cl-lighten', n: '颜色变亮/暗', c: 'color', d: '把颜色调亮或调暗指定程度',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#1a6b55' }, { k: 'amt', t: '幅度 %', type: 'number', v: 20, min: -100, max: 100 }, { k: 'out', t: '结果', type: 'outhtml' }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var hsl = Cl.rgb2hsl.apply(null, rgb); hsl[2] = Math.max(0, Math.min(100, hsl[2] + v.amt)); var r = Cl.hsl2rgb.apply(null, hsl); var hex = Cl.rgb2hex.apply(null, r); return { out: '<div style="display:flex;align-items:center;gap:10px"><div style="width:50px;height:50px;border-radius:10px;background:' + hex + '"></div><b>' + hex + '</b></div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+tool({ id: 'cl-invert', n: '颜色反相', c: 'color', d: '取颜色的反色（255-值）',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#1a6b55' }, { k: 'out', t: '结果', type: 'outhtml' }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var r = [255 - rgb[0], 255 - rgb[1], 255 - rgb[2]]; var hex = Cl.rgb2hex.apply(null, r); return { out: '<div style="display:flex;align-items:center;gap:10px"><div style="width:50px;height:50px;border-radius:10px;background:' + hex + '"></div><b>' + hex + '</b></div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+tool({ id: 'cl-gray', n: '颜色灰度化', c: 'color', d: '把彩色转成灰度（去色）',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#1a6b55' }, { k: 'out', t: '结果', type: 'outhtml' }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var g = Math.round(0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]); var hex = Cl.rgb2hex(g, g, g); return { out: '<div style="display:flex;align-items:center;gap:10px"><div style="width:50px;height:50px;border-radius:10px;background:' + hex + '"></div><b>' + hex + '</b></div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+tool({ id: 'cl-grad', n: '渐变生成器', c: 'color', d: '生成 CSS 线性渐变代码',
+  f: [{ k: 'a', t: '起始色', type: 'text', v: '#6366f1' }, { k: 'b', t: '结束色', type: 'text', v: '#ec4899' }, { k: 'ang', t: '角度', type: 'number', v: 135, min: 0, max: 360 }, { k: 'out', t: 'CSS', type: 'outhtml' }],
+  run: function (v) { var css = 'linear-gradient(' + v.ang + 'deg, ' + v.a + ', ' + v.b + ')'; return { out: '<div style="padding:10px"><div style="height:60px;border-radius:10px;background:' + css + '"></div><div style="font-size:12px;margin-top:6px;font-family:var(--mono)">' + RT.esc(css) + '</div></div>' }; } });
+
+tool({ id: 'cl-shadow', n: '阴影生成器', c: 'color', d: '生成 box-shadow CSS 并实时预览',
+  f: [{ k: 'x', t: 'X', type: 'number', v: 0 }, { k: 'y', t: 'Y', type: 'number', v: 4 }, { k: 'blur', t: '模糊', type: 'number', v: 12 }, { k: 'spread', t: '扩散', type: 'number', v: 0 }, { k: 'color', t: '颜色', type: 'color', v: '#000000' }, { k: 'op', t: '透明度', type: 'range', min: 0, max: 100, v: 15, unit: '%' }, { k: 'out', t: 'CSS', type: 'outhtml' }],
+  run: function (v) { var hex = v.color; var a = (v.op / 100).toFixed(2); var c = hex.length === 7 ? hex + Math.round(v.op / 100 * 255).toString(16).padStart(2, '0') : hex; var css = v.x + 'px ' + v.y + 'px ' + v.blur + 'px ' + v.spread + 'px ' + c; return { out: '<div style="padding:20px;display:flex;justify-content:center"><div style="width:80px;height:80px;border-radius:14px;background:#fff;box-shadow:' + css + '"></div></div><div style="font-size:12px;font-family:var(--mono)">box-shadow: ' + RT.esc(css) + ';</div>' }; } });
+
+tool({ id: 'cl-radius', n: '圆角生成器', c: 'color', d: '生成 border-radius 并预览',
+  f: [{ k: 'r', t: '圆角 px', type: 'number', v: 16, min: 0 }, { k: 'out', t: 'CSS', type: 'outhtml' }],
+  run: function (v) { return { out: '<div style="padding:20px;display:flex;justify-content:center"><div style="width:90px;height:90px;background:linear-gradient(135deg,#6366f1,#ec4899);border-radius:' + v.r + 'px"></div></div><div style="font-size:12px;font-family:var(--mono)">border-radius: ' + v.r + 'px;</div>' }; } });
+
+tool({ id: 'cl-text-shadow', n: '文字阴影', c: 'color', d: '生成 text-shadow CSS 预览',
+  f: [{ k: 'x', t: 'X', type: 'number', v: 2 }, { k: 'y', t: 'Y', type: 'number', v: 2 }, { k: 'blur', t: '模糊', type: 'number', v: 4 }, { k: 'color', t: '颜色', type: 'color', v: '#000000' }, { k: 'out', t: '预览', type: 'outhtml' }],
+  run: function (v) { var css = v.x + 'px ' + v.y + 'px ' + v.blur + 'px ' + v.color; return { out: '<div style="padding:24px;text-align:center;font-size:32px;font-weight:700;color:#fff;text-shadow:' + css + '">文字阴影 Aa</div><div style="font-size:12px;font-family:var(--mono)">text-shadow: ' + RT.esc(css) + ';</div>' }; } });
+
+tool({ id: 'cl-name', n: '颜色名称查询', c: 'color', d: '把 HEX 匹配到最接近的英文颜色名',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#ff0000' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var N = { '#ff0000': 'Red 红', '#00ff00': 'Lime 绿', '#0000ff': 'Blue 蓝', '#ffff00': 'Yellow 黄', '#ff00ff': 'Magenta 品红', '#00ffff': 'Cyan 青', '#000000': 'Black 黑', '#ffffff': 'White 白', '#808080': 'Gray 灰', '#ffa500': 'Orange 橙', '#800080': 'Purple 紫', '#00ff80': 'Spring Green', '#1a6b55': 'Teal 蓝绿', '#ffc0cb': 'Pink 粉', '#a52a2a': 'Brown 棕', '#f5f5dc': 'Beige 米', '#000080': 'Navy 藏青', '#808000': 'Olive 橄榄' }; var hex = (v.in || '').toLowerCase(); return { out: N[hex] || '未收录（可自定义命名）', metrics: [{ t: 'HEX', v: hex }] }; } });
+
+tool({ id: 'cl-random', n: '随机颜色', c: 'color', d: '生成一个随机 HEX 颜色',
+  f: [{ k: 'out', t: '颜色', type: 'outhtml' }], auto: false,
+  run: function (v) { var hex = '#' + '0123456789abcdef'.split('').map(function () { return '0123456789abcdef'[Math.floor(Math.random() * 16)]; }).join('').slice(0, 6); var rgb = Cl.hex2rgb(hex); return { out: '<div style="display:flex;align-items:center;gap:10px"><div style="width:50px;height:50px;border-radius:10px;background:' + hex + '"></div><b>' + hex + '</b><span style="font-size:12px;color:var(--ink-3)">rgb(' + rgb.join(',') + ')</span></div>' }; } });
+
+tool({ id: 'cl-pick', n: '屏幕取色', c: 'color', d: '点取色板上任意位置的十六进制值',
+  f: [{ k: 'out', t: '取色板', type: 'custom', t2: '', html: '<canvas id="cvPick" style="width:100%;height:160px;border-radius:10px;cursor:crosshair"></canvas><div id="pickOut" style="margin-top:8px;font-family:var(--mono)">点击色板取色</div>' }],
+  run: function () {}, init: function (RT, host) {
+    var cv = document.getElementById('cvPick'); if (!cv) return; var ctx = cv.getContext('2d'); cv.width = cv.clientWidth; cv.height = 160;
+    for (var x = 0; x < cv.width; x++) for (var y = 0; y < cv.height; y++) { var h = x / cv.width * 360, l = 80 - y / cv.height * 60; ctx.fillStyle = 'hsl(' + h + ',90%,' + l + '%)'; ctx.fillRect(x, y, 1, 1); }
+    cv.onclick = function (e) { var r = cv.getBoundingClientRect(); var px = ctx.getImageData((e.clientX - r.left) * cv.width / r.width, (e.clientY - r.top) * cv.height / r.height, 1, 1).data; var hex = Cl.rgb2hex(px[0], px[1], px[2]); document.getElementById('pickOut').textContent = hex + '  rgb(' + px[0] + ',' + px[1] + ',' + px[2] + ')'; RT.copy(hex); };
+  } });
+
+tool({ id: 'cl-contrast-text', n: '文字黑/白判定', c: 'color', d: '给定背景色，判断配黑字还是白字更清晰',
+  f: [{ k: 'bg', t: '背景色', type: 'text', v: '#1a6b55' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { try { var bg = Cl.hex2rgb(v.bg); var white = Cl.contrast([255, 255, 255], bg), black = Cl.contrast([0, 0, 0], bg); var best = white >= black ? '#fff 白字' : '#000 黑字'; return { out: best, metrics: [{ t: '白字对比', v: white.toFixed(2) }, { t: '黑字对比', v: black.toFixed(2) }, { t: '建议', v: best }] }; } catch (e) { return { out: '', note: '格式有误', warn: true }; } } });
+
+tool({ id: 'cl-tint', n: '色阶生成', c: 'color', d: '按主色生成 50-900 多级色阶',
+  f: [{ k: 'in', t: '主色 HEX', type: 'text', v: '#6366f1' }, { k: 'out', t: '色阶', type: 'outhtml' }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var levels = [['50', 90], ['100', 80], ['200', 65], ['300', 50], ['400', 38], ['500', 25], ['600', 18], ['700', 12], ['800', 6], ['900', 2]]; var html = '<div style="display:flex;flex-wrap:wrap;gap:6px">'; levels.forEach(function (l) { var hsl = Cl.rgb2hsl.apply(null, rgb); hsl[2] = l[1]; var r = Cl.hsl2rgb.apply(null, hsl); var hex = Cl.rgb2hex.apply(null, r); html += '<div style="width:60px;text-align:center"><div style="height:42px;border-radius:8px;background:' + hex + '"></div><div style="font-size:10px">' + l[0] + '</div><div style="font-size:9px;color:var(--ink-3)">' + hex + '</div></div>'; }); return { out: html + '</div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+tool({ id: 'cl-alpha', n: '透明度叠加', c: 'color', d: '算带 alpha 的颜色叠在白/黑底上的结果',
+  f: [{ k: 'in', t: '颜色 HEX', type: 'text', v: '#6366f1' }, { k: 'a', t: '不透明度 %', type: 'number', v: 70, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'outhtml' }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var t = v.a / 100; function over(bg) { return [rgb[0] * t + bg[0] * (1 - t), rgb[1] * t + bg[1] * (1 - t), rgb[2] * t + bg[2] * (1 - t)]; } var w = over([255, 255, 255]), b = over([0, 0, 0]); return { out: '<div style="display:flex;gap:10px"><div style="text-align:center"><div style="width:50px;height:50px;border-radius:10px;background:' + Cl.rgb2hex.apply(null, w) + ';border:1px solid #ddd"></div><div style="font-size:11px">白底</div></div><div style="text-align:center"><div style="width:50px;height:50px;border-radius:10px;background:' + Cl.rgb2hex.apply(null, b) + '"></div><div style="font-size:11px">黑底</div></div></div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+tool({ id: 'cl-cssvar', n: 'CSS 变量生成', c: 'color', d: '把一组颜色生成 :root 变量代码',
+  f: [{ k: 'in', t: '颜色（每行一个 HEX）', type: 'textarea', ph: '#6366f1\n#ec4899\n#1a6b55' }, { k: 'out', t: 'CSS', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var cs = (v.in || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (!cs.length) return { out: '', note: '请输入颜色', warn: true }; var r = ':root {\n'; cs.forEach(function (c, i) { r += '  --color-' + (i + 1) + ': ' + c + ';\n'; }); return { out: r + '}' }; } });
+
+tool({ id: 'cl-temp-export', n: '主题色导出', c: 'color', d: '导出主色+深浅变体的 CSS 主题',
+  f: [{ k: 'in', t: '主色 HEX', type: 'text', v: '#6366f1' }, { k: 'out', t: 'CSS', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var dark = Cl.rgb2hex.apply(null, Cl.hsl2rgb.apply(null, [(Cl.rgb2hsl.apply(null, rgb)[0]), 70, 18])), light = Cl.rgb2hex.apply(null, Cl.hsl2rgb.apply(null, [Cl.rgb2hsl.apply(null, rgb)[0], 70, 88])); var css = ':root{\n  --primary:' + v.in + ';\n  --primary-dark:' + dark + ';\n  --primary-light:' + light + ';\n}'; return { out: css }; } catch (e) { return { out: '', note: '格式有误', warn: true }; } } });
+
+tool({ id: 'cl-warm-cool', n: '冷暖色调判断', c: 'color', d: '判断颜色偏暖还是偏冷',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#ff6600' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var h = Cl.rgb2hsl.apply(null, rgb)[0]; var warm = h >= 30 && h <= 190 ? '暖色' : '冷色'; return { out: warm, metrics: [{ t: '色相', v: h + '°' }, { t: '倾向', v: warm }] }; } catch (e) { return { out: '', note: '格式有误', warn: true }; } } });
+
+tool({ id: 'cl-distance', n: '颜色差异度', c: 'color', d: '算两个颜色之间的视觉距离（0-100）',
+  f: [{ k: 'a', t: '颜色 A', type: 'text', v: '#ff0000' }, { k: 'b', t: '颜色 B', type: 'text', v: '#00ff00' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { try { var ca = Cl.hex2rgb(v.a), cb = Cl.hex2rgb(v.b); var dist = Math.sqrt(Math.pow(ca[0] - cb[0], 2) + Math.pow(ca[1] - cb[1], 2) + Math.pow(ca[2] - cb[2], 2)); var pct = Math.min(100, dist / 441 * 100); return { out: pct.toFixed(1) + ' / 100', metrics: [{ t: '欧氏距离', v: dist.toFixed(1) }, { t: '差异', v: pct.toFixed(0) + '%' }] }; } catch (e) { return { out: '', note: '格式有误', warn: true }; } } });
+
+tool({ id: 'cl-transparent', n: '透明色生成', c: 'color', d: '把 HEX 加 alpha 转成 8 位十六进制',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#6366f1' }, { k: 'op', t: '不透明度 %', type: 'number', v: 50, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var a = Math.round(v.op / 100 * 255).toString(16).padStart(2, '0'); return { out: (v.in || '').replace('#', '#') + a }; } });
+
+tool({ id: 'cl-saturate', n: '饱和度调整', c: 'color', d: '调整颜色饱和度并预览',
+  f: [{ k: 'in', t: 'HEX', type: 'text', v: '#1a6b55' }, { k: 's', t: '饱和度 %', type: 'number', v: 80, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'outhtml' }],
+  run: function (v) { try { var rgb = Cl.hex2rgb(v.in); var hsl = Cl.rgb2hsl.apply(null, rgb); hsl[1] = v.s; var r = Cl.hsl2rgb.apply(null, hsl); var hex = Cl.rgb2hex.apply(null, r); return { out: '<div style="display:flex;align-items:center;gap:10px"><div style="width:50px;height:50px;border-radius:10px;background:' + hex + '"></div><b>' + hex + '</b></div>' }; } catch (e) { return { out: '<span class="out-empty">格式有误</span>' }; } } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "cl-grad"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: cl-grad'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

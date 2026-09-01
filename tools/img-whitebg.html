@@ -40,21 +40,319 @@
     },
     px: function (img) { return H.getCtx(img).getImageData(0, 0, img.width, img.height); }
   };
-  
-window.TOOL = { id: "img-whitebg", n: "透明背景填白", c: "image", d: "把 PNG 透明区域填充为白色，便于放文档。",
-  custom: null,
-  fields: [{"k":"file","t":"图片","type":"file","accept":"image/*"},{"k":"outimg","t":"预览","type":"outimg"}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) {
+  var T = [];
+  function tool(o) { T.push(o); }
+
+  // 通用文件+输出
+  function inFields(extra) {
+    return [{ k: 'file', t: '图片', type: 'file', accept: 'image/*' }].concat(extra || []);
+  }
+  function need(v) { return v && v.file ? null : { note: '请先选择图片', outimg: null }; }
+
+  /* 1 改尺寸 */
+  tool({ id: 'img-resize', n: '图片改尺寸', c: 'image', d: '按指定宽高重绘，高度留 0 自动按比例。',
+    f: inFields([{ k: 'w', t: '宽度', type: 'number', v: 800 }, { k: 'h', t: '高度(0=按比例)', type: 'number', v: 0 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var sw = img.naturalWidth, sh = img.naturalHeight;
+        var tw = v.w || sw, th = v.h || Math.round(sh * tw / sw);
+        return { outimg: H.drawResize(img, tw, th), note: '原 ' + sw + '×' + sh + ' → ' + tw + '×' + th };
+      });
+    } });
+
+  /* 2 格式转换 */
+  tool({ id: 'img-format', n: '图片格式转换', c: 'image', d: 'PNG / JPEG / WEBP 互转，点保存图片下载。',
+    f: inFields([{ k: 'fmt', t: '目标格式', type: 'select', opts: ['png', 'jpeg', 'webp'], v: 'png' }, { k: 'q', t: '质量(0-1,仅JPEG/WEBP)', type: 'range', min: 0.1, max: 1, step: 0.05, v: 0.92 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v, RT) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight);
+        var mt = 'image/' + v.fmt;
+        return new Promise(function (res) {
+          c.toBlob(function (b) {
+            var url = URL.createObjectURL(b);
+            var out = document.createElement('canvas'); out.width = c.width; out.height = c.height;
+            var im = new Image(); im.onload = function () { out.getContext('2d').drawImage(im, 0, 0); res({ outimg: out, note: '已转 ' + v.fmt.toUpperCase() + '，点“保存图片”下载' }); };
+            im.src = url;
+          }, mt, v.q);
+        });
+      });
+    } });
+
+  /* 3 压缩 */
+  tool({ id: 'img-compress', n: '图片压缩', c: 'image', d: '降低质量压缩体积，可同时限制最大边。',
+    f: inFields([{ k: 'q', t: '质量', type: 'range', min: 0.1, max: 1, step: 0.05, v: 0.7 }, { k: 'max', t: '最大边(0=不限制)', type: 'number', v: 0 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v, RT) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var sw = img.naturalWidth, sh = img.naturalHeight, s = 1;
+        if (v.max && Math.max(sw, sh) > v.max) s = v.max / Math.max(sw, sh);
+        var c = H.drawResize(img, Math.round(sw * s), Math.round(sh * s));
+        return new Promise(function (res) {
+          c.toBlob(function (b) {
+            var out = document.createElement('canvas'); out.width = c.width; out.height = c.height;
+            var im = new Image(); im.onload = function () { out.getContext('2d').drawImage(im, 0, 0); res({ outimg: out, note: '输出 ' + RT.fmtSize(b.size) + '（原 ' + RT.fmtSize(v.file.size) + '）' }); };
+            im.src = URL.createObjectURL(b);
+          }, 'image/jpeg', v.q);
+        });
+      });
+    } });
+
+  /* 4 旋转 */
+  tool({ id: 'img-rotate', n: '图片旋转', c: 'image', d: '顺时针 90/180/270 度旋转。',
+    f: inFields([{ k: 'deg', t: '角度', type: 'seg', opts: [{ v: '90', t: '90°' }, { v: '180', t: '180°' }, { v: '270', t: '270°' }], v: '90' }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var sw = img.naturalWidth, sh = img.naturalHeight, d = +v.deg;
+        var c = RT.mkCanvas(d === 90 || d === 270 ? sh : sw, d === 90 || d === 270 ? sw : sh);
+        var x = c.getContext('2d'); x.translate(c.width / 2, c.height / 2); x.rotate(d * Math.PI / 180);
+        x.drawImage(img, -sw / 2, -sh / 2);
+        return { outimg: c };
+      });
+    } });
+
+  /* 5 翻转 */
+  tool({ id: 'img-flip', n: '图片翻转', c: 'image', d: '水平或垂直镜像。',
+    f: inFields([{ k: 'm', t: '方向', type: 'seg', opts: [{ v: 'h', t: '水平' }, { v: 'v', t: '垂直' }], v: 'h' }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), x = c.getContext('2d');
+        x.translate(c.width / 2, c.height / 2);
+        x.scale(v.m === 'h' ? -1 : 1, v.m === 'v' ? -1 : 1);
+        x.drawImage(img, -c.width / 2, -c.height / 2);
+        return { outimg: c };
+      });
+    } });
+
+  /* 6 灰度 */
+  tool({ id: 'img-gray', n: '图片转灰度', c: 'image', d: '去色为黑白灰阶。',
+    f: inFields([{ k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), d = H.px(c), a = d.data;
+        for (var i = 0; i < a.length; i += 4) { var g = (a[i] * 0.299 + a[i + 1] * 0.587 + a[i + 2] * 0.114) | 0; a[i] = a[i + 1] = a[i + 2] = g; }
+        c.getContext('2d').putImageData(d, 0, 0); return { outimg: c };
+      });
+    } });
+
+  /* 7 亮度对比度 */
+  tool({ id: 'img-bright', n: '亮度 / 对比度', c: 'image', d: '调整明暗与对比。',
+    f: inFields([{ k: 'b', t: '亮度', type: 'range', min: -100, max: 100, step: 1, v: 0 }, { k: 'ct', t: '对比度', type: 'range', min: -100, max: 100, step: 1, v: 0 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), d = H.px(c), a = d.data;
+        var cf = (259 * (v.ct + 255)) / (255 * (259 - v.ct));
+        for (var i = 0; i < a.length; i += 4) {
+          a[i] = Math.max(0, Math.min(255, cf * (a[i] + v.b - 128) + 128));
+          a[i + 1] = Math.max(0, Math.min(255, cf * (a[i + 1] + v.b - 128) + 128));
+          a[i + 2] = Math.max(0, Math.min(255, cf * (a[i + 2] + v.b - 128) + 128));
+        }
+        c.getContext('2d').putImageData(d, 0, 0); return { outimg: c };
+      });
+    } });
+
+  /* 8 反相 */
+  tool({ id: 'img-invert', n: '颜色反相', c: 'image', d: '负片效果。',
+    f: inFields([{ k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), d = H.px(c), a = d.data;
+        for (var i = 0; i < a.length; i += 4) { a[i] = 255 - a[i]; a[i + 1] = 255 - a[i + 1]; a[i + 2] = 255 - a[i + 2]; }
+        c.getContext('2d').putImageData(d, 0, 0); return { outimg: c };
+      });
+    } });
+
+  /* 9 复古暖色 */
+  tool({ id: 'img-sepia', n: '复古暖色调', c: 'image', d: '老照片 / 胶片风。',
+    f: inFields([{ k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), d = H.px(c), a = d.data;
+        for (var i = 0; i < a.length; i += 4) {
+          var r = a[i], g = a[i + 1], b = a[i + 2];
+          a[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+          a[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+          a[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
+        }
+        c.getContext('2d').putImageData(d, 0, 0); return { outimg: c };
+      });
+    } });
+
+  /* 10 模糊 */
+  tool({ id: 'img-blur', n: '高斯模糊', c: 'image', d: '柔化模糊。',
+    f: inFields([{ k: 'r', t: '强度', type: 'range', min: 1, max: 20, step: 1, v: 4 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), x = c.getContext('2d');
+        x.filter = 'blur(' + v.r + 'px)'; x.drawImage(img, 0, 0); x.filter = 'none';
+        return { outimg: c };
+      });
+    } });
+
+  /* 11 像素化 */
+  tool({ id: 'img-pixel', n: '像素化 / 马赛克', c: 'image', d: '降低分辨率再放大实现像素块。',
+    f: inFields([{ k: 's', t: '像素块大小', type: 'range', min: 2, max: 40, step: 1, v: 10 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var sw = img.naturalWidth, sh = img.naturalHeight, b = v.s || 10;
+        var c = H.drawResize(img, Math.max(1, sw / b), Math.max(1, sh / b)); var out = RT.mkCanvas(sw, sh);
+        var x = out.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(c, 0, 0, sw, sh);
+        return { outimg: out };
+      });
+    } });
+
+  /* 12 圆角 */
+  tool({ id: 'img-round', n: '图片圆角', c: 'image', d: '四角变圆，背景可填充。',
+    f: inFields([{ k: 'r', t: '圆角半径', type: 'number', v: 40 }, { k: 'bg', t: '底色', type: 'color', v: '#ffffff' }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var sw = img.naturalWidth, sh = img.naturalHeight, c = RT.mkCanvas(sw, sh), x = c.getContext('2d');
+        x.save(); x.beginPath();
+        var rad = Math.min(v.r || 0, sw / 2, sh / 2);
+        x.moveTo(rad, 0); x.arcTo(sw, 0, sw, sh, rad); x.arcTo(sw, sh, 0, sh, rad); x.arcTo(0, sh, 0, 0, rad); x.arcTo(0, 0, sw, 0, rad); x.closePath();
+        x.fillStyle = v.bg || '#fff'; x.fill(); x.clip(); x.drawImage(img, 0, 0); x.restore();
+        return { outimg: c };
+      });
+    } });
+
+  /* 13 圆形头像 */
+  tool({ id: 'img-circle', n: '圆形头像裁剪', c: 'image', d: '截取居中正方形裁成圆形。',
+    f: inFields([{ k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var s = Math.min(img.naturalWidth, img.naturalHeight), c = RT.mkCanvas(s, s), x = c.getContext('2d');
+        x.save(); x.beginPath(); x.arc(s / 2, s / 2, s / 2, 0, 7); x.closePath(); x.clip();
+        var ox = (img.naturalWidth - s) / 2, oy = (img.naturalHeight - s) / 2;
+        x.drawImage(img, ox, oy, s, s, 0, 0, s, s); x.restore();
+        return { outimg: c };
+      });
+    } });
+
+  /* 14 加边框 */
+  tool({ id: 'img-border', n: '图片加边框', c: 'image', d: '外扩填充纯色边框。',
+    f: inFields([{ k: 'w', t: '边框宽度', type: 'number', v: 20 }, { k: 'bg', t: '边框颜色', type: 'color', v: '#1a6b55' }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var bw = v.w || 0, sw = img.naturalWidth, sh = img.naturalHeight, c = RT.mkCanvas(sw + bw * 2, sh + bw * 2), x = c.getContext('2d');
+        x.fillStyle = v.bg || '#000'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, bw, bw);
+        return { outimg: c };
+      });
+    } });
+
+  /* 15 文字水印 */
+  tool({ id: 'img-wm', n: '添加文字水印', c: 'image', d: '平铺半透明文字水印。',
+    f: inFields([{ k: 'text', t: '水印文字', type: 'text', v: '超有用的工具箱' }, { k: 'op', t: '透明度', type: 'range', min: 0.05, max: 1, step: 0.05, v: 0.25 }, { k: 'size', t: '字号', type: 'number', v: 28 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), x = c.getContext('2d');
+        x.font = (v.size || 28) + 'px sans-serif'; x.fillStyle = 'rgba(255,255,255,' + (v.op || 0.25) + ')';
+        x.textBaseline = 'middle';
+        var step = (v.size || 28) * 2.2;
+        for (var y = step / 2; y < c.height; y += step)
+          for (var xx = 0; xx < c.width; xx += (v.text.length * (v.size || 28)) + 60) { x.save(); x.translate(xx, y); x.rotate(-0.35); x.fillText(v.text || '', 0, 0); x.restore(); }
+        return { outimg: c };
+      });
+    } });
+
+  /* 16 图片信息 */
+  tool({ id: 'img-info', n: '图片信息读取', c: 'image', d: '尺寸 / 类型 / 体积 / 比例。',
+    f: inFields([{ k: 'out', t: '信息', type: 'out', mono: true }]),
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      var t = v.file.type || '未知', ratio = (function () { var p = t.split('/'); return p[1] ? p[1].toUpperCase() : '?'; })();
+      return RT.loadImg(v.file).then(function (img) {
+        return { out: '文件名：' + v.file.name + '\n类型：' + t + '\n尺寸：' + img.naturalWidth + ' × ' + img.naturalHeight + '\n比例：' + (img.naturalWidth / img.naturalHeight).toFixed(3) + '\n体积：' + RT.fmtSize(v.file.size) };
+      });
+    } });
+
+  /* 17 转 Base64 */
+  tool({ id: 'img-b64', n: '图片转 Base64', c: 'image', d: '输出 DataURL，可直接贴进 HTML/CSS。',
+    f: inFields([{ k: 'out', t: 'DataURL', type: 'out', mono: true, dl: true, dlName: 'image-base64.txt' }]),
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.loadImg(v.file).then(function (img) {
+        var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), mt = v.file.type || 'image/png';
+        return new Promise(function (res) { c.toBlob(function (b) { var r = new FileReader(); r.onload = function () { res({ out: r.result }); }; r.readAsDataURL(b); }, mt); });
+      });
+    } });
+
+  /* 18 Base64 转图片 */
+  tool({ id: 'img-b64d', n: 'Base64 转图片', c: 'image', d: '粘贴 DataURL 预览并保存。',
+    f: [{ k: 'data', t: 'DataURL', type: 'textarea', rows: 4, ph: 'data:image/png;base64,...' }, { k: 'outimg', t: '预览', type: 'outimg' }],
+    run: function (v) {
+      var s = (v.data || '').trim(); if (!/^data:image\//.test(s)) return { note: '请粘贴 image 的 DataURL', outimg: null };
+      return RT.loadImg(s).then(function (img) { var c = H.drawResize(img, img.naturalWidth, img.naturalHeight); return { outimg: c }; });
+    } });
+
+  /* 19 横向拼接 */
+  tool({ id: 'img-merge-h', n: '图片横向拼接', c: 'image', d: '多张图片并排拼成一张。',
+    f: [{ k: 'files', t: '图片(多选)', type: 'file', multi: true, accept: 'image/*' }, { k: 'gap', t: '间距(px)', type: 'number', v: 0 }, { k: 'bg', t: '底色', type: 'color', v: '#ffffff' }, { k: 'outimg', t: '预览', type: 'outimg' }],
+    run: function (v) {
+      if (!v.files || !v.files.length) return { note: '请选择多张图片', outimg: null };
+      var ps = v.files.map(RT.loadImg), gap = v.gap || 0;
+      return Promise.all(ps).then(function (imgs) {
+        var h = Math.max.apply(null, imgs.map(function (i) { return i.naturalHeight; }));
+        var w = imgs.reduce(function (s, i) { return s + i.naturalWidth; }, gap * (imgs.length - 1));
+        var c = RT.mkCanvas(w, h), x = c.getContext('2d'); x.fillStyle = v.bg; x.fillRect(0, 0, w, h);
+        var cx = 0; imgs.forEach(function (i) { x.drawImage(i, cx, (h - i.naturalHeight) / 2); cx += i.naturalWidth + gap; });
+        return { outimg: c };
+      });
+    } });
+
+  /* 20 纵向拼接 */
+  tool({ id: 'img-merge-v', n: '图片纵向拼接', c: 'image', d: '多张图片上下拼成一张（长图）。',
+    f: [{ k: 'files', t: '图片(多选)', type: 'file', multi: true, accept: 'image/*' }, { k: 'gap', t: '间距(px)', type: 'number', v: 0 }, { k: 'bg', t: '底色', type: 'color', v: '#ffffff' }, { k: 'outimg', t: '预览', type: 'outimg' }],
+    run: function (v) {
+      if (!v.files || !v.files.length) return { note: '请选择多张图片', outimg: null };
+      var ps = v.files.map(RT.loadImg), gap = v.gap || 0;
+      return Promise.all(ps).then(function (imgs) {
+        var w = Math.max.apply(null, imgs.map(function (i) { return i.naturalWidth; }));
+        var h = imgs.reduce(function (s, i) { return s + i.naturalHeight; }, gap * (imgs.length - 1));
+        var c = RT.mkCanvas(w, h), x = c.getContext('2d'); x.fillStyle = v.bg; x.fillRect(0, 0, w, h);
+        var cy = 0; imgs.forEach(function (i) { x.drawImage(i, (w - i.naturalWidth) / 2, cy); cy += i.naturalHeight + gap; });
+        return { outimg: c };
+      });
+    } });
+
+  /* 21 缩略图 */
+  tool({ id: 'img-thumb', n: '生成缩略图', c: 'image', d: '按最长边缩放成缩略图。',
+    f: inFields([{ k: 'max', t: '最长边', type: 'number', v: 200 }, { k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
+      var m = need(v); if (m) return m;
+      return RT.loadImg(v.file).then(function (img) {
+        var sw = img.naturalWidth, sh = img.naturalHeight, s = Math.min(1, (v.max || 200) / Math.max(sw, sh));
+        return { outimg: H.drawResize(img, Math.round(sw * s), Math.round(sh * s)) };
+      });
+    } });
+
+  /* 22 白底替换（透明填充白） */
+  tool({ id: 'img-whitebg', n: '透明背景填白', c: 'image', d: '把 PNG 透明区域填充为白色，便于放文档。',
+    f: inFields([{ k: 'outimg', t: '预览', type: 'outimg' }]),
+    run: function (v) {
       var m = need(v); if (m) return m;
       return RT.loadImg(v.file).then(function (img) {
         var c = H.drawResize(img, img.naturalWidth, img.naturalHeight), x = c.getContext('2d');
         x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0);
         return { outimg: c };
       });
-    } };
+    } });
+
+  
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "img-whitebg"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: img-whitebg'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

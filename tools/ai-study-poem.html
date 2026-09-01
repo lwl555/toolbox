@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 古诗赏析 - 超有用的工具箱</title>
+<meta name="description" content="给出古诗赏析框架。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI学习</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 古诗赏析</h1>
+<p class="lede">给出古诗赏析框架。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-study-essay.html"><div class="card-t"><span class="card-name">AI 作文批改</span></div><div class="card-desc">按评分维度点评作文并给建议。</div></a><a class="card" href="ai-study-outline.html"><div class="card-t"><span class="card-name">AI 大纲生成</span></div><div class="card-desc">把主题展开为多级大纲。</div></a><a class="card" href="ai-study-card.html"><div class="card-t"><span class="card-name">AI 知识点卡片</span></div><div class="card-desc">生成记忆卡片(正面/背面)。</div></a><a class="card" href="ai-study-word.html"><div class="card-t"><span class="card-name">AI 单词卡</span></div><div class="card-desc">生成单词记忆卡(音/义/句)。</div></a><a class="card" href="ai-study-key.html"><div class="card-t"><span class="card-name">AI 考点提炼</span></div><div class="card-desc">从教材片段提考点。</div></a><a class="card" href="ai-study-wrong.html"><div class="card-t"><span class="card-name">AI 错题分析</span></div><div class="card-desc">分析错因并给同类练习。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 古诗赏析<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   31-ai-study.js — AI 学习（模板/算法真实生成，共 26 个）
+   ============================================================ */
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 作文批改 */
+tool({ id: 'ai-study-essay', n: 'AI 作文批改', c: 'ai-study', d: '按评分维度点评作文并给建议。',
+  f: [{ k: 'essay', t: '作文', type: 'textarea' }, { k: 'out', t: '批语', type: 'out' }, { k: 'outhtml', t: '评分', type: 'outhtml' }],
+  run: function (v) {
+    var e = v.essay || ''; if (!e) return { out: '请粘贴作文' };
+    var len = e.length;
+    return { out: '总体：立意' + (len > 300 ? '较清晰' : '可更明确') + '；结构建议"总-分-总"；语言可加修辞与过渡。\n修改建议：\n1 开头点题\n2 每段一个中心句\n3 结尾升华\n4 改正错别字与病句', outhtml: '<div class="metric"><b>' + (len > 600 ? 85 : len > 300 ? 78 : 70) + '</b><span>综合(示例)</span></div>' };
+  } });
+
+/* 2 大纲生成 */
+tool({ id: 'ai-study-outline', n: 'AI 大纲生成', c: 'ai-study', d: '把主题展开为多级大纲。',
+  f: [{ k: 'topic', t: '主题', type: 'text' }, { k: 'lv', t: '层级', type: 'number', v: 2 }, { k: 'out', t: '大纲', type: 'out' }],
+  run: function (v) {
+    if (!v.topic) return { out: '请填主题' };
+    var lv = Math.max(1, Math.min(3, v.lv || 2), 3), s = v.topic + '\n';
+    for (var i = 1; i <= 3; i++) { s += i + '. 要点' + i + '\n'; if (lv >= 2) for (var j = 1; j <= 2; j++) s += '   ' + i + '.' + j + ' 子点\n'; if (lv >= 3) s += '     举例/数据\n'; }
+    return { out: s };
+  } });
+
+/* 3 知识点卡片 */
+tool({ id: 'ai-study-card', n: 'AI 知识点卡片', c: 'ai-study', d: '生成记忆卡片(正面/背面)。',
+  f: [{ k: 'k', t: '知识点', type: 'text' }, { k: 'out', t: '卡片', type: 'out' }],
+  run: function (v) {
+    if (!v.k) return { out: '请填知识点' };
+    return { out: '【正面】' + v.k + '\n【背面】定义：__\n关键特征：__\n例子：__\n易混：__' };
+  } });
+
+/* 4 单词记忆卡 */
+tool({ id: 'ai-study-word', n: 'AI 单词卡', c: 'ai-study', d: '生成单词记忆卡(音/义/句)。',
+  f: [{ k: 'w', t: '单词(英文)', type: 'text' }, { k: 'out', t: '卡片', type: 'out' }],
+  run: function (v) {
+    if (!v.w) return { out: '请填单词' };
+    return { out: v.w + '\n词性：__\n释义：__\n例句：The __ is important.\n联想：__\n同义/反义：__' };
+  } });
+
+/* 5 考点提炼 */
+tool({ id: 'ai-study-key', n: 'AI 考点提炼', c: 'ai-study', d: '从教材片段提考点。',
+  f: [{ k: 'text', t: '教材/内容', type: 'textarea' }, { k: 'out', t: '考点', type: 'out' }],
+  run: function (v) {
+    if (!v.text) return { out: '请粘贴内容' };
+    var lines = v.text.split('\n').filter(function (x) { return x.trim(); });
+    return { out: '核心考点：\n' + lines.slice(0, 8).map(function (x, i) { return (i + 1) + '. ' + x.trim().slice(0, 30) + ' → 易考角度__'; }).join('\n') };
+  } });
+
+/* 6 错题分析 */
+tool({ id: 'ai-study-wrong', n: 'AI 错题分析', c: 'ai-study', d: '分析错因并给同类练习。',
+  f: [{ k: 'q', t: '原题', type: 'textarea' }, { k: 'ans', t: '你的答案', type: 'text' }, { k: 'out', t: '分析', type: 'out' }],
+  run: function (v) {
+    if (!v.q) return { out: '请填原题' };
+    return { out: '原题：' + v.q + '\n你的答案：' + (v.ans || '__') + '\n错因类型：□概念不清 □审题 □计算 □粗心\n正确思路：__\n同类题：__\n防错口诀：__' };
+  } });
+
+/* 7 读书笔记 */
+tool({ id: 'ai-study-note', n: 'AI 读书笔记', c: 'ai-study', d: '结构化读书笔记。',
+  f: [{ k: 'book', t: '书名', type: 'text' }, { k: 'hl', t: '划线/摘抄', type: 'textarea' }, { k: 'out', t: '笔记', type: 'out' }],
+  run: function (v) {
+    return { out: '《' + (v.book || '书名') + '》读书笔记\n核心观点：__\n金句：' + (v.hl || '__') + '\n我的思考：__\n行动项：__' };
+  } });
+
+/* 8 思维导图 */
+tool({ id: 'ai-study-mind', n: 'AI 思维导图', c: 'ai-study', d: '生成文本层级思维导图。',
+  f: [{ k: 'topic', t: '中心主题', type: 'text' }, { k: 'out', t: '导图', type: 'out' }],
+  run: function (v) {
+    if (!v.topic) return { out: '请填主题' };
+    return { out: v.topic + '\n├─ 是什么\n│  ├─ 定义\n│  └─ 特征\n├─ 为什么\n│  ├─ 原因\n│  └─ 意义\n└─ 怎么做\n   ├─ 步骤\n   └─ 注意' };
+  } });
+
+/* 9 演讲稿 */
+tool({ id: 'ai-study-speech', n: 'AI 演讲稿', c: 'ai-study', d: '按场景生成演讲稿框架。',
+  f: [{ k: 'topic', t: '演讲主题', type: 'text' }, { k: 'min', t: '时长(分钟)', type: 'number', v: 3 }, { k: 'out', t: '稿', type: 'out' }],
+  run: function (v) {
+    if (!v.topic) return { out: '请填主题' };
+    return { out: '开场（抓注意）：__\n主体（' + (v.min || 3) + '分钟，2-3 个论点+故事）：__\n结尾（呼吁/金句）：__\n提示：放慢语速、看观众、留停顿。' };
+  } });
+
+/* 10 论文提纲 */
+tool({ id: 'ai-study-thesis', n: 'AI 论文提纲', c: 'ai-study', d: '学术论文结构。',
+  f: [{ k: 'topic', t: '论文题目', type: 'text' }, { k: 'out', t: '提纲', type: 'out' }],
+  run: function (v) {
+    return { out: (v.topic || '题目') + '\n摘要\n1 引言(背景/问题/意义)\n2 文献综述\n3 方法\n4 结果与讨论\n5 结论与展望\n参考文献' };
+  } });
+
+/* 11 古诗赏析 */
+tool({ id: 'ai-study-poem', n: 'AI 古诗赏析', c: 'ai-study', d: '给出古诗赏析框架。',
+  f: [{ k: 'poem', t: '诗题/诗句', type: 'text' }, { k: 'out', t: '赏析', type: 'out' }],
+  run: function (v) {
+    if (!v.poem) return { out: '请填诗' };
+    return { out: '《' + v.poem + '》\n译文：__\n意象：__\n情感：__\n手法：__（借景抒情/托物言志等）\n名句赏析：__' };
+  } });
+
+/* 12 翻译练习 */
+tool({ id: 'ai-study-trans', n: 'AI 翻译练习', c: 'ai-study', d: '英译中带难点提示。',
+  f: [{ k: 'en', t: '英文句', type: 'textarea' }, { k: 'out', t: '练习', type: 'out' }],
+  run: function (v) {
+    if (!v.en) return { out: '请填英文' };
+    return { out: '原文：' + v.en + '\n你的译文：__\n难点词：__\n句型：__\n参考译文：__（自核）' };
+  } });
+
+/* 13 公式讲解 */
+tool({ id: 'ai-study-formula', n: 'AI 公式讲解', c: 'ai-study', d: '解释公式含义与用法。',
+  f: [{ k: 'f', t: '公式', type: 'text' }, { k: 'out', t: '讲解', type: 'out' }],
+  run: function (v) {
+    if (!v.f) return { out: '请填公式' };
+    return { out: '公式：' + v.f + '\n各符号含义：__\n适用条件：__\n推导思路：__\n典型例题：__' };
+  } });
+
+/* 14 概念对比 */
+tool({ id: 'ai-study-cmp', n: 'AI 概念对比', c: 'ai-study', d: '两概念对比表。',
+  f: [{ k: 'a', t: '概念A', type: 'text' }, { k: 'b', t: '概念B', type: 'text' }, { k: 'out', t: '对比', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请填两概念' };
+    return { out: '维度\t' + v.a + '\t' + v.b + '\n定义\t__\t__\n特点\t__\t__\n适用\t__\t__\n联系\t两者都__' };
+  } });
+
+/* 15 速记口诀 */
+tool({ id: 'ai-study-mnem', n: 'AI 速记口诀', c: 'ai-study', d: '把要点编成口诀。',
+  f: [{ k: 'pts', t: '要点(逐行)', type: 'textarea' }, { k: 'out', t: '口诀', type: 'out' }],
+  run: function (v) {
+    var lines = (v.pts || '').split('\n').filter(function (x) { return x.trim(); });
+    if (!lines.length) return { out: '请填要点' };
+    return { out: '口诀（取每点首字/谐音）：\n' + lines.map(function (x) { return '· ' + x.trim(); }).join('\n') + '\n→ 编成一句话/顺口溜便于记忆：______' };
+  } });
+
+/* 16 复习计划 */
+tool({ id: 'ai-study-plan', n: 'AI 复习计划', c: 'ai-study', d: '按艾宾浩斯排复习。',
+  f: [{ k: 'subj', t: '科目', type: 'text' }, { k: 'days', t: '天数', type: 'number', v: 7 }, { k: 'out', t: '计划', type: 'out' }],
+  run: function (v) {
+    var d = Math.max(1, Math.min(30, v.days || 7)), s = (v.subj || '科目') + ' 复习计划：\n';
+    [1, 2, 4, 7, 15].forEach(function (n) { if (n <= d) s += '第' + n + '天：回顾+自测\n'; });
+    return { out: s + '每天番茄钟×__，错题当天清。' };
+  } });
+
+/* 17 提问生成 */
+tool({ id: 'ai-study-quiz', n: 'AI 出题', c: 'ai-study', d: '基于文本出选择题。',
+  f: [{ k: 'text', t: '学习内容', type: 'textarea' }, { k: 'n', t: '题数', type: 'number', v: 3 }, { k: 'out', t: '题目', type: 'out' }],
+  run: function (v) {
+    if (!v.text) return { out: '请粘贴内容' };
+    var n = Math.max(1, Math.min(10, v.n || 3)), s = '';
+    for (var i = 1; i <= n; i++) s += i + '. （单选）关于上文，下列说法正确的是？\n   A.__ B.__ C.__ D.__\n   答案：__\n\n';
+    return { out: s };
+  } });
+
+/* 18 摘要笔记 */
+tool({ id: 'ai-study-sum', n: 'AI 摘要笔记', c: 'ai-study', d: '长文转康奈尔笔记。',
+  f: [{ k: 'text', t: '材料', type: 'textarea' }, { k: 'out', t: '笔记', type: 'out' }],
+  run: function (v) {
+    if (!v.text) return { out: '请粘贴材料' };
+    return { out: '【主栏】要点：\n· __\n· __\n【线索栏】关键词：__\n【总结】一句话：__' };
+  } });
+
+/* 19 论点论据 */
+tool({ id: 'ai-study-arg', n: 'AI 论点论据', c: 'ai-study', d: '给观点配论据。',
+  f: [{ k: 'claim', t: '观点', type: 'text' }, { k: 'out', t: '结构', type: 'out' }],
+  run: function (v) {
+    if (!v.claim) return { out: '请填观点' };
+    return { out: '论点：' + v.claim + '\n论据1（事实/数据）：__\n论据2（案例）：__\n论据3（权威）：__\n反驳预判：__\n结论：__' };
+  } });
+
+/* 20 辩论稿 */
+tool({ id: 'ai-study-debate', n: 'AI 辩论稿', c: 'ai-study', d: '正/反方辩论框架。',
+  f: [{ k: 'topic', t: '辩题', type: 'text' }, { k: 'side', t: '立场', type: 'select', opts: ['正方', '反方'], v: '正方' }, { k: 'out', t: '稿', type: 'out' }],
+  run: function (v) {
+    if (!v.topic) return { out: '请填辩题' };
+    return { out: '立场：' + v.side + '｜辩题：' + v.topic + '\n一辩立论：定义+标准+分论点\n二辩驳论：抓对方漏洞\n三辩质询：数据追问\n四辩总结：升华价值' };
+  } });
+
+/* 21 学习简历亮点 */
+tool({ id: 'ai-study-cv', n: 'AI 学业亮点', c: 'ai-study', d: '把经历写成简历亮点。',
+  f: [{ k: 'exp', t: '经历描述', type: 'textarea' }, { k: 'out', t: '亮点', type: 'out' }],
+  run: function (v) {
+    if (!v.exp) return { out: '请填经历' };
+    return { out: '改写建议（动词开头+量化）：\n' + v.exp.split('\n').filter(function (x) { return x.trim(); }).map(function (x) { return '· ' + x.trim() + ' → 主导/完成__，提升__%，获得__'; }).join('\n') };
+  } });
+
+/* 22 番茄学习计划 */
+tool({ id: 'ai-study-pomo', n: 'AI 番茄计划', c: 'ai-study', d: '拆分任务为番茄钟。',
+  f: [{ k: 'task', t: '任务', type: 'textarea' }, { k: 'out', t: '计划', type: 'out' }],
+  run: function (v) {
+    var lines = (v.task || '').split('\n').filter(function (x) { return x.trim(); });
+    if (!lines.length) return { out: '请填任务' };
+    return { out: '番茄钟安排（25分钟/个，间休5分）：\n' + lines.map(function (x, i) { return '🍅' + (i + 1) + ' ' + x.trim(); }).join('\n') + '\n每4个长休15分。' };
+  } });
+
+/* 23 错题本整理 */
+tool({ id: 'ai-study-wrongbook', n: 'AI 错题本', c: 'ai-study', d: '错题归档格式。',
+  f: [{ k: 'q', t: '题目', type: 'textarea' }, { k: 'out', t: '归档', type: 'out' }],
+  run: function (v) {
+    if (!v.q) return { out: '请填题目' };
+    return { out: '【日期】__ 【科目】__\n【原题】' + v.q + '\n【错解】__\n【正解】__\n【错因标签】#概念 #审题 #计算\n【同类】__' };
+  } });
+
+/* 24 名词解释 */
+tool({ id: 'ai-study-term', n: 'AI 名词解释', c: 'ai-study', d: '生成名词解释卡。',
+  f: [{ k: 'term', t: '名词', type: 'text' }, { k: 'out', t: '解释', type: 'out' }],
+  run: function (v) {
+    if (!v.term) return { out: '请填名词' };
+    return { out: v.term + '：\n定义：__\n来源/背景：__\n举例：__\n相关概念：__' };
+  } });
+
+/* 25 实验报告 */
+tool({ id: 'ai-study-exp', n: 'AI 实验报告', c: 'ai-study', d: '实验报告结构。',
+  f: [{ k: 'name', t: '实验名', type: 'text' }, { k: 'out', t: '结构', type: 'out' }],
+  run: function (v) {
+    return { out: '实验：' + (v.name || '') + '\n一、目的\n二、原理\n三、器材\n四、步骤\n五、数据记录与处理\n六、结果分析\n七、误差与改进\n八、结论' };
+  } });
+
+/* 26 考前清单 */
+tool({ id: 'ai-study-checklist', n: 'AI 考前清单', c: 'ai-study', d: '考前准备核对。',
+  f: [{ k: 'out', t: '清单', type: 'out' }],
+  run: function (v) {
+    return { out: '□ 准考证/证件  □ 文具(笔/尺/计算器)  □ 课本笔记过一遍  □ 错题本复盘  □ 早睡  □ 考场路线  □ 水/零食  □ 心态放松' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-study-poem"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-study-poem'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-study-poem")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-study-poem");
+if(i>=0)f.splice(i,1);else f.push("ai-study-poem");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-study-poem"});u.unshift("ai-study-poem");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

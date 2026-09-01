@@ -32,19 +32,146 @@ var Ch = {};
 Ch.lin = function (v, from, to, units) { var f = units[from], t = units[to]; if (!f || !t) return null; return v * f / t; };
 Ch.opt = function (obj) { return Object.keys(obj).map(function (k) { return { v: k, t: obj[k].t }; }); };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "cvt-db", n: "分贝换算", c: "convert", d: "功率比/电压比与分贝互转",
-  custom: null,
-  fields: [{"k":"v","t":"数值","type":"number","v":10},{"k":"from","t":"从","type":"select","opts":[{"v":"db","t":"分贝 dB（功率）"},{"v":"ratio","t":"功率比"},{"v":"dbv","t":"分贝 dB（电压）"},{"v":"vratio","t":"电压比"}]},{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
-  auto: true,
-  first: true,
-  init: null,
+var LEN = { m: { t: '米 m', f: 1 }, km: { t: '千米 km', f: 1000 }, cm: { t: '厘米 cm', f: 0.01 }, mm: { t: '毫米 mm', f: 0.001 }, um: { t: '微米 µm', f: 1e-6 }, in: { t: '英寸 in', f: 0.0254 }, ft: { t: '英尺 ft', f: 0.3048 }, yd: { t: '码 yd', f: 0.9144 }, mi: { t: '英里 mi', f: 1609.344 }, nmi: { t: '海里 nmi', f: 1852 } };
+tool({ id: 'cvt-length', n: '长度换算', c: 'convert', d: '米/千米/厘米/英寸/英尺/英里/海里等互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(LEN) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(LEN) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = Ch.lin(v.v, v.from, v.to, Object.keys(LEN).reduce(function (a, k) { a[k] = LEN[k].f; return a; }, {})); if (r == null) return { out: '', note: '单位不支持', warn: true }; return { out: (Math.round(r * 1e8) / 1e8) + '' }; } });
+
+var AREA = { m2: { t: '平方米', f: 1 }, km2: { t: '平方千米', f: 1e6 }, cm2: { t: '平方厘米', f: 1e-4 }, ha: { t: '公顷', f: 1e4 }, mu: { t: '亩', f: 666.667 }, ft2: { t: '平方英尺', f: 0.092903 }, acre: { t: '英亩', f: 4046.86 }, in2: { t: '平方英寸', f: 0.00064516 } };
+tool({ id: 'cvt-area', n: '面积换算', c: 'convert', d: '平方米/亩/公顷/英亩/平方英尺互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(AREA) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(AREA) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(AREA).forEach(function (k) { F[k] = AREA[k].f; }); var r = Ch.lin(v.v, v.from, v.to, F); return { out: (Math.round(r * 1e6) / 1e6) + '' }; } });
+
+var VOL = { l: { t: '升 L', f: 1 }, ml: { t: '毫升 mL', f: 0.001 }, m3: { t: '立方米', f: 1000 }, gal: { t: '加仑(美) gal', f: 3.78541 }, galuk: { t: '加仑(英)', f: 4.54609 }, pt: { t: '品脱 pt', f: 0.473176 }, cup: { t: '杯(美)', f: 0.236588 }, ozf: { t: '液量盎司', f: 0.0295735 } };
+tool({ id: 'cvt-volume', n: '体积容量换算', c: 'convert', d: '升/毫升/加仑/杯/品脱互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(VOL) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(VOL) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(VOL).forEach(function (k) { F[k] = VOL[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e6) / 1e6) + '' }; } });
+
+var MASS = { kg: { t: '千克 kg', f: 1 }, g: { t: '克 g', f: 0.001 }, mg: { t: '毫克', f: 1e-6 }, t: { t: '吨', f: 1000 }, jin: { t: '斤', f: 0.5 }, liang: { t: '两', f: 0.05 }, lb: { t: '磅 lb', f: 0.453592 }, oz: { t: '盎司 oz', f: 0.0283495 }, ct: { t: '克拉 ct', f: 0.0002 } };
+tool({ id: 'cvt-mass', n: '重量质量换算', c: 'convert', d: '千克/克/斤/两/磅/盎司/克拉互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(MASS) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(MASS) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(MASS).forEach(function (k) { F[k] = MASS[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e6) / 1e6) + '' }; } });
+
+tool({ id: 'cvt-temp', n: '温度换算', c: 'convert', d: '摄氏度/华氏度/开尔文互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 25 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'c', t: '摄氏度 ℃' }, { v: 'f', t: '华氏度 ℉' }, { v: 'k', t: '开尔文 K' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) {
+    var c = v.from === 'c' ? v.v : v.from === 'f' ? (v.v - 32) * 5 / 9 : v.v - 273.15;
+    var f = c * 9 / 5 + 32, k = c + 273.15;
+    return { out: c.toFixed(2) + ' ℃', metrics: [{ t: '摄氏度', v: c.toFixed(2) + '℃' }, { t: '华氏度', v: f.toFixed(2) + '℉' }, { t: '开尔文', v: k.toFixed(2) + 'K' }] };
+  } });
+
+var SPD = { ms: { t: '米/秒', f: 1 }, kmh: { t: '千米/时', f: 0.277778 }, mph: { t: '英里/时', f: 0.44704 }, knot: { t: '节', f: 0.514444 } };
+tool({ id: 'cvt-speed', n: '速度换算', c: 'convert', d: '米每秒/千米时/英里时/节互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 100 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(SPD) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(SPD) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(SPD).forEach(function (k) { F[k] = SPD[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e4) / 1e4) + '' }; } });
+
+var DATA = { b: { t: '比特 bit', f: 0.125 }, B: { t: '字节 B', f: 1 }, KB: { t: 'KB', f: 1024 }, MB: { t: 'MB', f: 1048576 }, GB: { t: 'GB', f: 1073741824 }, TB: { t: 'TB', f: 1099511627776 } };
+tool({ id: 'cvt-data', n: '数据存储换算', c: 'convert', d: 'bit/B/KB/MB/GB/TB 互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(DATA) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(DATA) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(DATA).forEach(function (k) { F[k] = DATA[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 100) / 100) + '' }; } });
+
+tool({ id: 'cvt-angle', n: '角度换算', c: 'convert', d: '度/弧度/梯度互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 180 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'deg', t: '度 °' }, { v: 'rad', t: '弧度 rad' }, { v: 'grad', t: '梯度 gon' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var deg = v.from === 'deg' ? v.v : v.from === 'rad' ? v.v * 180 / Math.PI : v.v * 0.9; return { out: deg.toFixed(4) + '°', metrics: [{ t: '度', v: deg.toFixed(4) }, { t: '弧度', v: (deg * Math.PI / 180).toFixed(4) }, { t: '梯度', v: (deg / 0.9).toFixed(4) }] }; } });
+
+var PRESS = { pa: { t: '帕 Pa', f: 1 }, kpa: { t: '千帕 kPa', f: 1000 }, bar: { t: '巴 bar', f: 1e5 }, psi: { t: '磅/吋² psi', f: 6894.76 }, atm: { t: '标准大气压', f: 101325 }, mmhg: { t: '毫米汞柱', f: 133.322 } };
+tool({ id: 'cvt-pressure', n: '压力换算', c: 'convert', d: '帕/千帕/巴/psi/大气压互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(PRESS) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(PRESS) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(PRESS).forEach(function (k) { F[k] = PRESS[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e4) / 1e4) + '' }; } });
+
+var ENERGY = { j: { t: '焦耳 J', f: 1 }, kj: { t: '千焦 kJ', f: 1000 }, cal: { t: '卡 cal', f: 4.184 }, kcal: { t: '千卡 kcal', f: 4184 }, wh: { t: '瓦时 Wh', f: 3600 }, kwh: { t: '千瓦时 kWh', f: 3.6e6 }, ev: { t: '电子伏 eV', f: 1.602e-19 } };
+tool({ id: 'cvt-energy', n: '能量换算', c: 'convert', d: '焦耳/卡/千卡/千瓦时互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(ENERGY) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(ENERGY) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(ENERGY).forEach(function (k) { F[k] = ENERGY[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e6) / 1e6) + '' }; } });
+
+var POW = { w: { t: '瓦 W', f: 1 }, kw: { t: '千瓦 kW', f: 1000 }, mw: { t: '兆瓦 MW', f: 1e6 }, hp: { t: '马力(公)', f: 735.499 }, hpm: { t: '马力(英)', f: 745.7 } };
+tool({ id: 'cvt-power', n: '功率换算', c: 'convert', d: '瓦/千瓦/马力互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(POW) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(POW) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(POW).forEach(function (k) { F[k] = POW[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e4) / 1e4) + '' }; } });
+
+var FORCE = { n: { t: '牛顿 N', f: 1 }, kn: { t: '千牛 kN', f: 1000 }, kgf: { t: '千克力 kgf', f: 9.80665 }, lbf: { t: '磅力 lbf', f: 4.44822 } };
+tool({ id: 'cvt-force', n: '力换算', c: 'convert', d: '牛顿/千克力/磅力互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(FORCE) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(FORCE) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(FORCE).forEach(function (k) { F[k] = FORCE[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e4) / 1e4) + '' }; } });
+
+var TIMEU = { s: { t: '秒 s', f: 1 }, m: { t: '分 min', f: 60 }, h: { t: '时 h', f: 3600 }, d: { t: '天 d', f: 86400 }, w: { t: '周', f: 604800 } };
+tool({ id: 'cvt-time', n: '时间换算', c: 'convert', d: '秒/分/时/天/周互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(TIMEU) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(TIMEU) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(TIMEU).forEach(function (k) { F[k] = TIMEU[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e4) / 1e4) + '' }; } });
+
+tool({ id: 'cvt-fuel', n: '油耗换算', c: 'convert', d: '百公里油耗 L/100km 与英里每加仑 mpg 互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 8 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'l100', t: '升/百公里' }, { v: 'mpg', t: '英里/加仑' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { if (v.from === 'l100') { if (v.v <= 0) return { out: '', note: '油耗需>0', warn: true }; return { out: (235.215 / v.v).toFixed(2) + ' mpg' }; } return { out: (235.215 / v.v).toFixed(2) + ' L/100km' }; } });
+
+tool({ id: 'cvt-shoe', n: '鞋码换算', c: 'convert', d: '中国/欧洲/美国/英国鞋码互转（以欧码为基准）',
+  f: [{ k: 'v', t: '中国码(内长mm)', type: 'number', v: 250 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var eu = v.v - 1.5 * 5 / 2 * 2; var euCode = Math.round(v.v / 6.67); var us = Math.round((v.v - 230) / 6.67 + 0.5); var uk = us - 1; return { out: 'EU ' + euCode, metrics: [{ t: '中国码', v: v.v + ' mm' }, { t: '欧洲码 EU', v: euCode }, { t: '美国码 US', v: us }, { t: '英国码 UK', v: uk }] }; } });
+
+tool({ id: 'cvt-cloth', n: '衣服尺码', c: 'convert', d: '国际女装 S/M/L 与中国码对照（胸围cm）',
+  f: [{ k: 'chest', t: '胸围 cm', type: 'number', v: 84 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var c = v.chest; var cn = c < 82 ? 'S(160/80A)' : c < 88 ? 'M(165/84A)' : c < 94 ? 'L(170/88A)' : c < 100 ? 'XL(175/92A)' : 'XXL(180/96A)'; return { out: cn, metrics: [{ t: '胸围', v: c + ' cm' }, { t: '建议', v: cn }] }; } });
+
+tool({ id: 'cvt-dpi', n: '像素与厘米', c: 'convert', d: '按 DPI 把像素换算成物理尺寸（厘米/英寸）',
+  f: [{ k: 'px', t: '像素', type: 'number', v: 300 }, { k: 'dpi', t: 'DPI', type: 'number', v: 96 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var inch = v.px / (v.dpi || 1); return { out: inch.toFixed(3) + ' 英寸', metrics: [{ t: '英寸', v: inch.toFixed(3) + '"' }, { t: '厘米', v: (inch * 2.54).toFixed(3) + ' cm' }, { t: '毫米', v: (inch * 25.4).toFixed(2) + ' mm' }] }; } });
+
+tool({ id: 'cvt-ftin', n: '英尺英寸转厘米', c: 'convert', d: '身高常用：英尺英寸 ↔ 厘米',
+  f: [{ k: 'ft', t: '英尺', type: 'number', v: 5 }, { k: 'inch', t: '英寸', type: 'number', v: 9 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var cm = (v.ft * 12 + v.inch) * 2.54; return { out: cm.toFixed(1) + ' cm', metrics: [{ t: '厘米', v: cm.toFixed(1) }, { t: '米', v: (cm / 100).toFixed(3) }, { t: '英尺英寸', v: v.ft + "'" + v.inch + '"' }] }; } });
+
+tool({ id: 'cvt-ring', n: '戒指尺寸', c: 'convert', d: '按内圈周长(中国号)换算直径与美码',
+  f: [{ k: 'cn', t: '中国号(周长mm)', type: 'number', v: 52 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var diam = v.cn / Math.PI; var us = (v.cn - 40.4) / 2.55; return { out: '直径 ' + diam.toFixed(2) + ' mm', metrics: [{ t: '周长', v: v.cn + ' mm' }, { t: '直径', v: diam.toFixed(2) + ' mm' }, { t: '美码 US', v: Math.max(0, us).toFixed(1) }] }; } });
+
+var RATE = { bps: { t: 'bps', f: 1 }, kbps: { t: 'kbps', f: 1000 }, mbps: { t: 'Mbps', f: 1e6 }, gbps: { t: 'Gbps', f: 1e9 } };
+tool({ id: 'cvt-bitrate', n: '数据速率换算', c: 'convert', d: 'bps/kbps/Mbps/Gbps 互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 100 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(RATE) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(RATE) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(RATE).forEach(function (k) { F[k] = RATE[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 100) / 100) + '' }; } });
+
+var FREQ = { hz: { t: '赫兹 Hz', f: 1 }, khz: { t: '千赫 kHz', f: 1000 }, mhz: { t: '兆赫 MHz', f: 1e6 }, ghz: { t: '吉赫 GHz', f: 1e9 } };
+tool({ id: 'cvt-freq', n: '频率换算', c: 'convert', d: 'Hz/kHz/MHz/GHz 互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 2.4 }, { k: 'from', t: '从', type: 'select', opts: Ch.opt(FREQ) }, { k: 'to', t: '到', type: 'select', opts: Ch.opt(FREQ) }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = {}; Object.keys(FREQ).forEach(function (k) { F[k] = FREQ[k].f; }); return { out: (Math.round(Ch.lin(v.v, v.from, v.to, F) * 1e6) / 1e6) + '' }; } });
+
+tool({ id: 'cvt-db', n: '分贝换算', c: 'convert', d: '功率比/电压比与分贝互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 10 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'db', t: '分贝 dB（功率）' }, { v: 'ratio', t: '功率比' }, { v: 'dbv', t: '分贝 dB（电压）' }, { v: 'vratio', t: '电压比' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
   run: function (v) {
     if (v.from === 'db') return { out: Math.pow(10, v.v / 10).toFixed(4) + ' 倍' };
     if (v.from === 'dbv') return { out: Math.pow(10, v.v / 20).toFixed(4) + ' 倍' };
     if (v.from === 'ratio') return { out: (10 * Math.log10(v.v)).toFixed(3) + ' dB' };
     return { out: (20 * Math.log10(v.v)).toFixed(3) + ' dB' };
-  } };
+  } });
+
+tool({ id: 'cvt-data-time', n: '下载时间估算', c: 'convert', d: '按文件大小和网速估算下载耗时',
+  f: [{ k: 'size', t: '文件大小', type: 'number', v: 1 }, { k: 'unit', t: '大小单位', type: 'select', opts: [{ v: 'MB', t: 'MB' }, { v: 'GB', t: 'GB' }] }, { k: 'speed', t: '网速 (Mbps)', type: 'number', v: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var bytes = v.size * (v.unit === 'GB' ? 1073741824 : 1048576); var bits = bytes * 8; var sec = bits / (v.speed * 1e6); var m = Math.floor(sec / 60), s = Math.round(sec % 60); return { out: m + ' 分 ' + s + ' 秒', metrics: [{ t: '约', v: sec.toFixed(1) + ' 秒' }] }; } });
+
+tool({ id: 'cvt-cup-vol', n: '烹饪量换算', c: 'convert', d: '杯/汤匙/茶匙与毫升互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 1 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'cup', t: '杯(美)' }, { v: 'tbsp', t: '汤匙 tbsp' }, { v: 'tsp', t: '茶匙 tsp' }, { v: 'ml', t: '毫升' }] }, { k: 'to', t: '到', type: 'select', opts: [{ v: 'cup', t: '杯' }, { v: 'tbsp', t: '汤匙' }, { v: 'tsp', t: '茶匙' }, { v: 'ml', t: '毫升' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var F = { cup: 236.588, tbsp: 14.787, tsp: 4.929, ml: 1 }; var ml = v.v * F[v.from]; return { out: (ml / F[v.to]).toFixed(3) + '' }; } });
+
+tool({ id: 'cvt-currency', n: '货币换算（参考）', c: 'convert', d: '按内置参考汇率换算，非实时，仅估算',
+  f: [{ k: 'v', t: '金额', type: 'number', v: 100 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'CNY', t: '人民币 CNY' }, { v: 'USD', t: '美元 USD' }, { v: 'EUR', t: '欧元 EUR' }, { v: 'JPY', t: '日元 JPY' }, { v: 'HKD', t: '港币 HKD' }, { v: 'GBP', t: '英镑 GBP' }] }, { k: 'to', t: '到', type: 'select', opts: [{ v: 'CNY', t: '人民币 CNY' }, { v: 'USD', t: '美元 USD' }, { v: 'EUR', t: '欧元 EUR' }, { v: 'JPY', t: '日元 JPY' }, { v: 'HKD', t: '港币 HKD' }, { v: 'GBP', t: '英镑 GBP' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, note: '参考汇率：1 USD≈7.2 CNY，1 EUR≈7.8，1 JPY≈0.048，1 HKD≈0.92，1 GBP≈9.1（非实时）' }],
+  run: function (v) { var R = { CNY: 1, USD: 7.2, EUR: 7.8, JPY: 0.048, HKD: 0.92, GBP: 9.1 }; var cny = v.v * R[v.from]; return { out: (cny / R[v.to]).toFixed(2) + ' ' + v.to }; } });
+
+tool({ id: 'cvt-bytes-read', n: '字节可读化', c: 'convert', d: '把字节数转成 KB/MB/GB 易读形式',
+  f: [{ k: 'b', t: '字节数', type: 'number', v: 1048576 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var b = v.b, r; if (b < 1024) r = b + ' B'; else if (b < 1048576) r = (b / 1024).toFixed(2) + ' KB'; else if (b < 1073741824) r = (b / 1048576).toFixed(2) + ' MB'; else r = (b / 1073741824).toFixed(2) + ' GB'; return { out: r, metrics: [{ t: 'B', v: b }, { t: 'KB', v: (b / 1024).toFixed(2) }, { t: 'MB', v: (b / 1048576).toFixed(3) }] }; } });
+
+tool({ id: 'cvt-brightness', n: '亮度换算', c: 'convert', d: '尼特 nit 与英尺朗伯 fL 互转',
+  f: [{ k: 'v', t: '数值', type: 'number', v: 300 }, { k: 'from', t: '从', type: 'select', opts: [{ v: 'nit', t: '尼特 nit' }, { v: 'fl', t: '英尺朗伯 fL' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = v.from === 'nit' ? v.v / 3.426 : v.v * 3.426; return { out: r.toFixed(2) + (v.from === 'nit' ? ' fL' : ' nit') }; } });
+
+tool({ id: 'cvt-ppi', n: '屏幕 PPI 计算', c: 'convert', d: '按分辨率和尺寸算屏幕像素密度 PPI',
+  f: [{ k: 'w', t: '宽像素', type: 'number', v: 1920 }, { k: 'h', t: '高像素', type: 'number', v: 1080 }, { k: 'inch', t: '对角线英寸', type: 'number', v: 23.8 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var ppi = Math.sqrt(v.w * v.w + v.h * v.h) / v.inch; return { out: ppi.toFixed(1) + ' PPI', metrics: [{ t: 'PPI', v: ppi.toFixed(1) }, { t: '清晰度', v: ppi > 200 ? '视网膜级' : ppi > 120 ? '清晰' : '普通' }] }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "cvt-db"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: cvt-db'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

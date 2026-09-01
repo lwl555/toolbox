@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 缺失填充 - 超有用的工具箱</title>
+<meta name="description" content="把空/NaN 位置用均值填充（逗号分隔）。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI数据</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 缺失填充</h1>
+<p class="lede">把空/NaN 位置用均值填充（逗号分隔）。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-stat.html"><div class="card-t"><span class="card-name">AI 描述统计</span></div><div class="card-desc">均值/中位/众数/方差/标准差/极值/分位。</div></a><a class="card" href="ai-outlier.html"><div class="card-t"><span class="card-name">AI 异常检测</span></div><div class="card-desc">Z-Score 法标记离群值（|z|>阈值）。</div></a><a class="card" href="ai-corr.html"><div class="card-t"><span class="card-name">AI 相关性</span></div><div class="card-desc">皮尔逊相关系数（-1~1）。</div></a><a class="card" href="ai-linreg.html"><div class="card-t"><span class="card-name">AI 线性回归</span></div><div class="card-desc">拟合 y=kx+b 并预测。</div></a><a class="card" href="ai-minmax.html"><div class="card-t"><span class="card-name">AI 归一化</span></div><div class="card-desc">Min-Max 缩放到 0~1 或指定区间。</div></a><a class="card" href="ai-zscore.html"><div class="card-t"><span class="card-name">AI Z-Score</span></div><div class="card-desc">标准化为均值0、标准差1。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 缺失填充<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   23-ai-data.js — AI 数据（统计/机器学习，离线真实算法）
+   ============================================================ */
+function nums(s) { return (s || '').split(/[\s,;，；]+/).map(function (x) { var n = parseFloat(x); return isNaN(n) ? null : n; }).filter(function (x) { return x !== null; }); }
+function mean(a) { return a.reduce(function (x, y) { return x + y; }, 0) / (a.length || 1); }
+function std(a) { var m = mean(a); return Math.sqrt(mean(a.map(function (x) { return (x - m) * (x - m); }))); }
+function median(a) { var b = a.slice().sort(function (x, y) { return x - y; }); var n = b.length; return n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2; }
+function mode(a) { var m = {}, best = null, bc = -1; a.forEach(function (x) { m[x] = (m[x] || 0) + 1; if (m[x] > bc) { bc = m[x]; best = x; } }); return best; }
+function pearson(x, y) { var n = Math.min(x.length, y.length); if (n < 2) return 0; var mx = mean(x.slice(0, n)), my = mean(y.slice(0, n)), sxy = 0, sx = 0, sy = 0; for (var i = 0; i < n; i++) { sxy += (x[i] - mx) * (y[i] - my); sx += (x[i] - mx) * (x[i] - mx); sy += (y[i] - my) * (y[i] - my); } return sxy / (Math.sqrt(sx * sy) || 1); }
+function linreg(x, y) { var n = Math.min(x.length, y.length); if (n < 2) return null; var mx = mean(x.slice(0, n)), my = mean(y.slice(0, n)), num = 0, den = 0; for (var i = 0; i < n; i++) { num += (x[i] - mx) * (y[i] - my); den += (x[i] - mx) * (x[i] - mx); } var k = den ? num / den : 0; return { k: k, b: my - k * mx }; }
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 描述统计 */
+tool({ id: 'ai-stat', n: 'AI 描述统计', c: 'ai-data', d: '均值/中位/众数/方差/标准差/极值/分位。',
+  f: [{ k: 'data', t: '数据(逗号/换行分隔)', type: 'textarea' }, { k: 'out', t: '统计', type: 'out' }, { k: 'outhtml', t: '指标', type: 'outhtml' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '至少输入 2 个数值' };
+    var m = mean(a), sd = std(a);
+    return { out: '均值 ' + m.toFixed(2) + ' · 中位 ' + median(a) + ' · 标准差 ' + sd.toFixed(2),
+      outhtml: '<p>样本 ' + a.length + ' · 均值 <b>' + m.toFixed(2) + '</b> · 中位数 ' + median(a) + ' · 众数 ' + mode(a) + '<br>标准差 ' + sd.toFixed(2) + ' · 方差 ' + (sd * sd).toFixed(2) + ' · 最小 ' + Math.min.apply(null, a) + ' · 最大 ' + Math.max.apply(null, a) + '<br>Q1 ' + median(a.slice(0, Math.floor(a.length / 2))) + ' · Q3 ' + median(a.slice(Math.ceil(a.length / 2))) + '</p>' };
+  } });
+
+/* 2 异常检测 */
+tool({ id: 'ai-outlier', n: 'AI 异常检测', c: 'ai-data', d: 'Z-Score 法标记离群值（|z|>阈值）。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'th', t: 'Z阈值', type: 'number', v: 2 }, { k: 'out', t: '异常值', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 3) return { out: '样本过少' };
+    var m = mean(a), sd = std(a), th = v.th || 2, out = [];
+    a.forEach(function (x) { if (sd && Math.abs((x - m) / sd) > th) out.push(x); });
+    return { out: out.length ? '异常值：' + out.join(', ') : '未发现明显异常（|z|>=' + th + '）' };
+  } });
+
+/* 3 相关性 */
+tool({ id: 'ai-corr', n: 'AI 相关性', c: 'ai-data', d: '皮尔逊相关系数（-1~1）。',
+  f: [{ k: 'a', t: '序列A', type: 'textarea' }, { k: 'b', t: '序列B', type: 'textarea' }, { k: 'out', t: '相关系数', type: 'out' }],
+  run: function (v) {
+    var x = nums(v.a || ''), y = nums(v.b || ''); if (x.length < 2) return { out: '序列太短' };
+    var r = pearson(x, y);
+    return { out: 'r = ' + r.toFixed(3) + '（' + (Math.abs(r) > 0.7 ? '强' : Math.abs(r) > 0.4 ? '中' : '弱') + (r > 0 ? '正' : '负') + '相关）' };
+  } });
+
+/* 4 线性回归 */
+tool({ id: 'ai-linreg', n: 'AI 线性回归', c: 'ai-data', d: '拟合 y=kx+b 并预测。',
+  f: [{ k: 'x', t: 'X序列', type: 'textarea' }, { k: 'y', t: 'Y序列', type: 'textarea' }, { k: 'px', t: '预测X', type: 'number', v: 0 }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var x = nums(v.x || ''), y = nums(v.y || ''); var r = linreg(x, y); if (!r) return { out: '数据不足' };
+    return { out: 'y = ' + r.k.toFixed(3) + 'x + ' + r.b.toFixed(3) + '\nX=' + (v.px || 0) + ' 时预测 Y = ' + (r.k * (v.px || 0) + r.b).toFixed(2) };
+  } });
+
+/* 5 归一化 */
+tool({ id: 'ai-minmax', n: 'AI 归一化', c: 'ai-data', d: 'Min-Max 缩放到 0~1 或指定区间。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'lo', t: '下限', type: 'number', v: 0 }, { k: 'hi', t: '上限', type: 'number', v: 1 }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (!a.length) return { out: '空' };
+    var mn = Math.min.apply(null, a), mx = Math.max.apply(null, a), lo = v.lo || 0, hi = v.hi || 1;
+    return { out: a.map(function (x) { return mx === mn ? lo : (lo + (x - mn) / (mx - mn) * (hi - lo)).toFixed(3); }).join(', ') };
+  } });
+
+/* 6 标准化 */
+tool({ id: 'ai-zscore', n: 'AI Z-Score', c: 'ai-data', d: '标准化为均值0、标准差1。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: 'Z值', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '样本过少' };
+    var m = mean(a), sd = std(a);
+    return { out: a.map(function (x) { return (sd ? ((x - m) / sd).toFixed(3) : 0); }).join(', ') };
+  } });
+
+/* 7 频次分布 */
+tool({ id: 'ai-hist', n: 'AI 频次分布', c: 'ai-data', d: '输出各取值出现次数（直方图数据）。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: '分布', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); var m = {}; a.forEach(function (x) { var k = x.toFixed(1); m[k] = (m[k] || 0) + 1; });
+    return { out: Object.keys(m).sort(function (p, q) { return p - q; }).map(function (k) { return k + ': ' + m[k]; }).join('\n') };
+  } });
+
+/* 8 分箱 */
+tool({ id: 'ai-bin', n: 'AI 数据分箱', c: 'ai-data', d: '等宽分箱为 N 个区间并统计计数。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'n', t: '箱数', type: 'number', v: 5 }, { k: 'out', t: '分箱', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (!a.length) return { out: '空' };
+    var mn = Math.min.apply(null, a), mx = Math.max.apply(null, a), k = v.n || 5, w = (mx - mn) / k, cnt = new Array(k).fill(0);
+    a.forEach(function (x) { var i = Math.min(k - 1, Math.floor((x - mn) / w)); cnt[i]++; });
+    var out = []; for (var i = 0; i < k; i++) out.push('[' + (mn + i * w).toFixed(1) + ',' + (mn + (i + 1) * w).toFixed(1) + ') : ' + cnt[i]);
+    return { out: out.join('\n') };
+  } });
+
+/* 9 缺失值填充 */
+tool({ id: 'ai-fillna', n: 'AI 缺失填充', c: 'ai-data', d: '把空/NaN 位置用均值填充（逗号分隔）。',
+  f: [{ k: 'data', t: '数据(空位留空)', type: 'textarea' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var raw = (v.data || '').split(',').map(function (x) { return x.trim(); });
+    var valid = raw.filter(function (x) { return x !== '' && !isNaN(parseFloat(x)); }).map(Number);
+    var m = mean(valid);
+    return { out: raw.map(function (x) { return (x === '' || isNaN(parseFloat(x))) ? m.toFixed(2) : x; }).join(', ') };
+  } });
+
+/* 10 移动平均 */
+tool({ id: 'ai-ma', n: 'AI 移动平均', c: 'ai-data', d: '时序平滑（窗口 N）。',
+  f: [{ k: 'data', t: '序列', type: 'textarea' }, { k: 'w', t: '窗口', type: 'number', v: 3 }, { k: 'out', t: '平滑后', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); var w = Math.max(2, v.w || 3), out = [];
+    for (var i = 0; i < a.length; i++) { var s = a.slice(Math.max(0, i - w + 1), i + 1); out.push(mean(s).toFixed(2)); }
+    return { out: out.join(', ') };
+  } });
+
+/* 11 增长率 */
+tool({ id: 'ai-growth', n: 'AI 增长率', c: 'ai-data', d: '计算环比/同比增长率序列。',
+  f: [{ k: 'data', t: '时序数据', type: 'textarea' }, { k: 'out', t: '增长率%', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '至少 2 个' };
+    var out = a.map(function (x, i) { return i === 0 ? '—' : ((a[i - 1] ? (x - a[i - 1]) / a[i - 1] * 100 : 0).toFixed(1) + '%'); });
+    return { out: '环比：' + out.join(', ') };
+  } });
+
+/* 12 累计求和 */
+tool({ id: 'ai-cum', n: 'AI 累计求和', c: 'ai-data', d: '输出累计值序列。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: '累计', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); var s = 0;
+    return { out: a.map(function (x) { s += x; return s.toFixed(2); }).join(', ') };
+  } });
+
+/* 13 趋势判断 */
+tool({ id: 'ai-trend', n: 'AI 趋势判断', c: 'ai-data', d: '线性回归斜率判断上升/下降。',
+  f: [{ k: 'data', t: '时序', type: 'textarea' }, { k: 'out', t: '趋势', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 3) return { out: '样本过少' };
+    var x = a.map(function (_, i) { return i; }), r = linreg(x, a);
+    return { out: r.k > 0 ? '上升趋势（斜率 ' + r.k.toFixed(3) + '）' : r.k < 0 ? '下降趋势（斜率 ' + r.k.toFixed(3) + '）' : '持平' };
+  } });
+
+/* 14 聚类(KNN简易) */
+tool({ id: 'ai-knn', n: 'AI KNN 分类', c: 'ai-data', d: '最近邻分类（1维特征）。',
+  f: [{ k: 'train', t: '训练(值:类别,每行一条)', type: 'textarea' }, { k: 'x', t: '待测值', type: 'number', v: 0 }, { k: 'out', t: '预测类别', type: 'out' }],
+  run: function (v) {
+    var rows = (v.train || '').split('\n').map(function (l) { var p = l.split(':'); return p.length === 2 ? [parseFloat(p[0]), p[1].trim()] : null; }).filter(Boolean);
+    if (rows.length < 2) return { out: '训练样本至少 2 条' };
+    var x = v.x || 0, best = null, bd = 1e9;
+    rows.forEach(function (r) { var d = Math.abs(r[0] - x); if (d < bd) { bd = d; best = r[1]; } });
+    return { out: '预测类别：' + best + '（最近邻距离 ' + bd.toFixed(2) + '）' };
+  } });
+
+/* 15 偏度/峰度 */
+tool({ id: 'ai-skew', n: 'AI 偏度峰度', c: 'ai-data', d: '估计分布偏态与峰态。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 3) return { out: '样本过少' };
+    var m = mean(a), sd = std(a), sk = 0, ku = 0;
+    a.forEach(function (x) { var z = (x - m) / (sd || 1); sk += z * z * z; ku += z * z * z * z; });
+    sk /= a.length; ku = ku / a.length - 3;
+    return { out: '偏度 ' + sk.toFixed(2) + '（' + (sk > 0.5 ? '右偏' : sk < -0.5 ? '左偏' : '近似对称') + '） · 峰度 ' + ku.toFixed(2) };
+  } });
+
+/* 16 分位数 */
+tool({ id: 'ai-quantile', n: 'AI 分位数', c: 'ai-data', d: '输出 P10/P25/P50/P75/P90。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: '分位数', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '样本过少' };
+    var b = a.slice().sort(function (x, y) { return x - y; });
+    function q(p) { var i = (b.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return (b[lo] + (b[hi] - b[lo]) * (i - lo)).toFixed(2); }
+    return { out: 'P10 ' + q(0.1) + ' · P25 ' + q(0.25) + ' · P50 ' + q(0.5) + ' · P75 ' + q(0.75) + ' · P90 ' + q(0.9) };
+  } });
+
+/* 17 数据去重 */
+tool({ id: 'ai-uniq', n: 'AI 数据去重', c: 'ai-data', d: '保留首次出现，去除重复值。',
+  f: [{ k: 'data', t: '数据(逗号/换行)', type: 'textarea' }, { k: 'out', t: '去重后', type: 'out' }],
+  run: function (v) {
+    var arr = (v.data || '').split(/[\s,，；;]+/).filter(Boolean), seen = {}, out = [];
+    arr.forEach(function (x) { if (!seen[x]) { seen[x] = 1; out.push(x); } });
+    return { out: out.join(', ') + '\n（原 ' + arr.length + ' → 去重 ' + out.length + '）' };
+  } });
+
+/* 18 相关系数矩阵 */
+tool({ id: 'ai-cormat', n: 'AI 相关矩阵', c: 'ai-data', d: '多序列两两相关性。',
+  f: [{ k: 'data', t: '多序列(每行一个,逗号分隔)', type: 'textarea' }, { k: 'out', t: '矩阵', type: 'out' }],
+  run: function (v) {
+    var seqs = (v.data || '').split('\n').map(function (l) { return nums(l); }).filter(function (a) { return a.length > 1; });
+    if (seqs.length < 2) return { out: '至少 2 个序列' };
+    var out = []; for (var i = 0; i < seqs.length; i++) { var row = []; for (var j = 0; j < seqs.length; j++) row.push((i === j ? 1 : pearson(seqs[i], seqs[j])).toFixed(2)); out.push('S' + (i + 1) + ': ' + row.join('  ')); }
+    return { out: out.join('\n') };
+  } });
+
+/* 19 自动报告 */
+tool({ id: 'ai-report', n: 'AI 数据报告', c: 'ai-data', d: '一键生成数据画像文本。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: '报告', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '样本过少' };
+    var m = mean(a), sd = std(a);
+    return { out: '数据画像：共 ' + a.length + ' 条。均值 ' + m.toFixed(2) + '，标准差 ' + sd.toFixed(2) + '，中位数 ' + median(a) + '。分布' + (sd / (m || 1) > 0.5 ? '离散度较大' : '较集中') + '，' + (a[a.length - 1] - a[0] > 3 * sd ? '存在离群值' : '无明显离群') + '。' };
+  } });
+
+/* 20 百分位排名 */
+tool({ id: 'ai-pctrank', n: 'AI 百分位排名', c: 'ai-data', d: '给出某值在分布中的百分位。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'x', t: '查询值', type: 'number', v: 0 }, { k: 'out', t: '百分位', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (!a.length) return { out: '空' };
+    var below = a.filter(function (y) { return y <= (v.x || 0); }).length;
+    return { out: (v.x || 0) + ' 超过 ' + Math.round(below / a.length * 100) + '% 的数据' };
+  } });
+
+/* 21 极差/变异系数 */
+tool({ id: 'ai-cv', n: 'AI 变异系数', c: 'ai-data', d: '极差与 CV（标准差/均值）。',
+  f: [{ k: 'data', t: '数据', type: 'textarea' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '样本过少' };
+    var m = mean(a), sd = std(a);
+    return { out: '极差 ' + (Math.max.apply(null, a) - Math.min.apply(null, a)).toFixed(2) + ' · 变异系数 CV ' + (m ? (sd / m * 100).toFixed(1) : 0) + '%' };
+  } });
+
+/* 22 简单预测(指数平滑) */
+tool({ id: 'ai-forecast', n: 'AI 指数平滑预测', c: 'ai-data', d: '一次指数平滑预测下一期。',
+  f: [{ k: 'data', t: '时序', type: 'textarea' }, { k: 'a', t: '平滑系数α', type: 'number', v: 0.3 }, { k: 'out', t: '预测', type: 'out' }],
+  run: function (v) {
+    var a = nums(v.data || ''); if (a.length < 2) return { out: '样本过少' };
+    var al = Math.min(1, Math.max(0.05, v.a || 0.3)), s = a[0];
+    for (var i = 1; i < a.length; i++) s = al * a[i] + (1 - al) * s;
+    return { out: '下一期预测值：' + s.toFixed(2) + '（α=' + al + '）' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-fillna"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-fillna'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-fillna")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-fillna");
+if(i>=0)f.splice(i,1);else f.push("ai-fillna");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-fillna"});u.unshift("ai-fillna");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

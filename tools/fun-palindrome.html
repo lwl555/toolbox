@@ -38,14 +38,86 @@ Fn.riddle = [['白天不见，夜里出来，照亮别人，自己黑暗。', '�
 Fn.brain = [['什么越洗越脏？', '水'], ['什么东西天气越热它爬得越高？', '温度计'], ['小明的爸爸有三个儿子，大儿子叫大毛，二儿子叫二毛，三儿子叫什么？', '小明'], ['什么东西越生气它越大？', '脾气'], ['什么东西不能吃？', '亏'], ['一个盒子有几个边？', '里边和外边，两个边']];
 Fn.love = ['我想去你的心里逛逛。', '你今天有点怪，怪好看的。', '近朱者赤，近你者甜。', '我也想喝一口你藏的温柔。', '你是我的北方，我是你的南方，我们刚好拼成完整的方向。', '我的被子太轻了，需要你压一压。'];
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "fun-palindrome", n: "回文检测", c: "fun", d: "判断一句话正反读是否一样",
-  custom: null,
-  fields: [{"k":"in","t":"文字","type":"text","v":"上海自来水来自海上"},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) { var s = (v.in || '').replace(/[\s\p{P}]/gu, ''); var r = s === s.split('').reverse().join(''); return { out: r ? '✓ 是回文（正反一样）' : '✗ 不是回文', metrics: [{ t: '去标点后', v: s }, { t: '反转', v: s.split('').reverse().join('') }] }; } };
+tool({ id: 'fun-wc', n: '朋友圈文案', c: 'fun', d: '随机生成一条发圈文案',
+  f: [{ k: 'out', t: '文案', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Fn.wc[Math.floor(Math.random() * Fn.wc.length)] }; } });
+
+tool({ id: 'fun-joke', n: '冷笑话', c: 'fun', d: '随机一条冷笑话',
+  f: [{ k: 'out', t: '笑话', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Fn.joke[Math.floor(Math.random() * Fn.joke.length)] }; } });
+
+tool({ id: 'fun-tongue', n: '绕口令', c: 'fun', d: '随机一条绕口令练嘴皮',
+  f: [{ k: 'out', t: '绕口令', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Fn.tongue[Math.floor(Math.random() * Fn.tongue.length)] }; } });
+
+tool({ id: 'fun-bless', n: '祝福语生成', c: 'fun', d: '按场景生成祝福语',
+  f: [{ k: 'cat', t: '场景', type: 'select', opts: [{ v: 'birthday', t: '生日' }, { v: 'newyear', t: '新年' }, { v: 'love', t: '表白' }, { v: 'general', t: '通用' }] }, { k: 'out', t: '祝福', type: 'out', dl: 1 }], auto: false, run: function (v) { var a = Fn.bless[v.cat]; return { out: a[Math.floor(Math.random() * a.length)] }; } });
+
+tool({ id: 'fun-emoticon', n: '颜文字', c: 'fun', d: '随机一个可爱颜文字',
+  f: [{ k: 'out', t: '颜文字', type: 'out', dl: 1, metrics: 1 }], auto: false, run: function (v) { var e = Fn.emoticon[Math.floor(Math.random() * Fn.emoticon.length)]; return { out: e, metrics: [{ t: '复制', v: e }] }; } });
+
+tool({ id: 'fun-riddle', n: '猜谜语', c: 'fun', d: '出题+点开看答案',
+  f: [{ k: 'cv', t: '谜语', type: 'custom', html: '<div id="rdQ" style="font-size:16px;font-weight:600;min-height:48px;display:flex;align-items:center">点击出题</div><button id="rdNext" class="btn btn-sec" style="margin-top:8px">换一题</button> <button id="rdAns" class="btn btn-pri" style="margin-top:8px">看答案</button><div id="rdA" style="margin-top:8px;color:var(--accent);font-weight:600"></div>' }],
+  run: function () {}, init: function () { var q = document.getElementById('rdQ'), next = document.getElementById('rdNext'), ans = document.getElementById('rdAns'), a = document.getElementById('rdA'); var cur = null; function draw() { cur = Fn.riddle[Math.floor(Math.random() * Fn.riddle.length)]; q.textContent = cur[0]; a.textContent = ''; } next.onclick = draw; ans.onclick = function () { a.textContent = cur ? '答案：' + cur[1] : ''; }; draw(); } });
+
+tool({ id: 'fun-brain', n: '脑筋急转弯', c: 'fun', d: '出题+点开看答案',
+  f: [{ k: 'cv', t: '急转弯', type: 'custom', html: '<div id="brQ" style="font-size:16px;font-weight:600;min-height:48px;display:flex;align-items:center">点击出题</div><button id="brNext" class="btn btn-sec" style="margin-top:8px">换一题</button> <button id="brAns" class="btn btn-pri" style="margin-top:8px">看答案</button><div id="brA" style="margin-top:8px;color:var(--accent);font-weight:600"></div>' }],
+  run: function () {}, init: function () { var q = document.getElementById('brQ'), next = document.getElementById('brNext'), ans = document.getElementById('brAns'), a = document.getElementById('brA'); var cur = null; function draw() { cur = Fn.brain[Math.floor(Math.random() * Fn.brain.length)]; q.textContent = cur[0]; a.textContent = ''; } next.onclick = draw; ans.onclick = function () { a.textContent = cur ? '答案：' + cur[1] : ''; }; draw(); } });
+
+tool({ id: 'fun-love', n: '土味情话', c: 'fun', d: '随机一句土味情话',
+  f: [{ k: 'out', t: '情话', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Fn.love[Math.floor(Math.random() * Fn.love.length)] }; } });
+
+tool({ id: 'fun-guess', n: '猜数字', c: 'fun', d: '1-100 猜数字小游戏',
+  f: [{ k: 'cv', t: '游戏', type: 'custom', html: '<div style="display:flex;gap:6px;margin-bottom:8px"><input id="gIn" class="ipt" type="number" placeholder="1-100" style="flex:1"><button id="gGo" class="btn btn-pri">猜</button><button id="gNew" class="btn btn-sec">新局</button></div><div id="gMsg" style="font-size:14px;min-height:24px"></div>' }],
+  run: function () {}, init: function (RT) { var inp = document.getElementById('gIn'), go = document.getElementById('gGo'), nw = document.getElementById('gNew'), msg = document.getElementById('gMsg'); var secret = Math.floor(Math.random() * 100) + 1; go.onclick = function () { var g = parseInt(inp.value); if (isNaN(g)) return; if (g === secret) { msg.textContent = '🎉 猜对了！'; } else if (g < secret) { msg.textContent = '大一点 ↑'; } else { msg.textContent = '小一点 ↓'; } }; nw.onclick = function () { secret = Math.floor(Math.random() * 100) + 1; inp.value = ''; msg.textContent = '新数字已生成'; }; } });
+
+tool({ id: 'fun-tictoe', n: '井字棋', c: 'fun', d: '和电脑对战的井字棋',
+  f: [{ k: 'cv', t: '棋盘', type: 'custom', html: '<div id="ttBoard" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:180px;margin:0 auto"></div><div id="ttMsg" style="text-align:center;margin-top:10px;font-size:14px"></div><button id="ttNew" class="btn btn-sec" style="display:block;margin:10px auto 0">重开</button>' }],
+  run: function () {}, init: function (RT) {
+    var board = document.getElementById('ttBoard'), msg = document.getElementById('ttMsg'), nw = document.getElementById('ttNew'); var cells = [], st = Array(9).fill('');
+    for (var i = 0; i < 9; i++) { var c = document.createElement('div'); c.style.cssText = 'aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;border:1px solid var(--ink-2);border-radius:10px;cursor:pointer;background:var(--ink-0)'; c.dataset.i = i; board.appendChild(c); cells.push(c); }
+    function win(b) { var L = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]]; for (var k = 0; k < L.length; k++) { var [a, b, c] = L[k]; if (b[a] && b[a] === b[b] && b[a] === b[c]) return b[a]; } return null; }
+    function render() { cells.forEach(function (c, i) { c.textContent = st[i]; }); }
+    function over() { var w = win(st); if (w) { msg.textContent = w === 'X' ? '你赢了！🎉' : '电脑赢了'; return true; } if (st.every(function (x) { return x; })) { msg.textContent = '平局'; return true; } return false; }
+    function ai() { var empty = []; st.forEach(function (x, i) { if (!x) empty.push(i); }); var m = empty[Math.floor(Math.random() * empty.length)]; st[m] = 'O'; render(); if (!over()) msg.textContent = '轮到你'; }
+    cells.forEach(function (c) { c.onclick = function () { var i = +c.dataset.i; if (st[i] || over()) return; st[i] = 'X'; render(); if (!over()) { msg.textContent = '电脑思考…'; setTimeout(ai, 300); } }; });
+    nw.onclick = function () { st = Array(9).fill(''); render(); msg.textContent = '你先走（X）'; };
+    render(); msg.textContent = '你先走（X）';
+  } });
+
+tool({ id: 'fun-art', n: '艺术字', c: 'fun', d: '把文字渲染成多种 CSS 艺术效果',
+  f: [{ k: 'in', t: '文字', type: 'text', v: '你好' }, { k: 'out', t: '预览', type: 'outhtml' }],
+  run: function (v) { var s = RT.esc(v.in || '文字'); return { out: '<div style="display:grid;gap:14px;font-size:28px;font-weight:700;text-align:center;padding:10px">' +
+    '<div style="text-shadow:2px 2px 0 #ec4899,-2px -2px 0 #6366f1">' + s + '</div>' +
+    '<div style="background:linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f);-webkit-background-clip:text;background-clip:text;color:transparent">' + s + '</div>' +
+    '<div style="-webkit-text-stroke:1px #333;color:transparent">' + s + '</div>' +
+    '<div style="letter-spacing:6px">' + s + '</div>' +
+    '<div style="text-shadow:0 0 8px #ff0;color:#ff0">' + s + '</div>' +
+    '</div>' }; } });
+
+tool({ id: 'fun-mirror', n: '文字镜像', c: 'fun', d: '把文字反转并镜像显示（CSS）',
+  f: [{ k: 'in', t: '文字', type: 'text', v: 'HELLO' }, { k: 'out', t: '预览', type: 'outhtml' }],
+  run: function (v) { var rev = (v.in || '').split('').reverse().join(''); return { out: '<div style="display:flex;gap:30px;justify-content:center;font-size:30px;font-weight:700;padding:16px"><div>' + RT.esc(v.in || '') + '</div><div style="transform:scaleX(-1);color:var(--accent)">' + RT.esc(v.in || '') + '</div></div><div style="text-align:center;color:var(--ink-3);font-size:13px">反转：' + RT.esc(rev) + '</div>' }; } });
+
+tool({ id: 'fun-palindrome', n: '回文检测', c: 'fun', d: '判断一句话正反读是否一样',
+  f: [{ k: 'in', t: '文字', type: 'text', v: '上海自来水来自海上' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = (v.in || '').replace(/[\s\p{P}]/gu, ''); var r = s === s.split('').reverse().join(''); return { out: r ? '✓ 是回文（正反一样）' : '✗ 不是回文', metrics: [{ t: '去标点后', v: s }, { t: '反转', v: s.split('').reverse().join('') }] }; } });
+
+tool({ id: 'fun-emoji-mix', n: 'Emoji 组合', c: 'fun', d: '随机组合几个 emoji 当表情',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 3, min: 1, max: 6 }, { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }], auto: false,
+  run: function (v) { var pool = '🎉🔥💡🌟🌈🍰🐱🌸⚡🍀🌊🎈💎🍓🌻🚀🌙⭐🍑🌿'; var r = ''; for (var i = 0; i < v.n; i++) r += pool[Math.floor(Math.random() * pool.length)]; return { out: r, metrics: [{ t: '组合', v: r }] }; } });
+
+tool({ id: 'fun-abbr', n: '英文缩写查询', c: 'fun', d: '查常见英文缩写含义',
+  f: [{ k: 'in', t: '缩写', type: 'text', v: 'LOL' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var M = { lol: 'Laugh Out Loud 大笑', brb: 'Be Right Back 马上回来', btw: 'By The Way 顺便说', imo: 'In My Opinion 我认为', diy: 'Do It Yourself 自己动手', fyi: 'For Your Information 供参考', asap: 'As Soon As Possible 尽快', idk: 'I Don\'t Know 不知道', tbh: 'To Be Honest 说实话', omg: 'Oh My God 天哪', tbd: 'To Be Determined 待定', eta: 'Estimated Time of Arrival 预计到达', faq: 'Frequently Asked Questions 常见问题', vip: 'Very Important Person 贵宾', ceo: 'Chief Executive Officer 首席执行官', api: 'Application Programming Interface 接口', url: 'Uniform Resource Locator 网址', pdf: 'Portable Document Format', gif: 'Graphics Interchange Format', cpu: 'Central Processing Unit 处理器', ram: 'Random Access Memory 内存', ui: 'User Interface 界面', ux: 'User Experience 体验' }; var k = (v.in || '').trim().toLowerCase(); return { out: M[k] || '未收录，试试 LOL/BTW/DIY/API 等' }; } });
+
+tool({ id: 'fun-typing', n: '打字测速', c: 'fun', d: '给定一段文字测打字速度',
+  f: [{ k: 'cv', t: '测试', type: 'custom', html: '<div id="tpText" style="font-size:14px;line-height:1.8;margin-bottom:8px">生活就像海洋，只有意志坚强的人才能到达彼岸。</div><textarea id="tpIn" class="ta" rows="3" placeholder="在上面文字框里照着打…"></textarea><div id="tpMsg" style="font-size:13px;margin-top:8px;color:var(--ink-3)"></div>' }],
+  run: function () {}, init: function () { var txt = document.getElementById('tpText'), inp = document.getElementById('tpIn'), msg = document.getElementById('tpMsg'); var start = null; txt.dataset.t = txt.textContent; inp.oninput = function () { if (!start) start = Date.now(); if (inp.value === txt.dataset.t) { var sec = (Date.now() - start) / 1000; var cpm = Math.round(txt.dataset.t.length / sec * 60); msg.textContent = '✓ 完成！用时 ' + sec.toFixed(1) + ' 秒，速度约 ' + cpm + ' 字/分'; } }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "fun-palindrome"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: fun-palindrome'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

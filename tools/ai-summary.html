@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 文本摘要 - 超有用的工具箱</title>
+<meta name="description" content="抽取式摘要：按词频与位置权重挑重点句，离线生成。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI文本</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 文本摘要</h1>
+<p class="lede">抽取式摘要：按词频与位置权重挑重点句，离线生成。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-keywords.html"><div class="card-t"><span class="card-name">AI 关键词提取</span></div><div class="card-desc">按词频统计提取高频关键词（去停用词）。</div></a><a class="card" href="ai-sentiment.html"><div class="card-t"><span class="card-name">AI 情感分析</span></div><div class="card-desc">基于正负面词典统计情感倾向与强度。</div></a><a class="card" href="ai-sim.html"><div class="card-t"><span class="card-name">AI 文本相似度</span></div><div class="card-desc">余弦相似度（词频向量），0~1 越高越像。</div></a><a class="card" href="ai-ner.html"><div class="card-t"><span class="card-name">AI 命名实体提取</span></div><div class="card-desc">正则抽取邮箱/电话/网址/金额/日期/身份证等。</div></a><a class="card" href="ai-classify.html"><div class="card-t"><span class="card-name">AI 文本分类</span></div><div class="card-desc">关键词规则判断：新闻/技术/营销/学术/聊天。</div></a><a class="card" href="ai-readable.html"><div class="card-t"><span class="card-name">AI 可读性评分</span></div><div class="card-desc">按平均句长/词长估算阅读难度（0-100）。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 文本摘要<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   20-ai-text.js — AI 文本智能（本地 NLP 真实算法，离线零依赖）
+   ============================================================ */
+var STOP = '的 了 和 是 在 我 有 就 不 人 都 一 一个 上 也 很 到 说 要 去 你 会 着 没有 看 好 自己 这 那 与 及 或 但 而 因为 所以 如果 我们 他们 它们 什么 怎么 这个 那个 这样 那样 可以 应该 已经 还是 就是 一些 这些 那些 一种 时候 知道 现在 通过 对于 以及 并且 然后 但是 一种 进行 成为 由于 从而 以及 比如 例如 同时 另外 总之 其实 不过 只是 虽然 但是 或者 然后 之后 之前 其中 以及 一种 各个 各种 不少 多 少 大 小 新 老 高 低 长 短 前 后 里 外 内 中 下 上 左 右 点 些 个 条 件 位 名 次 回 遍 段 部 本 张 把 只 头 口 面 边 处 间 项 类 型'.split(/\s+/);
+
+function seg(s) {
+  s = (s || '').replace(/\s+/g, '');
+  var out = [], re = /[a-zA-Z0-9]+|[一-龥]/g, m;
+  while ((m = re.exec(s))) out.push(m[0]);
+  return out;
+}
+function freq(words) {
+  var m = {};
+  words.forEach(function (w) {
+    if (STOP.indexOf(w) >= 0) return;
+    if (w.length < 2 && /[一-龥]/.test(w)) return;
+    m[w] = (m[w] || 0) + 1;
+  });
+  return m;
+}
+function sents(s) {
+  var parts = (s || '').split(/([。！？!?；;])/), out = [], i;
+  for (i = 0; i < parts.length; i += 2) {
+    var x = (parts[i] || '') + (parts[i + 1] || '');
+    x = x.trim();
+    if (x) out.push(x);
+  }
+  return out;
+}
+function summarize(text, ratio) {
+  var ss = sents(text);
+  if (ss.length <= 1) return text || '';
+  var fr = freq(seg(text));
+  var scores = ss.map(function (s, i) {
+    var w = seg(s).filter(function (x) { return fr[x]; });
+    var sc = 0;
+    w.forEach(function (x) { sc += fr[x] || 0; });
+    sc = sc / (w.length || 1);
+    sc *= (1 - Math.abs(i / ss.length - 0.3));
+    if (s.length > 12 && s.length < 70) sc *= 1.25;
+    return sc;
+  });
+  var n = Math.max(1, Math.round(ss.length * (ratio || 0.3)));
+  var idx = scores.map(function (s, i) { return [i, s]; }).sort(function (a, b) { return b[1] - a[1]; })
+    .slice(0, n).map(function (x) { return x[0]; }).sort(function (a, b) { return a - b; });
+  return idx.map(function (i) { return ss[i]; }).join(' ');
+}
+var POS = '好 喜欢 爱 优秀 美丽 棒 赞 开心 高兴 快乐 成功 胜利 完美 惊喜 温暖 感动 希望 幸福 顺利 健康 强大 便宜 划算 推荐 值得 惊喜 优秀 棒 良 优 美 妙 赞 甜 香 稳 快 智能 方便 实用 清晰 漂亮 可爱 友好 热情 专业 靠谱 安心 满意 惊喜'.split(/\s+/);
+var NEG = '差 坏 讨厌 丑 烂 坑 贵 难 痛苦 失败 失望 生气 愤怒 担心 害怕 焦虑 恶心 麻烦 虚假 骗 垃圾 崩溃 错误 问题 危机 风险 亏损 落后 低劣 笨 慢 卡 乱 脏 丑 痛 苦 悲 惨 慌 慌张 遗憾 后悔 无奈 崩溃 担忧'.split(/\s+/);
+var DEG = '很 非常 特别 极其 十分 格外 相当 最 太 有点 稍微 略 更加 愈 越发'.split(/\s+/);
+function sentiment(text) {
+  var words = seg(text), pos = 0, neg = 0, d = 1;
+  words.forEach(function (w) {
+    var di = DEG.indexOf(w) >= 0 ? 1.6 : 1;
+    if (POS.indexOf(w) >= 0) pos += di;
+    if (NEG.indexOf(w) >= 0) neg += di;
+  });
+  var score = pos - neg;
+  return { lab: score > 0 ? '正面' : score < 0 ? '负面' : '中性', pos: pos, neg: neg, score: Math.round(score * 10) / 10 };
+}
+function sim(a, b) {
+  var fa = freq(seg(a)), fb = freq(seg(b)), keys = {}, k;
+  Object.keys(fa).forEach(function (x) { keys[x] = 1; });
+  Object.keys(fb).forEach(function (x) { keys[x] = 1; });
+  var dot = 0, na = 0, nb = 0;
+  for (k in keys) {
+    var x = fa[k] || 0, y = fb[k] || 0;
+    dot += x * y; na += x * x; nb += y * y;
+  }
+  return dot / ((Math.sqrt(na) * Math.sqrt(nb)) || 1);
+}
+var FAN2J = { '後': '后', '們': '们', '這': '这', '那': '那', '個': '个', '來': '来', '國': '国', '學': '学', '時': '时', '間': '间', '題': '题', '對': '对', '說': '说', '話': '话', '語': '语', '愛': '爱', '東': '东', '車': '车', '圖': '图', '書': '书', '號': '号', '開': '开', '關': '关', '見': '见', '親': '亲', '長': '长', '鳥': '鸟', '魚': '鱼', '馬': '马', '風': '风', '雲': '云', '電': '电', '飛': '飞', '體': '体', '會': '会', '歲': '岁', '歷': '历', '產': '产', '門': '门', '問': '问', '聞': '闻', '與': '与', '並': '并', '為': '为', '從': '从', '兩': '两', '萬': '万', '發': '发', '還': '还', '進': '进', '過': '过', '總': '总', '當': '当', '點': '点', '種': '种', '樣': '样', '歡': '欢', '氣': '气', '島': '岛', '業': '业', '實': '实', '師': '师', '帶': '带', '參': '参', '觀': '观', '變': '变', '態': '态', '應': '应', '網': '网', '銀': '银', '紅': '红', '綠': '绿', '紙': '纸', '級': '级', '終': '终', '結': '结', '統': '统', '維': '维', '織': '织', '緣': '缘', '費': '费', '認': '认', '識': '识', '讀': '读', '賣': '卖', '買': '买', '貴': '贵', '財': '财', '賬': '账', '貨': '货', '資': '资', '賓': '宾', '遷': '迁', '遠': '远', '邊': '边', '運': '运', '輸': '输', '選': '选', '舉': '举', '農': '农', '處': '处', '備': '备', '複': '复', '習': '习', '聖': '圣', '場': '场', '楊': '杨', '樹': '树', '機': '机', '權': '权', '歸': '归', '瀏': '浏', '覽': '览', '顏': '颜', '願': '愿', '類': '类', '顧': '顾', '順': '顺', '領': '领', '頭': '头', '養': '养', '險': '险', '驗': '验', '館': '馆' };
+var J2FAN = {}; for (var _k in FAN2J) J2FAN[FAN2J[_k]] = _k;
+var ERRMAP = { '的': '的/地/得 需区分', '地': '的/地/得 需区分', '得': '的/地/得 需区分', '后': '“后”表方位，“後”表时间', '候': '“候”常误作“后”', '做': '“做”表动作，“作”表书面', '作': '“作”多书面，“做”多口语', '在': '“在”表存在/地点，“再”表重复', '再': '“再”表重复，“在”表地点', '已': '“已”已经，“以”用以', '以': '“以”用以/凭借', '向': '“向”方向，“像”相似', '像': '“像”相似/形象', '的得': '叠用错误', '了過': '“了過”误用' };
+var EMOJI = { '爱': '❤️', '心': '💗', '笑': '😄', '哭': '😭', '火': '🔥', '钱': '💰', '赚': '💰', '好': '👍', '棒': '🎉', '牛': '🐮', '星': '⭐', '太阳': '☀️', '月': '🌙', '花': '🌸', '猫': '🐱', '狗': '🐶', '吃': '🍜', '喝': '🍵', '咖啡': '☕', '书': '📚', '工作': '💼', '学习': '📖', '病': '🤒', '睡': '😴', '旅行': '✈️', '家': '🏠', '时间': '⏰', '手机': '📱', '电脑': '💻', '音乐': '🎵', '电影': '🎬', '游戏': '🎮', '礼物': '🎁', '胜利': '🏆', '警告': '⚠️', '重要': '❗', '问': '❓', '想法': '💡', '加油': '💪', '成功': '✅', '失败': '❌', '增长': '📈', '下降': '📉', '数据': '📊', '设置': '⚙️', '锁': '🔒', '邮件': '📧', '电话': '📞', '位置': '📍', '天气': '🌤️', '雨': '🌧️', '雪': '❄️', '风': '🌬️', '健康': '🩺', '运动': '🏃', '山': '⛰️', '海': '🌊', '树': '🌳', '车': '🚗', '飞机': '✈️' };
+function langOf(s) {
+  var zh = (s.match(/[一-龥]/g) || []).length, en = (s.match(/[a-zA-Z]/g) || []).length, jp = (s.match(/[぀-ヿ]/g) || []).length, num = (s.match(/[0-9]/g) || []).length;
+  var t = zh + en + jp + num || 1;
+  if (jp / t > 0.2) return '日语';
+  if (en / t > 0.4) return '英语';
+  if (zh / t > 0.3) return '中文';
+  if (num / t > 0.5) return '数字/代码';
+  return '混合/其他';
+}
+
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 文本摘要 */
+tool({ id: 'ai-summary', n: 'AI 文本摘要', c: 'ai-text', d: '抽取式摘要：按词频与位置权重挑重点句，离线生成。',
+  f: [{ k: 'txt', t: '原文', type: 'textarea' }, { k: 'r', t: '压缩比(0.1-0.6)', type: 'number', v: 0.3 }, { k: 'out', t: '摘要', type: 'out' }],
+  run: function (v) { var t = (v.txt || '').trim(); if (!t) return { out: '请输入原文' }; return { out: summarize(t, Math.min(0.6, Math.max(0.1, v.r || 0.3))) }; } });
+
+/* 2 关键词提取 */
+tool({ id: 'ai-keywords', n: 'AI 关键词提取', c: 'ai-text', d: '按词频统计提取高频关键词（去停用词）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'n', t: '取前N个', type: 'number', v: 10 }, { k: 'out', t: '关键词', type: 'out' }],
+  run: function (v) {
+    var fr = freq(seg(v.txt || '')); var arr = Object.keys(fr).map(function (k) { return [k, fr[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, v.n || 10);
+    return { out: arr.map(function (x) { return x[0] + ' (' + x[1] + ')'; }).join('、') || '无有效词' };
+  } });
+
+/* 3 情感分析 */
+tool({ id: 'ai-sentiment', n: 'AI 情感分析', c: 'ai-text', d: '基于正负面词典统计情感倾向与强度。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '结果', type: 'out' }, { k: 'outhtml', t: '详情', type: 'outhtml' }],
+  run: function (v) {
+    var s = sentiment(v.txt || '');
+    return { out: '倾向：' + s.lab + '（强度 ' + s.score + '）', outhtml: '<p>正面词 ' + s.pos + ' · 负面词 ' + s.neg + ' · 综合强度 <b>' + s.score + '</b></p>' };
+  } });
+
+/* 4 文本相似度 */
+tool({ id: 'ai-sim', n: 'AI 文本相似度', c: 'ai-text', d: '余弦相似度（词频向量），0~1 越高越像。',
+  f: [{ k: 'a', t: '文本A', type: 'textarea' }, { k: 'b', t: '文本B', type: 'textarea' }, { k: 'out', t: '相似度', type: 'out' }],
+  run: function (v) { return { out: '相似度：' + Math.round(sim(v.a || '', v.b || '') * 1000) / 10 + '%' }; } });
+
+/* 5 命名实体提取 */
+tool({ id: 'ai-ner', n: 'AI 命名实体提取', c: 'ai-text', d: '正则抽取邮箱/电话/网址/金额/日期/身份证等。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '实体', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '', r = [];
+    (s.match(/[\w.+-]+@[\w-]+\.[\w.-]+/g) || []).forEach(function (x) { r.push('邮箱: ' + x); });
+    (s.match(/(?:\+?86)?1[3-9]\d{9}/g) || []).forEach(function (x) { r.push('手机: ' + x); });
+    (s.match(/https?:\/\/[^\s]+/g) || []).forEach(function (x) { r.push('网址: ' + x); });
+    (s.match(/(?:¥|\$|￥)\s?[\d,]+(?:\.\d+)?/g) || []).forEach(function (x) { r.push('金额: ' + x); });
+    (s.match(/\d{4}[-/年]\d{1,2}[-/月]\d{1,2}/g) || []).forEach(function (x) { r.push('日期: ' + x); });
+    (s.match(/\d{17}[\dXx]/g) || []).forEach(function (x) { r.push('身份证: ' + x); });
+    return { out: r.length ? r.join('\n') : '未发现常见实体' };
+  } });
+
+/* 6 文本分类 */
+tool({ id: 'ai-classify', n: 'AI 文本分类', c: 'ai-text', d: '关键词规则判断：新闻/技术/营销/学术/聊天。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '分类', type: 'out' }],
+  run: function (v) {
+    var s = (v.txt || '');
+    var rules = [['新闻', /报道|记者|讯|新华社|日电|据/], ['技术', /代码|函数|api|bug|服务器|前端|后端|部署|算法/], ['营销', /优惠|促销|限时|抢购|爆款|种草|打卡|福利/], ['学术', /研究|论文|实验|假设|样本|显著|文献|定理/], ['聊天', /哈哈|在吗|嗯|好的|今天|我们|你觉得/]];
+    for (var i = 0; i < rules.length; i++) if (rules[i][1].test(s)) return { out: '分类：' + rules[i][0] };
+    return { out: '分类：通用/其他' };
+  } });
+
+/* 7 可读性评分 */
+tool({ id: 'ai-readable', n: 'AI 可读性评分', c: 'ai-text', d: '按平均句长/词长估算阅读难度（0-100）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '评分', type: 'out' }, { k: 'outhtml', t: '分析', type: 'outhtml' }],
+  run: function (v) {
+    var ss = sents(v.txt || ''); if (!ss.length) return { out: '请输入文本' };
+    var words = seg(v.txt || '');
+    var avgS = v.txt.length / ss.length, avgW = words.length ? v.txt.replace(/\s/g, '').length / words.length : 1;
+    var score = Math.max(0, Math.min(100, 100 - (avgS - 15) * 1.6 - (avgW - 1.4) * 18));
+    return { out: '可读性：' + Math.round(score) + '/100', outhtml: '<p>平均句长 ' + Math.round(avgS) + ' 字 · 平均词长 ' + avgW.toFixed(2) + ' · 难度：' + (score > 70 ? '易读' : score > 45 ? '适中' : '偏难') + '</p>' };
+  } });
+
+/* 8 语种识别 */
+tool({ id: 'ai-lang', n: 'AI 语种识别', c: 'ai-text', d: '按字符占比判断中文/英文/日文/代码等。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '语种', type: 'out' }],
+  run: function (v) { var s = langOf(v.txt || ''); return { out: '识别语种：' + s }; } });
+
+/* 9 繁简转换 */
+tool({ id: 'ai-fan2jian', n: 'AI 繁→简', c: 'ai-text', d: '常见繁体字转简体（内置映射表）。',
+  f: [{ k: 'txt', t: '繁体文本', type: 'textarea' }, { k: 'out', t: '简体', type: 'out' }],
+  run: function (v) { return { out: (v.txt || '').split('').map(function (c) { return FAN2J[c] || c; }).join('') }; } });
+
+/* 10 简→繁 */
+tool({ id: 'ai-jian2fan', n: 'AI 简→繁', c: 'ai-text', d: '常见简体字转繁体（内置映射表）。',
+  f: [{ k: 'txt', t: '简体文本', type: 'textarea' }, { k: 'out', t: '繁体', type: 'out' }],
+  run: function (v) { return { out: (v.txt || '').split('').map(function (c) { return J2FAN[c] || c; }).join('') }; } });
+
+/* 11 自动校对 */
+tool({ id: 'ai-proof', n: 'AI 自动校对', c: 'ai-text', d: '基于常见错词表给出疑似错误提示。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '校对建议', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '', hit = [];
+    for (var key in ERRMAP) if (s.indexOf(key) >= 0) hit.push('「' + key + '」' + ERRMAP[key]);
+    return { out: hit.length ? hit.join('\n') : '未发现内置规则内的明显错误' };
+  } });
+
+/* 12 情感强度 */
+tool({ id: 'ai-emotion-int', n: 'AI 情感强度', c: 'ai-text', d: '正负面词计数 + 程度副词加权估算强度。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '强度', type: 'out' }],
+  run: function (v) { var s = sentiment(v.txt || ''); return { out: '强度 ' + s.score + '（正 ' + s.pos + ' / 负 ' + s.neg + '）' }; } });
+
+/* 13 文本水印 */
+tool({ id: 'ai-wm', n: 'AI 文本水印', c: 'ai-text', d: '在正文字符间插入零宽字符隐藏水印（肉眼不可见）。',
+  f: [{ k: 'txt', t: '原文', type: 'textarea' }, { k: 'mark', t: '水印内容', type: 'text', v: 'toolbox' }, { k: 'out', t: '带水印文本', type: 'out' }],
+  run: function (v) {
+    var bits = (v.mark || '').split('').map(function (c) { return c.charCodeAt(0).toString(2).padStart(8, '0'); }).join('');
+    var zw = '', i = 0;
+    var out = (v.txt || '').split('').map(function (c) {
+      if (i < bits.length) { var z = bits[i] === '1' ? '​' : '‌'; i++; return c + z; }
+      return c;
+    }).join('');
+    return { out: out, note: '已嵌入 ' + i + ' 个零宽字符' };
+  } });
+
+/* 14 去 AI 味 */
+tool({ id: 'ai-deai', n: 'AI 味检测', c: 'ai-text', d: '检测 AI 常见套话/被动/长句，给出改写建议。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '检测报告', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '', r = [];
+    ['首先', '其次', '此外', '综上所述', '值得一提的是', '值得注意的是', '毋庸置疑', '显而易见', '在当今世界', '随着...的发展'].forEach(function (w) { if (s.indexOf(w) >= 0) r.push('套话：' + w); });
+    if ((s.match(/被[^，。]{1,8}(了|到|于)/g) || []).length) r.push('被动语态偏多');
+    if ((s.match(/[，,][^，。]{40,}[。.]/g) || []).length) r.push('存在超长句（>40字）');
+    return { out: r.length ? r.join('\n') : '未发现明显 AI 套话特征' };
+  } });
+
+/* 15 观点提取 */
+tool({ id: 'ai-opinion', n: 'AI 观点提取', c: 'ai-text', d: '提取含判断/态度词的句子作为观点句。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '观点句', type: 'out' }],
+  run: function (v) {
+    var ss = sents(v.txt || '').filter(function (x) { return /(认为|觉得|应该|必须|建议|希望|以为|看来|其实|不如|最好|不要)/.test(x); });
+    return { out: ss.length ? ss.join('\n') : '未发现明显观点句' };
+  } });
+
+/* 16 标题推荐 */
+tool({ id: 'ai-title', n: 'AI 标题推荐', c: 'ai-text', d: '取首句/关键句截取为候选标题。',
+  f: [{ k: 'txt', t: '正文', type: 'textarea' }, { k: 'out', t: '候选标题', type: 'out' }],
+  run: function (v) {
+    var ss = sents(v.txt || '');
+    var c = ss.slice(0, 3).map(function (s) { return s.length > 20 ? s.slice(0, 20) + '…' : s; });
+    return { out: c.length ? c.join('\n') : '请输入正文' };
+  } });
+
+/* 17 自动目录 */
+tool({ id: 'ai-toc', n: 'AI 自动目录', c: 'ai-text', d: '从 Markdown 的 # 标题提取目录。',
+  f: [{ k: 'txt', t: 'Markdown', type: 'textarea' }, { k: 'out', t: '目录', type: 'out' }],
+  run: function (v) {
+    var lines = (v.txt || '').split('\n'), out = [];
+    lines.forEach(function (l) { var m = l.match(/^(#{1,4})\s+(.*)$/); if (m) out.push('  '.repeat(m[1].length - 1) + '· ' + m[2]); });
+    return { out: out.length ? out.join('\n') : '未找到 # 标题' };
+  } });
+
+/* 18 引文提取 */
+tool({ id: 'ai-quote', n: 'AI 引文提取', c: 'ai-text', d: '提取双引号/书名号内的引用内容。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '引文', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '', r = s.match(/[“"「『]([^”"」』]{1,80})[”"」』]/g) || [];
+    r = r.concat(s.match(/《([^》]{1,40})》/g) || []);
+    return { out: r.length ? r.join('\n') : '未发现引文' };
+  } });
+
+/* 19 数据提取 */
+tool({ id: 'ai-datax', n: 'AI 数据提取', c: 'ai-text', d: '提取文本中的“数字+单位”组合。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '数值', type: 'out' }],
+  run: function (v) {
+    var r = (v.txt || '').match(/-?\d[\d,.]*\s?(?:%|％|个|元|万元|亿|kg|吨|米|厘米|公里|岁|天|年|月|次|倍|度|㎡|m²|ml|升|斤|公斤)?/g) || [];
+    return { out: r.length ? r.join('、') : '未发现数值' };
+  } });
+
+/* 20 抄袭检测 */
+tool({ id: 'ai-plag', n: 'AI 抄袭检测', c: 'ai-text', d: '片段级重叠率估算（两文本相似比例）。',
+  f: [{ k: 'a', t: '文本A', type: 'textarea' }, { k: 'b', t: '文本B', type: 'textarea' }, { k: 'out', t: '重叠率', type: 'out' }],
+  run: function (v) {
+    var A = seg(v.a || ''), B = freq(seg(v.b || ''));
+    if (!A.length) return { out: '请输入文本A' };
+    var hit = 0; A.forEach(function (w) { if (B[w]) hit++; });
+    return { out: '片段重叠率：' + Math.round(hit / A.length * 100) + '%' };
+  } });
+
+/* 21 词频统计 */
+tool({ id: 'ai-wordfreq', n: 'AI 词频统计', c: 'ai-text', d: '全量词频排序（含停用词过滤）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '词频', type: 'out' }],
+  run: function (v) {
+    var fr = freq(seg(v.txt || '')), arr = Object.keys(fr).map(function (k) { return k + ':' + fr[k]; }).sort(function (a, b) { return +b.split(':')[1] - +a.split(':')[1]; });
+    return { out: arr.join('\n') || '无' };
+  } });
+
+/* 22 去停用词 */
+tool({ id: 'ai-stop', n: 'AI 去停用词', c: 'ai-text', d: '移除虚词，保留实义词（便于检索/NLP）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) { return { out: seg(v.txt || '').filter(function (w) { return STOP.indexOf(w) < 0 && !(w.length < 2 && /[一-龥]/.test(w)); }).join(' ') }; } });
+
+/* 23 emoji 推荐 */
+tool({ id: 'ai-emoji', n: 'AI emoji 推荐', c: 'ai-text', d: '按关键词从映射表推荐相关 emoji。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: 'emoji', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '', got = [];
+    for (var key in EMOJI) if (s.indexOf(key) >= 0) got.push(EMOJI[key]);
+    return { out: got.length ? got.join(' ') : '未匹配到关键词（试试：爱/钱/工作/旅行/咖啡）' };
+  } });
+
+/* 24 长句拆分 */
+tool({ id: 'ai-splitlong', n: 'AI 长句拆分', c: 'ai-text', d: '把超长句按逗号拆成短句，提升可读性。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var ss = sents(v.txt || '').map(function (s) {
+      if (s.length > 40) return s.split(/[，,]/).join('，\n');
+      return s;
+    });
+    return { out: ss.join('\n') };
+  } });
+
+/* 25 文本聚类 */
+tool({ id: 'ai-cluster', n: 'AI 文本聚类', c: 'ai-text', d: 'K-Means 简易聚类（多段文本归类，K=2~4）。',
+  f: [{ k: 'txt', t: '多段文本(空行分隔)', type: 'textarea' }, { k: 'k', t: '聚类数K', type: 'number', v: 2 }, { k: 'out', t: '分组', type: 'out' }],
+  run: function (v) {
+    var docs = (v.txt || '').split(/\n\s*\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (docs.length < 2) return { out: '至少输入 2 段文本' };
+    var vocab = {}, idf = {};
+    docs.forEach(function (d) { var f = freq(seg(d)), seen = {}; for (var w in f) { vocab[w] = 1; if (!seen[w]) { idf[w] = (idf[w] || 0) + 1; seen[w] = 1; } } });
+    var keys = Object.keys(vocab);
+    var vecs = docs.map(function (d) { var f = freq(seg(d)), v = {}; keys.forEach(function (w) { v[w] = (f[w] || 0) * Math.log(docs.length / (idf[w] || 1)); }); return v; });
+    var k = Math.min(4, Math.max(2, v.k || 2)), cents = vecs.slice(0, k).map(function (x) { return x; }), groups = {}, i, it;
+    for (it = 0; it < 8; it++) {
+      groups = {}; for (i = 0; i < k; i++) groups[i] = [];
+      vecs.forEach(function (vec, di) {
+        var best = 0, bd = 1e9;
+        for (i = 0; i < k; i++) { var d = 0; keys.forEach(function (w) { var a = vec[w] || 0, b = cents[i][w] || 0; d += (a - b) * (a - b); }); if (d < bd) { bd = d; best = i; } }
+        groups[best].push(docs[di]);
+      });
+      k && keys.forEach(function (w) { for (i = 0; i < k; i++) { var s = 0, n = 0; groups[i].forEach(function (_, gi) { s += vecs[diOf(groups[i][gi], docs)][w] || 0; n++; }); cents[i][w] = n ? s / n : 0; } });
+    }
+    function diOf(doc, arr) { return arr.indexOf(doc); }
+    var out = []; for (i = 0; i < k; i++) out.push('【组 ' + (i + 1) + '】\n' + (groups[i] || []).join('\n'));
+    return { out: out.join('\n\n') || '聚类失败' };
+  } });
+
+/* 26 自动标签 */
+tool({ id: 'ai-tags', n: 'AI 自动标签', c: 'ai-text', d: '取 Top 关键词作为标签（#形式）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'n', t: '标签数', type: 'number', v: 5 }, { k: 'out', t: '标签', type: 'out' }],
+  run: function (v) {
+    var fr = freq(seg(v.txt || '')); var arr = Object.keys(fr).sort(function (a, b) { return fr[b] - fr[a]; }).slice(0, v.n || 5);
+    return { out: arr.map(function (x) { return '#' + x; }).join(' ') || '无' };
+  } });
+
+/* 27 重复句检测 */
+tool({ id: 'ai-dup', n: 'AI 重复句检测', c: 'ai-text', d: '找出内容相同或高度相似的句子。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '重复句', type: 'out' }],
+  run: function (v) {
+    var ss = sents(v.txt || ''), seen = {}, dup = [];
+    ss.forEach(function (s) { if (seen[s]) dup.push(s); else seen[s] = 1; });
+    return { out: dup.length ? '重复 ' + dup.length + ' 句：\n' + dup.join('\n') : '未检测到完全重复句' };
+  } });
+
+/* 28 术语提取 */
+tool({ id: 'ai-term', n: 'AI 术语提取', c: 'ai-text', d: '提取大写英文/专有名词（疑似术语）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '术语', type: 'out' }],
+  run: function (v) {
+    var r = (v.txt || '').match(/[A-Z][A-Za-z]{2,}|[A-Z]{2,}|《[^》]+》|“[^”]+”/g) || [];
+    return { out: r.length ? Array.from(new Set(r)).join('、') : '未提取到术语' };
+  } });
+
+/* 29 摘要对比 */
+tool({ id: 'ai-cmp2', n: 'AI 双文摘要对比', c: 'ai-text', d: '对两篇文本分别摘要并对比要点。',
+  f: [{ k: 'a', t: '文本A', type: 'textarea' }, { k: 'b', t: '文本B', type: 'textarea' }, { k: 'out', t: '对比', type: 'out' }],
+  run: function (v) {
+    var sa = summarize(v.a || '', 0.3), sb = summarize(v.b || '', 0.3);
+    return { out: '【A 要点】\n' + (sa || '空') + '\n\n【B 要点】\n' + (sb || '空') + '\n\n相似度：' + Math.round(sim(v.a || '', v.b || '') * 100) + '%' };
+  } });
+
+/* 30 多文档摘要 */
+tool({ id: 'ai-msummary', n: 'AI 多文档摘要', c: 'ai-text', d: '合并多篇文本统一摘要（空行分隔各篇）。',
+  f: [{ k: 'txt', t: '多篇文本(空行分隔)', type: 'textarea' }, { k: 'out', t: '摘要', type: 'out' }],
+  run: function (v) { return { out: summarize(v.txt || '', 0.25) || '请输入文本' }; } });
+
+/* 31 句子压缩 */
+tool({ id: 'ai-compress', n: 'AI 句子压缩', c: 'ai-text', d: '去除冗余修饰（程度副词/套话），保留主干。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '压缩后', type: 'out' }],
+  run: function (v) {
+    var s = v.txt || '';
+    DEG.concat(['可以说', '所谓的', '实际上', '基本上', '在一定程度上']).forEach(function (w) { s = s.split(w).join(''); });
+    return { out: s.trim() };
+  } });
+
+/* 32 共现分析 */
+tool({ id: 'ai-cooc', n: 'AI 共现分析', c: 'ai-text', d: '统计相邻词对共现频率（发现搭配）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '词对', type: 'out' }],
+  run: function (v) {
+    var ws = seg(v.txt || '').filter(function (w) { return STOP.indexOf(w) < 0 && w.length >= 2; }), m = {};
+    for (var i = 0; i < ws.length - 1; i++) { var key = ws[i] + '+' + ws[i + 1]; m[key] = (m[key] || 0) + 1; }
+    var arr = Object.keys(m).map(function (k) { return k + ':' + m[k]; }).sort(function (a, b) { return +b.split(':')[1] - +a.split(':')[1]; }).slice(0, 12);
+    return { out: arr.join('\n') || '无' };
+  } });
+
+/* 33 文本难度分级 */
+tool({ id: 'ai-level', n: 'AI 文本难度', c: 'ai-text', d: '综合可读性给出小学/初中/高中/大学级建议。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '难度', type: 'out' }],
+  run: function (v) {
+    var ss = sents(v.txt || ''); if (!ss.length) return { out: '请输入文本' };
+    var avgS = v.txt.length / ss.length;
+    var lv = avgS < 18 ? '小学级' : avgS < 28 ? '初中级' : avgS < 42 ? '高中级' : '大学/专业级';
+    return { out: '建议阅读级别：' + lv + '（平均句长 ' + Math.round(avgS) + ' 字）' };
+  } });
+
+/* 34 引号内容提取 */
+tool({ id: 'ai-qmark', n: 'AI 英文引号提取', c: 'ai-text', d: '提取英文双引号内的内容片段。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '内容', type: 'out' }],
+  run: function (v) { var r = (v.txt || '').match(/"([^"]{1,120})"/g) || []; return { out: r.length ? r.join('\n') : '未发现英文引号内容' }; } });
+
+/* 35 观点极性统计 */
+tool({ id: 'ai-pol', n: 'AI 观点极性统计', c: 'ai-text', d: '统计文本中正面/负面/中性句子数量。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '统计', type: 'out' }],
+  run: function (v) {
+    var ss = sents(v.txt || ''), p = 0, n = 0, neu = 0;
+    ss.forEach(function (s) { var r = sentiment(s); if (r.lab === '正面') p++; else if (r.lab === '负面') n++; else neu++; });
+    return { out: '正面 ' + p + ' 句 / 负面 ' + n + ' 句 / 中性 ' + neu + ' 句（共 ' + ss.length + ' 句）' };
+  } });
+
+/* 36 关键词云数据 */
+tool({ id: 'ai-wc', n: 'AI 词云数据', c: 'ai-text', d: '输出词频 Top20（供词云工具使用）。',
+  f: [{ k: 'txt', t: '文本', type: 'textarea' }, { k: 'out', t: '词云数据', type: 'out' }],
+  run: function (v) {
+    var fr = freq(seg(v.txt || '')); var arr = Object.keys(fr).sort(function (a, b) { return fr[b] - fr[a]; }).slice(0, 20).map(function (k) { return k + ' ' + fr[k]; });
+    return { out: arr.join('\n') || '无' };
+  } });
+
+/* 37 自动摘要字数控制 */
+tool({ id: 'ai-sumlen', n: 'AI 摘要(限字数)', c: 'ai-text', d: '生成不超过指定字数的摘要。',
+  f: [{ k: 'txt', t: '原文', type: 'textarea' }, { k: 'max', t: '最大字数', type: 'number', v: 80 }, { k: 'out', t: '摘要', type: 'out' }],
+  run: function (v) {
+    var s = summarize(v.txt || '', 0.3);
+    return { out: s.length > (v.max || 80) ? s.slice(0, v.max || 80) + '…' : s };
+  } });
+
+/* 38 主题句提取 */
+tool({ id: 'ai-topic', n: 'AI 主题句提取', c: 'ai-text', d: '取每段的中心句（词频最高的句子）。',
+  f: [{ k: 'txt', t: '文本(空行分段)', type: 'textarea' }, { k: 'out', t: '主题句', type: 'out' }],
+  run: function (v) {
+    var paras = (v.txt || '').split(/\n\s*\n/).filter(Boolean), out = [];
+    paras.forEach(function (p) {
+      var ss = sents(p); if (!ss.length) return;
+      var fr = freq(seg(p)), best = ss[0], bs = -1;
+      ss.forEach(function (s) { var sc = seg(s).reduce(function (a, w) { return a + (fr[w] || 0); }, 0); if (sc > bs) { bs = sc; best = s; } });
+      out.push(best);
+    });
+    return { out: out.join('\n') || '请输入文本' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-summary"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-summary'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-summary")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-summary");
+if(i>=0)f.splice(i,1);else f.push("ai-summary");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-summary"});u.unshift("ai-summary");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

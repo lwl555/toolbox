@@ -33,14 +33,152 @@ Ca.monthly = function (p, annual, n) { var r = annual / 12; if (r === 0) return 
 Ca.taxYear = function (income) { var b = [36000, 144000, 300000, 420000, 660000, 960000, Infinity], r = [0.03, 0.1, 0.2, 0.25, 0.3, 0.35, 0.45], q = [0, 2520, 16920, 31920, 52920, 85920, 181920]; var t = 0; for (var i = 0; i < b.length; i++) { if (income <= b[i]) { t = income * r[i] - q[i]; break; } } return t < 0 ? 0 : t; };
 Ca.taxBonus = function (b) { var m = b / 12, rate, q; if (m <= 3000) { rate = 0.03; q = 0; } else if (m <= 12000) { rate = 0.1; q = 210; } else if (m <= 25000) { rate = 0.2; q = 1410; } else if (m <= 35000) { rate = 0.25; q = 2660; } else if (m <= 55000) { rate = 0.3; q = 4410; } else if (m <= 80000) { rate = 0.35; q = 7160; } else { rate = 0.45; q = 15160; } return b * rate - q; };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "calc-fuel-cost", n: "油费估算", c: "calc", d: "按里程和油耗算油费",
-  custom: null,
-  fields: [{"k":"km","t":"里程 km","type":"number","v":1000},{"k":"l100","t":"百公里油耗 L","type":"number","v":8},{"k":"price","t":"油价 元/L","type":"number","v":7.8},{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) { var cost = v.km / 100 * v.l100 * v.price; return { out: '油费：' + cost.toFixed(2) + ' 元', metrics: [{ t: '油费', v: cost.toFixed(2) }, { t: '用油', v: (v.km / 100 * v.l100).toFixed(1) + ' L' }] }; } };
+tool({ id: 'calc-mortgage', n: '房贷·等额本息', c: 'calc', d: '算月供和总利息（商贷）',
+  f: [{ k: 'p', t: '贷款总额(万)', type: 'number', v: 100 }, { k: 'y', t: '年限', type: 'number', v: 30 }, { k: 'rate', t: '年利率%', type: 'number', v: 4.2 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var P = v.p * 10000, n = v.y * 12, m = Ca.monthly(P, v.rate / 100, n); var total = m * n; return { out: '月供：' + m.toFixed(2) + ' 元', metrics: [{ t: '月供', v: m.toFixed(2) + ' 元' }, { t: '总还款', v: (total / 10000).toFixed(2) + ' 万' }, { t: '利息', v: ((total - P) / 10000).toFixed(2) + ' 万' }] }; } });
+
+tool({ id: 'calc-mortgage-cap', n: '房贷·等额本金', c: 'calc', d: '每月递减还款，总利息更少',
+  f: [{ k: 'p', t: '贷款总额(万)', type: 'number', v: 100 }, { k: 'y', t: '年限', type: 'number', v: 30 }, { k: 'rate', t: '年利率%', type: 'number', v: 4.2 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var P = v.p * 10000, n = v.y * 12, r = v.rate / 100 / 12, base = P / n; var first = base + P * r, last = base + base * r, total = 0; for (var i = 0; i < n; i++) total += base + (P - base * i) * r; return { out: '首月：' + first.toFixed(2) + ' 元', metrics: [{ t: '首月', v: first.toFixed(2) }, { t: '末月', v: last.toFixed(2) }, { t: '总利息', v: ((total - P) / 10000).toFixed(2) + ' 万' }] }; } });
+
+tool({ id: 'calc-car-loan', n: '车贷计算', c: 'calc', d: '车贷月供与总花费',
+  f: [{ k: 'p', t: '车价(万)', type: 'number', v: 15 }, { k: 'down', t: '首付%', type: 'number', v: 30 }, { k: 'y', t: '年限', type: 'number', v: 3 }, { k: 'rate', t: '年利率%', type: 'number', v: 5 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var loan = v.p * 10000 * (1 - v.down / 100), n = v.y * 12, m = Ca.monthly(loan, v.rate / 100, n); return { out: '月供：' + m.toFixed(2) + ' 元', metrics: [{ t: '贷款额', v: (loan / 10000).toFixed(2) + ' 万' }, { t: '利息', v: ((m * n - loan) / 10000).toFixed(2) + ' 万' }, { t: '总花费', v: (v.p * 10000 + m * n - loan + 0) / 10000 + ' 万' }] }; } });
+
+tool({ id: 'calc-fund-loan', n: '公积金贷款', c: 'calc', d: '公积金利率较低的月供',
+  f: [{ k: 'p', t: '贷款额(万)', type: 'number', v: 60 }, { k: 'y', t: '年限', type: 'number', v: 30 }, { k: 'rate', t: '年利率%', type: 'number', v: 3.1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var P = v.p * 10000, n = v.y * 12, m = Ca.monthly(P, v.rate / 100, n); return { out: '月供：' + m.toFixed(2) + ' 元', metrics: [{ t: '月供', v: m.toFixed(2) }, { t: '总利息', v: ((m * n - P) / 10000).toFixed(2) + ' 万' }] }; } });
+
+tool({ id: 'calc-combo-loan', n: '组合贷计算', c: 'calc', d: '公积金+商贷组合月供',
+  f: [{ k: 'pf', t: '公积金(万)', type: 'number', v: 60 }, { k: 'pc', t: '商贷(万)', type: 'number', v: 40 }, { k: 'y', t: '年限', type: 'number', v: 30 }, { k: 'rf', t: '公积金利率%', type: 'number', v: 3.1 }, { k: 'rc', t: '商贷利率%', type: 'number', v: 4.2 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var nf = v.y * 12, mf = Ca.monthly(v.pf * 10000, v.rf / 100, nf), mc = Ca.monthly(v.pc * 10000, v.rc / 100, nf); return { out: '月供合计：' + (mf + mc).toFixed(2) + ' 元', metrics: [{ t: '公积金月供', v: mf.toFixed(2) }, { t: '商贷月供', v: mc.toFixed(2) }, { t: '月供合计', v: (mf + mc).toFixed(2) }] }; } });
+
+tool({ id: 'calc-tax', n: '个税计算(综合)', c: 'calc', d: '按年度综合所得算个税',
+  f: [{ k: 'income', t: '年收入(万)', type: 'number', v: 20 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var inc = v.income * 10000 - 60000; if (inc <= 0) return { out: '0 元（未达起征点）', metrics: [{ t: '应纳税所得', v: 0 }] }; var t = Ca.taxYear(inc); return { out: '年个税：' + t.toFixed(2) + ' 元', metrics: [{ t: '应纳税所得额', v: inc.toFixed(0) }, { t: '税额', v: t.toFixed(2) }, { t: '税后', v: (v.income * 10000 - t).toFixed(0) }] }; } });
+
+tool({ id: 'calc-bonus-tax', n: '年终奖计税', c: 'calc', d: '年终奖单独计税最优方案',
+  f: [{ k: 'bonus', t: '年终奖(元)', type: 'number', v: 50000 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var t = Ca.taxBonus(v.bonus); return { out: '税额：' + t.toFixed(2) + ' 元', metrics: [{ t: '到手', v: (v.bonus - t).toFixed(2) }, { t: '税率', v: (t / v.bonus * 100).toFixed(1) + '%' }] }; } });
+
+tool({ id: 'calc-salary', n: '税后工资', c: 'calc', d: '按月薪估算到手（含简易个税）',
+  f: [{ k: 'salary', t: '月薪(元)', type: 'number', v: 15000 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var annual = v.salary * 12 - 60000; var tax = annual <= 0 ? 0 : Ca.taxYear(annual) / 12; var soc = v.salary * 0.105; var hand = v.salary - soc - tax; return { out: '到手：' + hand.toFixed(2) + ' 元', metrics: [{ t: '税前', v: v.salary }, { t: '社保(约10.5%)', v: soc.toFixed(2) }, { t: '个税(月)', v: tax.toFixed(2) }, { t: '到手', v: hand.toFixed(2) }] }; } });
+
+tool({ id: 'calc-insurance', n: '五险一金测算', c: 'calc', d: '按基数估算五险一金个人部分',
+  f: [{ k: 'base', t: '缴费基数(元)', type: 'number', v: 15000 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var items = [['养老', 0.08], ['医疗', 0.02], ['失业', 0.005], ['公积金', 0.12]]; var total = 0, r = []; items.forEach(function (it) { var amt = v.base * it[1]; total += amt; r.push(it[0] + ' ' + amt.toFixed(2)); }); return { out: r.join('\n') + '\n合计：' + total.toFixed(2), metrics: [{ t: '个人月缴', v: total.toFixed(2) }, { t: '年缴', v: (total * 12).toFixed(2) }] }; } });
+
+tool({ id: 'calc-bmi', n: 'BMI 计算', c: 'calc', d: '按中国标准算体质指数',
+  f: [{ k: 'h', t: '身高 cm', type: 'number', v: 170 }, { k: 'w', t: '体重 kg', type: 'number', v: 65 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var bmi = v.w / Math.pow(v.h / 100, 2); var lv = bmi < 18.5 ? '偏瘦' : bmi < 24 ? '正常' : bmi < 28 ? '超重' : '肥胖'; return { out: bmi.toFixed(1) + '（' + lv + '）', metrics: [{ t: 'BMI', v: bmi.toFixed(1) }, { t: '评级', v: lv }, { t: '标准体重', v: (22 * Math.pow(v.h / 100, 2)).toFixed(1) + ' kg' }] }; } });
+
+tool({ id: 'calc-bmr', n: '基础代谢 BMR', c: 'calc', d: 'Mifflin-St Jeor 公式算每日基础消耗',
+  f: [{ k: 'h', t: '身高 cm', type: 'number', v: 170 }, { k: 'w', t: '体重 kg', type: 'number', v: 65 }, { k: 'age', t: '年龄', type: 'number', v: 30 }, { k: 'sex', t: '性别', type: 'seg', v: 'm', opts: [{ v: 'm', t: '男' }, { v: 'f', t: '女' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var b = 10 * v.w + 6.25 * v.h - 5 * v.age + (v.sex === 'm' ? 5 : -161); var need = b * 1.55; return { out: 'BMR：' + b.toFixed(0) + ' kcal', metrics: [{ t: 'BMR', v: b.toFixed(0) + ' kcal' }, { t: '轻活动总需求', v: need.toFixed(0) + ' kcal' }] }; } });
+
+tool({ id: 'calc-calories', n: '每日热量需求', c: 'calc', d: '按活动量估算维持体重的热量',
+  f: [{ k: 'bmr', t: 'BMR（可先用BMR工具）', type: 'number', v: 1500 }, { k: 'act', t: '活动水平', type: 'select', opts: [{ v: '1.2', t: '久坐' }, { v: '1.375', t: '轻度' }, { v: '1.55', t: '中度' }, { v: '1.725', t: '高强度' }, { v: '1.9', t: '极高' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var c = v.bmr * parseFloat(v.act); return { out: c.toFixed(0) + ' kcal/天', metrics: [{ t: '维持', v: c.toFixed(0) }, { t: '减重(-500)', v: (c - 500).toFixed(0) }, { t: '增肌(+300)', v: (c + 300).toFixed(0) }] }; } });
+
+tool({ id: 'calc-discount', n: '折扣叠加', c: 'calc', d: '多个折扣连续打折后的最终价',
+  f: [{ k: 'price', t: '原价', type: 'number', v: 1000 }, { k: 'offs', t: '折扣%(逗号，如 90,80)', type: 'text', v: '90,80' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var ds = (v.offs || '').split(',').map(function (x) { return parseFloat(x); }).filter(function (x) { return !isNaN(x); }); if (!ds.length) return { out: '', note: '请输入折扣%', warn: true }; var p = v.price; ds.forEach(function (d) { p *= d / 100; }); return { out: '最终价：' + p.toFixed(2), metrics: [{ t: '原价', v: v.price }, { t: '最终价', v: p.toFixed(2) }, { t: '省', v: (v.price - p).toFixed(2) }] }; } });
+
+tool({ id: 'calc-tip', n: '小费计算', c: 'calc', d: '按账单和比例算小费与人均',
+  f: [{ k: 'bill', t: '账单金额', type: 'number', v: 200 }, { k: 'pct', t: '小费比例%', type: 'number', v: 15 }, { k: 'n', t: '人数', type: 'number', v: 4 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var tip = v.bill * v.pct / 100; var total = v.bill + tip; return { out: '每人：' + (total / v.n).toFixed(2), metrics: [{ t: '小费', v: tip.toFixed(2) }, { t: '总计', v: total.toFixed(2) }, { t: '人均', v: (total / v.n).toFixed(2) }] }; } });
+
+tool({ id: 'calc-installment', n: '分期手续费', c: 'calc', d: '算分期付款的真实成本',
+  f: [{ k: 'amount', t: '分期本金', type: 'number', v: 5000 }, { k: 'n', t: '期数', type: 'number', v: 12 }, { k: 'fee', t: '每期费率%', type: 'number', v: 0.6 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var per = v.amount / v.n, feeEach = v.amount * v.fee / 100, total = (per + feeEach) * v.n, apr = (feeEach * v.n) / v.amount / (v.n / 12) * 100; return { out: '每期：' + (per + feeEach).toFixed(2), metrics: [{ t: '每期还款', v: (per + feeEach).toFixed(2) }, { t: '总手续费', v: (feeEach * v.n).toFixed(2) }, { t: '近似年化', v: apr.toFixed(1) + '%' }] }; } });
+
+tool({ id: 'calc-credit-min', n: '信用卡最低还款', c: 'calc', d: '算最低还款额与利息',
+  f: [{ k: 'bill', t: '账单金额', type: 'number', v: 10000 }, { k: 'minPct', t: '最低还款%', type: 'number', v: 10 }, { k: 'rate', t: '日息‱(万分之)', type: 'number', v: 5 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var min = v.bill * v.minPct / 100; var interest = v.bill * v.rate / 10000 * 30; return { out: '最低还款：' + min.toFixed(2), metrics: [{ t: '最低还款', v: min.toFixed(2) }, { t: '30天利息', v: interest.toFixed(2) }, { t: '建议', v: '尽量全额还款' }] }; } });
+
+tool({ id: 'calc-compound', n: '复利终值', c: 'calc', d: '算本金按复利增长后的总额',
+  f: [{ k: 'p', t: '本金', type: 'number', v: 10000 }, { k: 'rate', t: '年利率%', type: 'number', v: 5 }, { k: 'y', t: '年数', type: 'number', v: 10 }, { k: 'm', t: '每年复利次数', type: 'number', v: 1, min: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var f = v.p * Math.pow(1 + v.rate / 100 / v.m, v.m * v.y); return { out: '终值：' + f.toFixed(2), metrics: [{ t: '本金', v: v.p }, { t: '收益', v: (f - v.p).toFixed(2) }, { t: '终值', v: f.toFixed(2) }] }; } });
+
+tool({ id: 'calc-present', n: '复利现值', c: 'calc', d: '算未来一笔钱的现在价值',
+  f: [{ k: 'f', t: '未来金额', type: 'number', v: 20000 }, { k: 'rate', t: '贴现率%', type: 'number', v: 5 }, { k: 'y', t: '年数', type: 'number', v: 10 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var p = v.f / Math.pow(1 + v.rate / 100, v.y); return { out: '现值：' + p.toFixed(2), metrics: [{ t: '现值', v: p.toFixed(2) }] }; } });
+
+tool({ id: 'calc-deposit', n: '定期存款利息', c: 'calc', d: '算整存整取利息（单利）',
+  f: [{ k: 'p', t: '本金', type: 'number', v: 50000 }, { k: 'rate', t: '年利率%', type: 'number', v: 2.5 }, { k: 'y', t: '存期年', type: 'number', v: 3 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var i = v.p * v.rate / 100 * v.y; return { out: '利息：' + i.toFixed(2), metrics: [{ t: '本金', v: v.p }, { t: '利息', v: i.toFixed(2) }, { t: '本息', v: (v.p + i).toFixed(2) }] }; } });
+
+tool({ id: 'calc-apr', n: '真实年化 APR', c: 'calc', d: '把分期手续费率折算成真实年化',
+  f: [{ k: 'amount', t: '本金', type: 'number', v: 12000 }, { k: 'n', t: '期数', type: 'number', v: 12 }, { k: 'fee', t: '每期费率%', type: 'number', v: 0.75 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var totalFee = v.amount * v.fee / 100 * v.n; var rate = Math.pow(1 + totalFee / v.amount, 12 / v.n) - 1; return { out: '年化：' + (rate * 100).toFixed(2) + '%', metrics: [{ t: '总手续费', v: totalFee.toFixed(2) }, { t: '真实年化(APR)', v: (rate * 100).toFixed(2) + '%' }] }; } });
+
+tool({ id: 'calc-invest', n: '投资收益', c: 'calc', d: '按收益率算投资盈亏',
+  f: [{ k: 'p', t: '投入', type: 'number', v: 100000 }, { k: 'rate', t: '年化%', type: 'number', v: 8 }, { k: 'y', t: '持有年', type: 'number', v: 5 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var f = v.p * Math.pow(1 + v.rate / 100, v.y); return { out: '终值：' + f.toFixed(2), metrics: [{ t: '收益', v: (f - v.p).toFixed(2) }, { t: '收益率', v: (f / v.p - 1) * 100 + '%' }] }; } });
+
+tool({ id: 'calc-inflation', n: '通胀购买力', c: 'calc', d: '算通胀下未来钱的购买力',
+  f: [{ k: 'p', t: '当前金额', type: 'number', v: 10000 }, { k: 'rate', t: '年通胀%', type: 'number', v: 3 }, { k: 'y', t: '年数', type: 'number', v: 20 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var real = v.p / Math.pow(1 + v.rate / 100, v.y); return { out: '购买力：' + real.toFixed(2), metrics: [{ t: '名义', v: v.p }, { t: '实际购买力', v: real.toFixed(2) }, { t: '缩水', v: (v.p - real).toFixed(2) }] }; } });
+
+tool({ id: 'calc-save-goal', n: '攒钱目标', c: 'calc', d: '按每月存款算达成目标时间',
+  f: [{ k: 'goal', t: '目标金额', type: 'number', v: 100000 }, { k: 'monthly', t: '每月存', type: 'number', v: 3000 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { if (!v.monthly) return { out: '', note: '每月存款不能为0', warn: true }; var months = Math.ceil(v.goal / v.monthly); return { out: '约 ' + months + ' 个月（' + (months / 12).toFixed(1) + ' 年）', metrics: [{ t: '月数', v: months }, { t: '约年', v: (months / 12).toFixed(1) }] }; } });
+
+tool({ id: 'calc-ratio-income', n: '月供收入比', c: 'calc', d: '看房贷月供占收入比例是否健康',
+  f: [{ k: 'monthly', t: '月供', type: 'number', v: 5000 }, { k: 'income', t: '月收入', type: 'number', v: 15000 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var r = v.monthly / v.income * 100; var lv = r > 50 ? '偏高，压力大' : r > 30 ? '适中' : '健康'; return { out: r.toFixed(1) + '%（' + lv + '）', metrics: [{ t: '占比', v: r.toFixed(1) + '%' }, { t: '评级', v: lv }] }; } });
+
+tool({ id: 'calc-loan-cmp', n: '贷款方案对比', c: 'calc', d: '对比两种贷款总利息',
+  f: [{ k: 'p', t: '贷款额(万)', type: 'number', v: 100 }, { k: 'y', t: '年限', type: 'number', v: 30 }, { k: 'r1', t: '方案1利率%', type: 'number', v: 4.2 }, { k: 'r2', t: '方案2利率%', type: 'number', v: 3.8 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var P = v.p * 10000, n = v.y * 12; var m1 = Ca.monthly(P, v.r1 / 100, n), m2 = Ca.monthly(P, v.r2 / 100, n); var i1 = m1 * n - P, i2 = m2 * n - P; return { out: '方案1比方案2多付 ' + ((i1 - i2) / 10000).toFixed(2) + ' 万利息', metrics: [{ t: '方案1总利息', v: (i1 / 10000).toFixed(2) + ' 万' }, { t: '方案2总利息', v: (i2 / 10000).toFixed(2) + ' 万' }, { t: '差额', v: ((i1 - i2) / 10000).toFixed(2) + ' 万' }] }; } });
+
+tool({ id: 'calc-lottery', n: '中奖概率', c: 'calc', d: '算双色球等乐透中奖概率',
+  f: [{ k: 'total', t: '总号码数', type: 'number', v: 33 }, { k: 'pick', t: '选几个', type: 'number', v: 6 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var comb = 1; for (var i = 0; i < v.pick; i++) comb *= (v.total - i); for (var j = 2; j <= v.pick; j++) comb /= j; return { out: '1 / ' + comb, metrics: [{ t: '组合数', v: comb }, { t: '概率', v: (100 / comb).toExponential(2) + '%' }] }; } });
+
+tool({ id: 'calc-expect', n: '彩票期望值', c: 'calc', d: '算彩票期望收益（通常为负）',
+  f: [{ k: 'price', t: '单注价格', type: 'number', v: 2 }, { k: 'prize', t: '头奖金额', type: 'number', v: 5000000 }, { k: 'prob', t: '中奖概率(1/n)', type: 'number', v: 17721088 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var e = v.prize / v.prob - v.price; return { out: '期望净收益：' + e.toFixed(3) + ' 元', metrics: [{ t: '期望', v: e.toFixed(3) }, { t: '结论', v: e < 0 ? '长期必亏' : '理论为正' }] }; } });
+
+tool({ id: 'calc-npv', n: '净现值 NPV', c: 'calc', d: '按贴现率算现金流净现值',
+  f: [{ k: 'flows', t: '现金流(逗号，-为支出)', type: 'text', v: '-10000,3000,4000,5000,6000' }, { k: 'rate', t: '贴现率%', type: 'number', v: 8 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var fs = (v.flows || '').split(',').map(function (x) { return parseFloat(x); }); if (fs.some(isNaN)) return { out: '', note: '现金流格式有误', warn: true }; var npv = 0; fs.forEach(function (f, i) { npv += f / Math.pow(1 + v.rate / 100, i); }); return { out: 'NPV：' + npv.toFixed(2), metrics: [{ t: 'NPV', v: npv.toFixed(2) }, { t: '判断', v: npv > 0 ? '可行' : '不可行' }] }; } });
+
+tool({ id: 'calc-savings', n: '储蓄计划', c: 'calc', d: '每月定存+利息的攒钱结果',
+  f: [{ k: 'monthly', t: '每月存', type: 'number', v: 2000 }, { k: 'rate', t: '年化%', type: 'number', v: 3 }, { k: 'y', t: '年数', type: 'number', v: 10 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var m = v.monthly, rm = v.rate / 100 / 12, n = v.y * 12, fv = 0; if (rm === 0) fv = m * n; else fv = m * (Math.pow(1 + rm, n) - 1) / rm; return { out: '到期：' + fv.toFixed(2), metrics: [{ t: '本金合计', v: (m * n).toFixed(2) }, { t: '利息', v: (fv - m * n).toFixed(2) }, { t: '总额', v: fv.toFixed(2) }] }; } });
+
+tool({ id: 'calc-split-bill', n: '聚餐 AA 制', c: 'calc', d: '按各自消费算每人应付',
+  f: [{ k: 'total', t: '总账单', type: 'number', v: 800 }, { k: 'n', t: '人数', type: 'number', v: 6 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: '每人：' + (v.total / v.n).toFixed(2), metrics: [{ t: '人均', v: (v.total / v.n).toFixed(2) }, { t: '合计', v: v.total }] }; } });
+
+tool({ id: 'calc-loan-term', n: '贷款期限反算', c: 'calc', d: '按目标月供算需要还多少期',
+  f: [{ k: 'p', t: '贷款额', type: 'number', v: 500000 }, { k: 'monthly', t: '月供上限', type: 'number', v: 3000 }, { k: 'rate', t: '年利率%', type: 'number', v: 4.2 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var r = v.rate / 100 / 12; if (v.monthly <= v.p * r) return { out: '', note: '月供低于利息，永远还不清', warn: true }; var n = Math.log(v.monthly / (v.monthly - v.p * r)) / Math.log(1 + r); return { out: '约 ' + Math.ceil(n) + ' 期（' + (Math.ceil(n) / 12).toFixed(1) + ' 年）', metrics: [{ t: '期数', v: Math.ceil(n) }] }; } });
+
+tool({ id: 'calc-body-fat', n: '体脂率估算', c: 'calc', d: '用 BMI 近似估算体脂（参考）',
+  f: [{ k: 'bmi', t: 'BMI', type: 'number', v: 22 }, { k: 'age', t: '年龄', type: 'number', v: 30 }, { k: 'sex', t: '性别', type: 'seg', v: 'm', opts: [{ v: 'm', t: '男' }, { v: 'f', t: '女' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var bf = (1.2 * v.bmi + 0.23 * v.age - (v.sex === 'm' ? 16.2 : 5.4)) * 1; var lv = bf < 10 ? '偏低' : bf < 20 ? '健康' : bf < 25 ? '偏高' : '过高'; return { out: bf.toFixed(1) + '%（' + lv + '）', metrics: [{ t: '体脂率', v: bf.toFixed(1) + '%' }, { t: '评级', v: lv }, { t: '注意', v: '仅公式估算' }] }; } });
+
+tool({ id: 'calc-pace', n: '跑步配速', c: 'calc', d: '按距离和时间算配速/速度',
+  f: [{ k: 'dist', t: '距离 km', type: 'number', v: 5 }, { k: 'min', t: '用时分钟', type: 'number', v: 30 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var pace = v.min / v.dist; var speed = v.dist / (v.min / 60); return { out: '配速 ' + Math.floor(pace) + ':' + (pace % 1 * 60).toFixed(0).padStart(2, '0') + ' /km', metrics: [{ t: '配速', v: Math.floor(pace) + ':' + (pace % 1 * 60).toFixed(0).padStart(2, '0') }, { t: '速度', v: speed.toFixed(2) + ' km/h' }] }; } });
+
+tool({ id: 'calc-rent-yield', n: '租售比', c: 'calc', d: '算房产租金回报率',
+  f: [{ k: 'price', t: '房价(万)', type: 'number', v: 300 }, { k: 'rent', t: '月租金', type: 'number', v: 4000 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var y = v.rent * 12 / (v.price * 10000) * 100; return { out: '年化回报率：' + y.toFixed(2) + '%', metrics: [{ t: '年租金', v: (v.rent * 12).toFixed(0) }, { t: '回报率', v: y.toFixed(2) + '%' }, { t: '回本年数', v: (100 / y).toFixed(1) + ' 年' }] }; } });
+
+tool({ id: 'calc-fuel-cost', n: '油费估算', c: 'calc', d: '按里程和油耗算油费',
+  f: [{ k: 'km', t: '里程 km', type: 'number', v: 1000 }, { k: 'l100', t: '百公里油耗 L', type: 'number', v: 8 }, { k: 'price', t: '油价 元/L', type: 'number', v: 7.8 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var cost = v.km / 100 * v.l100 * v.price; return { out: '油费：' + cost.toFixed(2) + ' 元', metrics: [{ t: '油费', v: cost.toFixed(2) }, { t: '用油', v: (v.km / 100 * v.l100).toFixed(1) + ' L' }] }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "calc-fuel-cost"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: calc-fuel-cost'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

@@ -31,14 +31,130 @@
    19-file.js — 文件工具（哈希 / 差分 / 拆分 / 编码，本地计算）
    ============================================================ */
 
-  
-window.TOOL = { id: "fl-hex", n: "十六进制预览", c: "file", d: "查看文件头部字节（前 256 字节）。",
-  custom: null,
-  fields: [{"k":"file","t":"文件","type":"file"},{"k":"out","t":"Hex 预览","type":"out","mono":true}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) {
+  var T = [];
+  function tool(o) { T.push(o); }
+
+  /* ---------- 纯 JS MD5（字符串/字节）---------- */
+  function md5bytes(bytes) {
+    function r(v, s) { return (v >>> s) | (v << (32 - s)); }
+    function a(v) { return v < 0 ? (1 + ~v) ^ -1 : v; }
+    function add() { var s = 0; for (var i = 0; i < arguments.length; i++) { s = (s + a(arguments[i])) % 4294967296; if (s < 0) s += 4294967296; } return s; }
+    function cm(x, fn) { return ((x >>> 0).toString(16)).padStart(8, '0'); }
+    var s = [], len = bytes.length, pad = (56 - (len + 1) % 64 + 64) % 64;
+    var total = len + 1 + pad + 8, arr = new Uint8Array(total);
+    arr.set(bytes); arr[len] = 0x80;
+    var view = new DataView(arr.buffer);
+    view.setUint32(total - 8, len * 8, true); view.setUint32(total - 4, Math.floor(len / 536870912), true);
+    var a0 = 1732584193, b0 = -271733879, c0 = -1732584194, d0 = 271733878;
+    var K = [], Tt = [];
+    for (var i = 0; i < 64; i++) { K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296); Tt[i] = (i < 16 ? (i * 1) : i < 32 ? (5 * i + 1) % 16 : i < 48 ? (3 * i + 5) % 16 : (7 * i) % 16); }
+    function F(x, y, z, n) { if (n < 16) return (x & y) | (~x & z); if (n < 32) return (x & z) | (y & ~z); if (n < 48) return x ^ y ^ z; return y ^ (x | ~z); }
+    function G(n) { return n < 16 ? 7 : n < 32 ? (n % 2 ? 5 : 12) : n < 48 ? (n % 3 ? 11 : 3) : (n % 4 ? 9 : 15); }
+    for (var off = 0; off < total; off += 64) {
+      var M = []; for (var j = 0; j < 16; j++) M[j] = view.getUint32(off + j * 4, true);
+      var A = a0, B = b0, C = c0, D = d0;
+      for (var k = 0; k < 64; k++) {
+        var f = F(A, B, C, k), g = Tt[k];
+        var tmp = D; D = C; C = B;
+        B = add(B, r((A + f + K[k] + M[g]) >>> 0, G(k)) >>> 0);
+        A = tmp;
+      }
+      a0 = add(a0, A); b0 = add(b0, B); c0 = add(c0, C); d0 = add(d0, D);
+    }
+    return cm(a0) + cm(b0) + cm(c0) + cm(d0);
+  }
+  function md5str(str) {
+    var utf = unescape(encodeURIComponent(str)), bytes = new Uint8Array(utf.length);
+    for (var i = 0; i < utf.length; i++) bytes[i] = utf.charCodeAt(i);
+    return md5bytes(bytes);
+  }
+
+  function bufToBytes(buf) { return new Uint8Array(buf); }
+  function utf8(str) { var u = unescape(encodeURIComponent(str)); var b = new Uint8Array(u.length); for (var i = 0; i < u.length; i++) b[i] = u.charCodeAt(i); return b; }
+
+  function sha256(buf) {
+    if (!(window.crypto && window.crypto.subtle)) return Promise.reject(new Error('当前环境不支持 SHA（需 HTTPS 或 localhost）'));
+    return window.crypto.subtle.digest('SHA-256', buf).then(function (h) {
+      return Array.prototype.map.call(new Uint8Array(h), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    });
+  }
+
+  /* 1 文件 MD5 */
+  tool({ id: 'fl-md5', n: '文件 MD5', c: 'file', d: '计算文件的 MD5 校验值。',
+    f: [{ k: 'file', t: '文件', type: 'file' }, { k: 'out', t: 'MD5', type: 'out', mono: true, dl: true, dlName: 'md5.txt' }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.fileToBuf(v.file).then(function (b) { return { out: md5str('') && md5bytes(bufToBytes(b)) }; });
+    } });
+
+  /* 2 文件 SHA256 */
+  tool({ id: 'fl-sha', n: '文件 SHA256', c: 'file', d: '计算文件的 SHA-256 校验值（需安全环境）。',
+    f: [{ k: 'file', t: '文件', type: 'file' }, { k: 'out', t: 'SHA256', type: 'out', mono: true }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.fileToBuf(v.file).then(function (b) { return sha256(b).then(function (h) { return { out: h }; }, function (e) { return { out: '', note: e.message, warn: true }; }); });
+    } });
+
+  /* 3 文件转 Base64 */
+  tool({ id: 'fl-b64', n: '文件转 Base64', c: 'file', d: '任意文件编码为 Base64 文本。',
+    f: [{ k: 'file', t: '文件', type: 'file' }, { k: 'out', t: 'Base64', type: 'out', mono: true }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.fileToBuf(v.file).then(function (b) {
+        var bytes = bufToBytes(b), bin = ''; for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return { out: btoa(bin) };
+      });
+    } });
+
+  /* 4 Base64 转文件 */
+  tool({ id: 'fl-b64d', n: 'Base64 转文件', c: 'file', d: '把 Base64 还原为可下载文件。',
+    f: [{ k: 'data', t: 'Base64 文本', type: 'textarea', rows: 5, ph: '粘贴 Base64' }, { k: 'name', t: '文件名', type: 'text', v: 'output.bin' }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      var s = (v.data || '').trim(); if (!s) return { note: '请粘贴 Base64', outfile: [] };
+      try {
+        var bin = atob(s), bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return { outfile: [{ name: v.name || 'output.bin', blob: new Blob([bytes]), size: bytes.length }] };
+      } catch (e) { return { note: 'Base64 解析失败', outfile: [], warn: true }; }
+    } });
+
+  /* 5 文本差异对比 */
+  tool({ id: 'fl-diff', n: '文本差异对比', c: 'file', d: '逐行对比，标记新增/删除。',
+    f: [{ k: 'a', t: '原文', type: 'textarea', rows: 6, ph: '旧版本文本' }, { k: 'b', t: '新文', type: 'textarea', rows: 6, ph: '新版本文本' }, { k: 'outhtml', t: '对比结果', type: 'outhtml' }],
+    run: function (v) {
+      var la = (v.a || '').split('\n'), lb = (v.b || '').split('\n');
+      function lcs(i, j, memo) { if (i < 0 || j < 0) return 0; if (memo[i][j] != null) return memo[i][j]; var r; if (la[i] === lb[j]) r = 1 + lcs(i - 1, j - 1, memo); else r = Math.max(lcs(i - 1, j, memo), lcs(i, j - 1, memo)); memo[i][j] = r; return r; }
+      var m = la.map(function () { return []; }); lcs(la.length - 1, lb.length - 1, m);
+      var i = la.length - 1, j = lb.length - 1, out = [];
+      while (i >= 0 && j >= 0) {
+        if (la[i] === lb[j]) { out.unshift('<div class="d-eq">' + RT.esc(la[i]) + '</div>'); i--; j--; }
+        else if ((m[i - 1] && m[i - 1][j]) === (m[i][j])) { out.unshift('<div class="d-del">- ' + RT.esc(la[i]) + '</div>'); i--; }
+        else { out.unshift('<div class="d-add">+ ' + RT.esc(lb[j]) + '</div>'); j--; }
+      }
+      while (i >= 0) { out.unshift('<div class="d-del">- ' + RT.esc(la[i]) + '</div>'); i--; }
+      while (j >= 0) { out.unshift('<div class="d-add">+ ' + RT.esc(lb[j]) + '</div>'); j--; }
+      return { outhtml: out.join('') };
+    } });
+
+  /* 6 文件分块 */
+  tool({ id: 'fl-split', n: '文件分块', c: 'file', d: '按大小切分为多个片段（便于传输）。',
+    f: [{ k: 'file', t: '文件', type: 'file' }, { k: 'size', t: '每块大小(KB)', type: 'number', v: 1024, min: 1 }, { k: 'outfile', t: '输出片段', type: 'outfile' }],
+    run: function (v) {
+      if (!v.file) return { note: '请选择文件', outfile: [] };
+      return RT.fileToBuf(v.file).then(function (b) {
+        var chunk = (v.size || 1024) * 1024, bytes = bufToBytes(b), out = [], idx = 1;
+        for (var off = 0; off < bytes.length; off += chunk) {
+          var part = bytes.subarray(off, Math.min(off + chunk, bytes.length));
+          out.push({ name: v.file.name + '.part' + String(idx++).padStart(3, '0'), blob: new Blob([part]), size: part.length });
+        }
+        return { outfile: out, note: '分成 ' + out.length + ' 块' };
+      });
+    } });
+
+  /* 7 十六进制预览 */
+  tool({ id: 'fl-hex', n: '十六进制预览', c: 'file', d: '查看文件头部字节（前 256 字节）。',
+    f: [{ k: 'file', t: '文件', type: 'file' }, { k: 'out', t: 'Hex 预览', type: 'out', mono: true }],
+    run: function (v) {
       if (!v.file) return { out: '' };
       return RT.fileToBuf(v.file).then(function (b) {
         var bytes = bufToBytes(b), n = Math.min(256, bytes.length), lines = [];
@@ -49,7 +165,43 @@ window.TOOL = { id: "fl-hex", n: "十六进制预览", c: "file", d: "查看文�
         }
         return { out: lines.join('\n') };
       });
-    } };
+    } });
+
+  /* 8 行数 / 字数统计 */
+  tool({ id: 'fl-count', n: '文本统计', c: 'file', d: '统计行数、字数、字节数。',
+    f: [{ k: 'text', t: '文本', type: 'textarea', rows: 8 }, { k: 'out', t: '统计', type: 'out', mono: true }],
+    run: function (v) {
+      var t = v.text || '';
+      var lines = t.split('\n').length, chars = t.length, words = (t.trim().match(/[^\s]+/g) || []).length;
+      var bytes = utf8(t).length;
+      return { out: '行数：' + lines + '\n字符数：' + chars + '\n词数：' + words + '\n字节(UTF-8)：' + bytes };
+    } });
+
+  /* 9 校验值比对 */
+  tool({ id: 'fl-verify', n: '哈希校验比对', c: 'file', d: '计算 MD5 并与你提供的期望值比对。',
+    f: [{ k: 'file', t: '文件', type: 'file' }, { k: 'expect', t: '期望 MD5', type: 'text', ph: '粘贴期望的 MD5' }, { k: 'out', t: '结果', type: 'out' }],
+    run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.fileToBuf(v.file).then(function (b) {
+        var got = md5bytes(bufToBytes(b));
+        if (!v.expect) return { out: '实际 MD5：' + got };
+        var ok = got.toLowerCase() === String(v.expect).trim().toLowerCase();
+        return { out: (ok ? '✓ 一致' : '✗ 不一致') + '\n实际：' + got + '\n期望：' + v.expect };
+      });
+    } });
+
+  /* 10 随机字节文件 */
+  tool({ id: 'fl-rand', n: '生成随机字节', c: 'file', d: '生成指定大小的随机数据文件（测试用）。',
+    f: [{ k: 'kb', t: '大小(KB)', type: 'number', v: 64, min: 1, max: 10240 }, { k: 'outfile', t: '输出', type: 'outfile' }],
+    run: function (v) {
+      var n = Math.min(10240, v.kb || 64) * 1024, bytes = new Uint8Array(n);
+      if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes); else for (var i = 0; i < n; i++) bytes[i] = Math.floor(Math.random() * 256);
+      return { outfile: [{ name: 'random-' + n + '.bin', blob: new Blob([bytes]), size: n }] };
+    } });
+
+  
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "fl-hex"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: fl-hex'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

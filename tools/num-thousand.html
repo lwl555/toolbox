@@ -56,14 +56,154 @@ Nh.romanD = function (s) { var m = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M
 Nh.parseNums = function (s) { return (s + '').split(/[^\d.\-eE]+/).map(function (x) { return parseFloat(x); }).filter(function (x) { return !isNaN(x); }); };
 Nh.fmt = function (n) { return ('' + n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "num-thousand", n: "千分位格式化", c: "number", d: "给长数字加千位逗号，并可选保留小数",
-  custom: null,
-  fields: [{"k":"x","t":"数字","type":"text","ph":"1234567.891"},{"k":"d","t":"小数位","type":"number","v":2,"min":0,"max":8},{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) { var x = parseFloat((v.x || '').replace(/,/g, '')); if (isNaN(x)) return { out: '', note: '请输入数字', warn: true }; var p = Math.pow(10, v.d || 0); var r = Math.round(x * p) / p; var s = ('' + r), parts = s.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); return { out: parts.join('.') }; } };
+tool({ id: 'num-arith', n: '四则运算', c: 'number', d: '输入一组数字和运算符，算出结果',
+  f: [{ k: 'a', t: '表达式', type: 'text', ph: '如 (12+3)*4/2' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) {
+    var s = (v.a || '').trim(); if (!s) return { out: '' };
+    if (/[^0-9+\-*/().\s]/.test(s)) return { out: '', note: '只支持数字和 + - * / ( )', warn: true };
+    try { /* eslint-disable no-new-func */ var r = Function('"use strict";return (' + s + ')')(); return { out: String(r), metrics: [{ t: '数值', v: r }] }; } catch (e) { return { out: '', note: '计算失败：' + e.message, warn: true }; }
+  } });
+
+tool({ id: 'num-percent', n: '百分比计算', c: 'number', d: '算 A 占 B 的百分之几，或某百分比对应的值',
+  f: [{ k: 'a', t: '数值 A', type: 'number', v: 30 }, { k: 'b', t: '数值 B（基数）', type: 'number', v: 200 }, { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) { var b = v.b || 0; if (!b) return { out: '', note: '基数不能为 0', warn: true }; return { out: (v.a / b * 100).toFixed(2) + '%', metrics: [{ t: 'A 占 B', v: (v.a / b * 100).toFixed(2) + '%' }, { t: 'B 的 1%', v: (b / 100).toFixed(4) }] }; } });
+
+tool({ id: 'num-change', n: '增减百分比', c: 'number', d: '算从旧值到新值涨了还是跌了多少',
+  f: [{ k: 'old', t: '原值', type: 'number', v: 100 }, { k: 'new', t: '新值', type: 'number', v: 150 }, { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) { if (!v.old) return { out: '', note: '原值不能为 0', warn: true }; var ch = (v.new - v.old) / v.old * 100; var dir = ch >= 0 ? '上涨' : '下降'; return { out: dir + ' ' + Math.abs(ch).toFixed(2) + '%', metrics: [{ t: '变化量', v: (v.new - v.old).toFixed(2) }, { t: '变化率', v: ch.toFixed(2) + '%' }] }; } });
+
+tool({ id: 'num-ratio', n: '比例分配', c: 'number', d: '把总数按给定比例拆分',
+  f: [{ k: 'total', t: '总量', type: 'number', v: 100 }, { k: 'ratio', t: '比例（逗号分隔）', type: 'text', v: '3,5,2' }, { k: 'out', t: '分配结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var rs = (v.ratio || '').split(',').map(function (x) { return parseFloat(x); }).filter(function (x) { return !isNaN(x) && x > 0; }); if (!rs.length) return { out: '', note: '请输入比例，如 3,5,2', warn: true }; var sum = Nh.sum(rs); return { out: rs.map(function (r) { return (v.total * r / sum).toFixed(2); }).join('\n') }; } });
+
+tool({ id: 'num-stats', n: '统计汇总', c: 'number', d: '求一组数的总和、均值、中位数、众数、最大最小',
+  f: [{ k: 'in', t: '数字列表（空格/逗号分隔）', type: 'textarea', ph: '1 2 3 4 5' }, { k: 'out', t: '统计结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var a = Nh.parseNums(v.in); if (a.length < 1) return { out: '', note: '请输入至少一个数字', warn: true }; var mo = Nh.mode(a); return { out: '数据个数：' + a.length, metrics: [{ t: '求和', v: Nh.sum(a) }, { t: '均值', v: Nh.mean(a).toFixed(3) }, { t: '中位数', v: Nh.med(a) }, { t: '众数', v: mo.length ? mo.join(', ') : '无' }, { t: '最大', v: Math.max.apply(null, a) }, { t: '最小', v: Math.min.apply(null, a) }, { t: '方差', v: (Nh.sum(a.map(function (x) { return (x - Nh.mean(a)) ** 2; })) / a.length).toFixed(3) }] }; } });
+
+tool({ id: 'num-gcd', n: '最大公约数', c: 'number', d: '求两个数的最大公约数',
+  f: [{ k: 'a', t: '数字 A', type: 'number', v: 48 }, { k: 'b', t: '数字 B', type: 'number', v: 36 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { return { out: Nh.gcd(v.a, v.b) + '', metrics: [{ t: '最大公约数', v: Nh.gcd(v.a, v.b) }, { t: '最小公倍数', v: Nh.lcm(v.a, v.b) }] }; } });
+
+tool({ id: 'num-lcm', n: '最小公倍数', c: 'number', d: '求两个数的最小公倍数',
+  f: [{ k: 'a', t: '数字 A', type: 'number', v: 4 }, { k: 'b', t: '数字 B', type: 'number', v: 6 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: Nh.lcm(v.a, v.b) + '', metrics: [{ t: '最小公倍数', v: Nh.lcm(v.a, v.b) }] }; } });
+
+tool({ id: 'num-prime', n: '质数判断', c: 'number', d: '判断一个数是不是质数',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 97, min: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { if (v.n < 2) return { out: '不是质数（小于 2）' }; return { out: Nh.isPrime(v.n) ? (v.n + ' 是质数 ✓') : (v.n + ' 不是质数'), metrics: Nh.isPrime(v.n) ? [{ t: '判定', v: '质数' }] : [{ t: '可整除', v: '最小因子 ' + (function () { for (var i = 2; i * i <= v.n; i++) if (v.n % i === 0) return i; return v.n; })() }] }; } });
+
+tool({ id: 'num-factor', n: '质因数分解', c: 'number', d: '把一个数拆成质数相乘',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 360, min: 2 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var f = Nh.factor(v.n); return { out: f.join(' × '), metrics: [{ t: '质因子', v: f.join(', ') }, { t: '个数', v: f.length }] }; } });
+
+tool({ id: 'num-fib', n: '斐波那契数列', c: 'number', d: '生成前 N 项斐波那契数',
+  f: [{ k: 'n', t: '项数', type: 'number', v: 20, min: 1, max: 1000 }, { k: 'out', t: '数列', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var n = Math.min(1000, Math.max(1, parseInt(v.n) || 1)); return { out: Nh.fib(n).join(', '), metrics: [{ t: '前', v: n + ' 项' }, { t: '末项', v: Nh.fib(n).pop() }] }; } });
+
+tool({ id: 'num-fact', n: '阶乘计算', c: 'number', d: '算 N 的阶乘（N≤170 不溢出）',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 10, min: 0, max: 170 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var n = Math.min(170, Math.max(0, parseInt(v.n) || 0)); return { out: Nh.fact(n) + '', metrics: [{ t: '阶乘', v: n + '! = ' + Nh.fmt(Nh.fact(n)) }] }; } });
+
+tool({ id: 'num-power', n: '乘方与开方', c: 'number', d: '算 x 的 y 次方，或开 n 次方根',
+  f: [{ k: 'x', t: '底数 x', type: 'number', v: 2 }, { k: 'y', t: '指数 y（负数=倒数，小数=根）', type: 'number', v: 10 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = Math.pow(v.x, v.y); if (!isFinite(r)) return { out: '', note: '结果超出范围', warn: true }; return { out: (Math.round(r * 1e10) / 1e10) + '', metrics: [{ t: 'x^y', v: v.x + ' ^ ' + v.y }] }; } });
+
+tool({ id: 'num-log', n: '对数计算', c: 'number', d: '常用对数、自然对数、任意底数对数',
+  f: [{ k: 'x', t: '真数（>0）', type: 'number', v: 100, min: 0.0001 }, { k: 'base', t: '底数', type: 'select', opts: [{ v: '10', t: 'log10 常用' }, { v: 'e', t: 'ln 自然' }, { v: '2', t: 'log2' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var x = v.x; if (x <= 0) return { out: '', note: '真数需大于 0', warn: true }; var r = v.base === 'e' ? Math.log(x) : v.base === '2' ? Math.log2(x) : Math.log10(x); return { out: r.toFixed(6) }; } });
+
+tool({ id: 'num-trigo', n: '三角函数', c: 'number', d: 'sin/cos/tan 等，可选角度或弧度',
+  f: [{ k: 'x', t: '角度', type: 'number', v: 30 }, { k: 'fn', t: '函数', type: 'select', opts: [{ v: 'sin', t: 'sin' }, { v: 'cos', t: 'cos' }, { v: 'tan', t: 'tan' }, { v: 'asin', t: 'arcsin' }, { v: 'acos', t: 'arccos' }, { v: 'atan', t: 'arctan' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = Math[v.fn](v.x * Math.PI / 180); if (!isFinite(r)) return { out: '无定义（如 tan 90°）' }; return { out: r.toFixed(6) }; } });
+
+tool({ id: 'num-roman', n: '罗马数字转换', c: 'number', d: '阿拉伯数字与罗马数字互转（1-3999）',
+  f: [{ k: 'in', t: '数字 或 罗马串', type: 'text', ph: '2024 或 MMXXIV' }, { k: 'm', t: '方向', type: 'seg', v: 'auto', opts: [{ v: 'auto', t: '自动识别' }, { v: 'a2r', t: '数字→罗马' }, { v: 'r2a', t: '罗马→数字' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = (v.in || '').trim(); if (/^[0-9]+$/.test(s) && v.m !== 'r2a') { var n = +s; if (n < 1 || n > 3999) return { out: '', note: '范围 1-3999', warn: true }; return { out: Nh.roman(n) }; } return { out: String(Nh.romanD(s.toUpperCase())), note: s.toUpperCase() }; } });
+
+tool({ id: 'num-cnmoney', n: '人民币大写', c: 'number', d: '把金额转成财务用的中文大写（壹贰叁…）',
+  f: [{ k: 'n', t: '金额', type: 'text', ph: '1234.56' }, { k: 'out', t: '大写', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var n = parseFloat((v.n || '').replace(/,/g, '')); if (isNaN(n)) return { out: '', note: '请输入数字', warn: true }; return { out: Nh.cnMoney(n) }; } });
+
+tool({ id: 'num-cnnum', n: '数字转中文', c: 'number', d: '把阿拉伯数字转成中文小写（一二三…）',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 12345 }, { k: 'out', t: '中文', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { if (v.n < 0 || v.n > 99999999) return { out: '', note: '范围 0-99999999', warn: true }; return { out: Nh.cnNum(Math.round(v.n)) }; } });
+
+tool({ id: 'num-en', n: '数字转英文', c: 'number', d: '把整数转成英文单词（财务/票据用）',
+  f: [{ k: 'n', t: '数字（0-999999）', type: 'number', v: 1024, max: 999999 }, { k: 'out', t: '英文', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) {
+    var n = Math.round(v.n); if (n < 0 || n > 999999) return { out: '', note: '范围 0-999999', warn: true };
+    var o = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    var t = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    function two(x) { if (x < 20) return o[x]; var r = t[x / 10 | 0]; if (x % 10) r += '-' + o[x % 10]; return r; }
+    function three(x) { if (x < 100) return two(x); var h = o[x / 100 | 0] + ' hundred'; if (x % 100) h += ' ' + two(x % 100); return h; }
+    if (n < 1000) return { out: three(n) };
+    var r = three(n / 1000 | 0) + ' thousand'; if (n % 1000) r += ' ' + three(n % 1000); return { out: r };
+  } });
+
+tool({ id: 'num-seq', n: '数列求和', c: 'number', d: '等差/等比数列前 N 项和',
+  f: [{ k: 'a1', t: '首项', type: 'number', v: 1 }, { k: 'd', t: '公差或公比', type: 'number', v: 2 }, { k: 'n', t: '项数', type: 'number', v: 10, min: 1 }, { k: 'm', t: '类型', type: 'seg', v: 'arith', opts: [{ v: 'arith', t: '等差' }, { v: 'geo', t: '等比' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) {
+    if (v.m === 'arith') return { out: Nh.fmt(Math.round(v.n * (2 * v.a1 + (v.n - 1) * v.d) / 2)) + '', metrics: [{ t: '末项', v: v.a1 + (v.n - 1) * v.d }] };
+    if (v.d === 1) return { out: String(v.n * v.a1), metrics: [{ t: '说明', v: '公比为1' }] };
+    return { out: Nh.fmt(Math.round(v.a1 * (1 - Math.pow(v.d, v.n)) / (1 - v.d))) + '' };
+  } });
+
+tool({ id: 'num-perm', n: '排列组合', c: 'number', d: '算 C(n,k) 组合数与 A(n,k) 排列数',
+  f: [{ k: 'n', t: '总数 n', type: 'number', v: 10, min: 0 }, { k: 'k', t: '选取 k', type: 'number', v: 3, min: 0 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) {
+    if (v.k > v.n) return { out: '', note: 'k 不能大于 n', warn: true };
+    function f(x) { return Nh.fact(x); }
+    var c = f(v.n) / (f(v.k) * f(v.n - v.k)); var a = f(v.n) / f(v.n - v.k);
+    return { out: 'C(' + v.n + ',' + v.k + ') = ' + Nh.fmt(c), metrics: [{ t: '组合数 C', v: Nh.fmt(c) }, { t: '排列数 A', v: Nh.fmt(a) }] };
+  } });
+
+tool({ id: 'num-round', n: '四舍五入取整', c: 'number', d: '多种进位方式，可指定小数位',
+  f: [{ k: 'x', t: '数值', type: 'text', ph: '3.14159' }, { k: 'd', t: '保留小数', type: 'number', v: 2, min: 0, max: 10 }, { k: 'm', t: '方式', type: 'select', opts: [{ v: 'round', t: '四舍五入' }, { v: 'floor', t: '向下取整' }, { v: 'ceil', t: '向上取整' }, { v: 'trunc', t: '直接舍去' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var x = parseFloat(v.x); if (isNaN(x)) return { out: '', note: '请输入数字', warn: true }; var p = Math.pow(10, v.d || 0); var r = v.m === 'floor' ? Math.floor(x * p) / p : v.m === 'ceil' ? Math.ceil(x * p) / p : v.m === 'trunc' ? Math.trunc(x * p) / p : Math.round(x * p) / p; return { out: (Math.round(r * 1e10) / 1e10) + '' }; } });
+
+tool({ id: 'num-thousand', n: '千分位格式化', c: 'number', d: '给长数字加千位逗号，并可选保留小数',
+  f: [{ k: 'x', t: '数字', type: 'text', ph: '1234567.891' }, { k: 'd', t: '小数位', type: 'number', v: 2, min: 0, max: 8 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var x = parseFloat((v.x || '').replace(/,/g, '')); if (isNaN(x)) return { out: '', note: '请输入数字', warn: true }; var p = Math.pow(10, v.d || 0); var r = Math.round(x * p) / p; var s = ('' + r), parts = s.split('.'); parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); return { out: parts.join('.') }; } });
+
+tool({ id: 'num-range', n: '生成等差序列', c: 'number', d: '生成从起值到终值、指定步长的数列',
+  f: [{ k: 'from', t: '起始', type: 'number', v: 1 }, { k: 'to', t: '结束', type: 'number', v: 20 }, { k: 'step', t: '步长', type: 'number', v: 2 }, { k: 'out', t: '序列', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var r = [], i = v.from, n = 0; if ((v.to - v.from) * v.step <= 0) return { out: '', note: '步长方向需与起止一致', warn: true }; while ((v.step > 0 && i <= v.to) || (v.step < 0 && i >= v.to)) { r.push(Math.round(i * 1e9) / 1e9); i += v.step; if (++n > 100000) break; } return { out: r.join(', '), metrics: [{ t: '项数', v: r.length }] }; } });
+
+tool({ id: 'num-mod', n: '取余运算', c: 'number', d: '算 a 除以 b 的余数',
+  f: [{ k: 'a', t: '被除数', type: 'number', v: 17 }, { k: 'b', t: '除数', type: 'number', v: 5 }, { k: 'out', t: '余数', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { if (!v.b) return { out: '', note: '除数不能为 0', warn: true }; return { out: String(v.a % v.b) }; } });
+
+tool({ id: 'num-shift', n: '位移运算', c: 'number', d: '按位左移 / 右移，看二进制变化',
+  f: [{ k: 'a', t: '数值', type: 'number', v: 8, min: 0 }, { k: 'bits', t: '位移位数', type: 'number', v: 2, min: 0, max: 31 }, { k: 'm', t: '方向', type: 'seg', v: 'l', opts: [{ v: 'l', t: '左移 <<' }, { v: 'r', t: '右移 >>' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var r = v.m === 'l' ? (v.a << v.bits) : (v.a >> v.bits); return { out: String(r), metrics: [{ t: '二进制', v: r.toString(2) }, { t: v.m === 'l' ? '相当于 ×2^' + v.bits : '相当于 ÷2^' + v.bits, v: r }] }; } });
+
+tool({ id: 'num-bitop', n: '位运算', c: 'number', d: '对两个十进制数做与/或/异或/取反',
+  f: [{ k: 'a', t: 'A', type: 'number', v: 12, min: 0 }, { k: 'b', t: 'B', type: 'number', v: 10, min: 0 }, { k: 'op', t: '运算', type: 'select', opts: [{ v: 'and', t: 'AND &' }, { v: 'or', t: 'OR |' }, { v: 'xor', t: 'XOR ^' }, { v: 'not', t: 'NOT ~（仅A）' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var r = v.op === 'and' ? (v.a & v.b) : v.op === 'or' ? (v.a | v.b) : v.op === 'xor' ? (v.a ^ v.b) : (~v.a >>> 0); return { out: String(r), metrics: [{ t: 'A 二进制', v: v.a.toString(2) }, { t: 'B 二进制', v: v.b.toString(2) }, { t: '结果二进制', v: r.toString(2) }] }; } });
+
+tool({ id: 'num-rand-range', n: '随机整数', c: 'number', d: '生成指定范围内的随机整数',
+  f: [{ k: 'a', t: '最小值', type: 'number', v: 1 }, { k: 'b', t: '最大值', type: 'number', v: 100 }, { k: 'n', t: '生成个数', type: 'number', v: 1, min: 1, max: 200 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false,
+  run: function (v) { var r = []; for (var i = 0; i < (v.n || 1); i++) r.push(Math.floor(Math.random() * (v.b - v.a + 1)) + v.a); return { out: r.join(', '), metrics: [{ t: '范围', v: v.a + ' ~ ' + v.b }] }; } });
+
+tool({ id: 'num-even-odd', n: '奇偶判断', c: 'number', d: '判断一个数是奇数还是偶数',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 42 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: v.n % 2 === 0 ? (v.n + ' 是偶数') : (v.n + ' 是奇数') }; } });
+
+tool({ id: 'num-divisors', n: '约数枚举', c: 'number', d: '列出一个数的所有正约数',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 60, min: 1 }, { k: 'out', t: '约数', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var n = Math.abs(Math.round(v.n)), r = []; for (var i = 1; i <= n; i++) if (n % i === 0) r.push(i); return { out: r.join(', '), metrics: [{ t: '约数个数', v: r.length }] }; } });
+
+tool({ id: 'num-palindrome', n: '回文数判断', c: 'number', d: '判断一个正整数是否正读反读都一样',
+  f: [{ k: 'n', t: '数字', type: 'number', v: 12321 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = '' + Math.abs(Math.round(v.n)); var r = s === s.split('').reverse().join(''); return { out: r ? (v.n + ' 是回文数 ✓') : (v.n + ' 不是回文数') }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "num-thousand"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: num-thousand'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

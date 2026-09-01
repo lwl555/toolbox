@@ -69,20 +69,412 @@ for (var _mk in MORSE) MORSE_R[MORSE[_mk]] = _mk;
 H.mE = function (s) { return s.toUpperCase().split('').map(function (c) { return c === ' ' ? '/' : (MORSE[c] || ''); }).filter(Boolean).join(' '); };
 H.mD = function (s) { return s.trim().split(/\s+/).map(function (c) { return c === '/' ? ' ' : (MORSE_R[c] || ''); }).join(''); };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "text-escape", n: "HTML 转义", c: "text", d: "把 < > & 等符号转成实体，防止页面错乱",
-  custom: null,
-  fields: [{"k":"in","t":"原始内容","type":"textarea","ph":"<div class=\"a\">内容</div>"},{"k":"m","t":"方向","type":"seg","v":"e","opts":[{"v":"e","t":"转义"},{"v":"u","t":"反转义"}]},{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
-  auto: true,
-  first: true,
-  init: null,
+tool({ id: 'text-upper', n: '文本转大写', c: 'text', d: '英文内容一键全部转成大写字母',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea', ph: '粘贴要转换的文本…' }, { k: 'out', t: '转换结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: (v.in || '').toUpperCase() }; } });
+
+tool({ id: 'text-lower', n: '文本转小写', c: 'text', d: '英文内容一键全部转成小写字母',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea', ph: '粘贴要转换的文本…' }, { k: 'out', t: '转换结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: (v.in || '').toLowerCase() }; } });
+
+tool({ id: 'text-capital', n: '首字母大写', c: 'text', d: '每段话或每句的第一个字母改成大写',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea' }, { k: 'm', t: '范围', type: 'seg', v: 'sentence', opts: [{ v: 'sentence', t: '每句' }, { v: 'line', t: '每行' }, { v: 'word', t: '每个词' }] }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var s = v.in || '';
+    if (v.m === 'word') return { out: s.replace(/\b[a-z]/g, function (c) { return c.toUpperCase(); }) };
+    var parts = v.m === 'line' ? H.L(s) : s.split(/([.!?。！？\s*\n])/);
+    return { out: parts.map(function (p, i) {
+      if (v.m === 'sentence' && i % 2) return p;
+      return p.charAt(0).toUpperCase() + p.slice(1);
+    }).join('') };
+  } });
+
+tool({ id: 'text-reverse', n: '文本倒序', c: 'text', d: '把整段文字或每一行倒过来排列',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea' }, { k: 'm', t: '方式', type: 'seg', v: 'all', opts: [{ v: 'all', t: '整体反转' }, { v: 'line', t: '每行反转' }, { v: 'rows', t: '行序反转' }] }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var s = v.in || '';
+    if (v.m === 'all') return { out: s.split('').reverse().join('') };
+    if (v.m === 'rows') return { out: H.L(s).reverse().join('\n') };
+    return { out: H.O(H.L(s).map(function (l) { return l.split('').reverse().join(''); })) };
+  } });
+
+tool({ id: 'text-rm-blank', n: '删除空行', c: 'text', d: '清理文本里多余的空行和首尾空白',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea', ph: '粘贴带空行的文本…' },
+    { k: 'trim', t: '同时去掉每行首尾空格', type: 'checkbox', v: true },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var ls = H.L(v.in), n0 = ls.length;
+    var r = ls.filter(function (l) { return l.trim() !== ''; });
+    if (v.trim) r = r.map(function (l) { return l.trim(); });
+    return { out: r.join('\n'), metrics: [{ t: '原始行数', v: n0 }, { t: '清理后', v: r.length }, { t: '删掉', v: n0 - r.length }] };
+  } });
+
+tool({ id: 'text-rm-space', n: '删除所有空格', c: 'text', d: '去掉文本里全部空格、制表符，或只压缩多余空格',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea' }, { k: 'm', t: '方式', type: 'seg', v: 'all', opts: [{ v: 'all', t: '全部空格' }, { v: 'dup', t: '压缩连续空格' }, { v: 'tab', t: '只去制表符' }] }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var s = v.in || '';
+    if (v.m === 'all') return { out: s.replace(/[\s\u3000]+/g, '') };
+    if (v.m === 'dup') return { out: s.replace(/[ \t\u3000]+/g, ' ') };
+    return { out: s.replace(/\t/g, '') };
+  } });
+
+tool({ id: 'text-half-full', n: '全角半角转换', c: 'text', d: '中文排版常用，全角标点与半角字符互转',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea' }, { k: 'm', t: '方向', type: 'seg', v: 'h', opts: [{ v: 'h', t: '全角转半角' }, { v: 'f', t: '半角转全角' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: v.m === 'f' ? H.full(v.in || '') : H.half(v.in || '') }; } });
+
+tool({ id: 'text-dedup', n: '文本去重', c: 'text', d: '按行去掉重复内容，可保留原顺序',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea', ph: '一行一条…' },
+    { k: 'sort', t: '去重后排序', type: 'checkbox' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var ls = H.L(v.in), seen = {}, r = [];
+    ls.forEach(function (l) { if (!seen[l] && l !== '') { seen[l] = 1; r.push(l); } });
+    if (v.sort) r.sort(function (a, b) { return a.localeCompare(b, 'zh'); });
+    return { out: r.join('\n'), metrics: [{ t: '原有', v: ls.filter(function (x) { return x !== ''; }).length }, { t: '去重后', v: r.length }, { t: '重复', v: ls.filter(function (x) { return x !== ''; }).length - r.length }] };
+  } });
+
+tool({ id: 'text-sort', n: '文本排序', c: 'text', d: '按拼音、字母或数字大小对每行排序',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea', ph: '一行一条…' },
+    { k: 'm', t: '排序方式', type: 'select', opts: [{ v: 'zh', t: '中文拼音' }, { v: 'en', t: '字母顺序' }, { v: 'num', t: '数字大小' }, { v: 'len', t: '长度' }] },
+    { k: 'desc', t: '倒序', type: 'checkbox' },
+    { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var r = H.L(v.in).filter(function (l) { return l !== ''; });
+    r.sort(function (a, b) {
+      if (v.m === 'num') return (parseFloat(a) || 0) - (parseFloat(b) || 0);
+      if (v.m === 'len') return a.length - b.length;
+      return a.localeCompare(b, v.m === 'zh' ? 'zh' : 'en');
+    });
+    if (v.desc) r.reverse();
+    return { out: r.join('\n') };
+  } });
+
+tool({ id: 'text-shuffle', n: '随机打乱', c: 'text', d: '把列表行的顺序随机打乱，抽签分组常用',
+  f: [{ k: 'in', t: '输入列表', type: 'textarea', ph: '一行一个…' }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false,
+  run: function (v) {
+    var r = H.L(v.in).filter(function (l) { return l !== ''; });
+    for (var i = r.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = r[i]; r[i] = r[j]; r[j] = t;
+    }
+    return { out: r.join('\n') };
+  } });
+
+tool({ id: 'text-addnum', n: '添加行号', c: 'text', d: '给每一行前面加上序号，支持多种格式',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea' },
+    { k: 'fmt', t: '格式', type: 'select', opts: [{ v: '1. ', t: '1. ' }, { v: '1、', t: '1、' }, { v: '(1)', t: '(1)' }, { v: '01.', t: '01.' }, { v: '1 ', t: '1 ' }] },
+    { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var ls = H.L(v.in), f = v.fmt, pad = f.indexOf('01') === 0;
+    return { out: H.O(ls.map(function (l, i) {
+      if (l === '' && i === ls.length - 1) return l;
+      var n = i + 1, s = pad && n < 10 ? '0' + n : '' + n;
+      return s + f.replace(/[0-9]/g, '') + l;
+    })) };
+  } });
+
+tool({ id: 'text-rmnum', n: '去掉行号', c: 'text', d: '批量删除每行开头的数字序号和符号',
+  f: [{ k: 'in', t: '带序号的文本', type: 'textarea', ph: '1. 内容\n2. 内容' }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) { return { out: H.O(H.L(v.in).map(function (l) { return l.replace(/^\s*\d+\s*[.、)．：:]\s*/, ''); })) }; } });
+
+tool({ id: 'text-count', n: '字数统计', c: 'text', d: '统计字符数、词数、行数，含高频词 TOP20',
+  f: [{ k: 'in', t: '输入文本', type: 'textarea', ph: '粘贴文章…' }, { k: 'out', t: '高频词', type: 'out', dl: 1, metrics: 1, ph: '输入文本后显示词频' }],
+  run: function (v) {
+    var s = v.in || '';
+    var cn = (s.match(/[\u4e00-\u9fa5]/g) || []).length;
+    var en = (s.match(/[a-zA-Z]+/g) || []).length;
+    var num = (s.match(/\d+/g) || []).length;
+    var punc = (s.match(/[\u3000-\u303F\uFF00-\uFFEF]/g) || []).length;
+    var ls = H.L(s);
+    var top = H.freq(s, 20, true).map(function (x) { return x.w + '  ' + x.n; }).join('\n');
+    return {
+      out: top,
+      metrics: [
+        { t: '字符总数', v: s.replace(/\s/g, '').length },
+        { t: '中文字', v: cn },
+        { t: '英文词', v: en },
+        { t: '数字', v: num },
+        { t: '中文标点', v: punc },
+        { t: '行数', v: ls.length },
+        { t: '段落', v: s.split(/\n\s*\n/).filter(function (x) { return x.trim(); }).length }
+      ]
+    };
+  } });
+
+tool({ id: 'text-replace', n: '批量替换', c: 'text', d: '支持多行规则的批量查找替换，可按正则',
+  f: [{ k: 'in', t: '原文', type: 'textarea' },
+    { k: 'a', t: '查找内容', type: 'textarea', rows: 3, ph: '每行一个，与替换内容一一对应' },
+    { k: 'b', t: '替换为', type: 'textarea', rows: 3, ph: '每行一个（留空表示删除）' },
+    { k: 're', t: '使用正则表达式', type: 'checkbox' },
+    { k: 'ci', t: '忽略大小写', type: 'checkbox', v: true },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var s = v.in || '', A = H.L(v.a), B = H.L(v.b), n = 0;
+    for (var i = 0; i < A.length; i++) {
+      if (!A[i]) continue;
+      var to = B[i] === undefined ? '' : B[i];
+      if (v.re) {
+        try {
+          var rx = new RegExp(A[i], (v.ci ? 'gi' : 'g'));
+          s = s.replace(rx, function () { n++; return to; });
+        } catch (e) { return { out: s, note: '第 ' + (i + 1) + ' 条正则有误：' + e.message, warn: true }; }
+      } else {
+        var parts = s.split(A[i]);
+        n += parts.length - 1;
+        s = parts.join(to);
+      }
+    }
+    return { out: s, metrics: [{ t: '替换次数', v: n }, { t: '规则数', v: A.filter(function (x) { return x; }).length }] };
+  } });
+
+tool({ id: 'text-extract', n: '内容提取器', c: 'text', d: '从大段文字里批量抽出手机号、邮箱、网址等',
+  f: [{ k: 'in', t: '原文', type: 'textarea', ph: '粘贴一段包含各种信息的文字…' },
+    { k: 'm', t: '提取类型', type: 'select', opts: [{ v: 'phone', t: '手机号' }, { v: 'email', t: '邮箱' }, { v: 'url', t: '网址' }, { v: 'ip', t: 'IP地址' }, { v: 'num', t: '数字' }, { v: 'cn', t: '只留中文' }, { v: 'en', t: '只留英文' }, { v: 'idcard', t: '身份证号' }, { v: 'date', t: '日期' }, { v: 'custom', t: '自定义正则' }] },
+    { k: 're', t: '自定义正则', type: 'text', ph: '如 \\d{4}-\\d{2}' },
+    { k: 'out', t: '提取结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var s = v.in || '', m = v.m, rx;
+    var MAP = {
+      phone: /1[3-9]\d{9}/g,
+      email: /[\w.+-]+@[\w-]+(\.[\w-]+)+/g,
+      url: /https?:\/\/[\w\-./?%&=:#+~@$*,';!()[\]]+/g,
+      ip: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+      num: /-?\d+\.?\d*/g,
+      idcard: /\b\d{17}[\dXx]\b/g,
+      date: /\d{4}[-/年]\d{1,2}[-/月]\d{1,2}日?/g
+    };
+    if (m === 'custom') {
+      if (!v.re) return { out: '', note: '请填写自定义正则' };
+      try { rx = new RegExp(v.re, 'g'); } catch (e) { return { out: '', note: '正则有误：' + e.message, warn: true }; }
+    } else if (m === 'cn') { var c = (s.match(/[\u4e00-\u9fa5]+/g) || []); return { out: c.join('\n'), metrics: [{ t: '提取到', v: c.length }] }; }
+    else if (m === 'en') { var e2 = (s.match(/[a-zA-Z]+/g) || []); return { out: e2.join('\n'), metrics: [{ t: '提取到', v: e2.length }] }; }
+    else rx = MAP[m];
+    var r = s.match(rx) || [];
+    var u = {}; r.forEach(function (x) { u[x] = 1; });
+    var arr = Object.keys(u);
+    return { out: arr.join('\n'), metrics: [{ t: '提取到', v: r.length }, { t: '去重后', v: arr.length }] };
+  } });
+
+tool({ id: 'text-split', n: '文本分割', c: 'text', d: '按指定符号把一段文字拆成多行',
+  f: [{ k: 'in', t: '原文', type: 'textarea' },
+    { k: 'sep', t: '分隔符', type: 'text', v: ',', ph: '如 , 或 | 或空格' },
+    { k: 're', t: '正则分隔', type: 'checkbox' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var s = v.in || '', r;
+    if (v.re) { try { r = s.split(new RegExp(v.sep)); } catch (e) { return { out: '', note: '正则有误', warn: true }; } }
+    else r = s.split(v.sep);
+    r = r.map(function (x) { return x.trim(); }).filter(function (x) { return x !== ''; });
+    return { out: r.join('\n'), metrics: [{ t: '分成', v: r.length }] };
+  } });
+
+tool({ id: 'text-join', n: '文本合并', c: 'text', d: '把多行内容用指定符号拼成一行',
+  f: [{ k: 'in', t: '输入列表', type: 'textarea', ph: '一行一个…' },
+    { k: 'sep', t: '连接符', type: 'text', v: ',' },
+    { k: 'q', t: '每项加引号', type: 'checkbox' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) {
+    var r = H.L(v.in).filter(function (l) { return l !== ''; });
+    if (v.q) r = r.map(function (x) { return '"' + x.replace(/"/g, '\\"') + '"'; });
+    return { out: r.join(v.sep) };
+  } });
+
+tool({ id: 'text-diff', n: '文本对比', c: 'text', d: '比较两段文字的差异，标出新增和删除',
+  f: [{ k: 'a', t: '原文 A', type: 'textarea', rows: 6 }, { k: 'b', t: '原文 B', type: 'textarea', rows: 6 },
+    { k: 'm', t: '对比粒度', type: 'seg', v: 'line', opts: [{ v: 'line', t: '按行' }, { v: 'char', t: '按字符' }] },
+    { k: 'out', t: '差异说明', type: 'outhtml' }],
+  run: function (v) {
+    var A = v.m === 'line' ? H.L(v.a) : (v.a || '').split('');
+    var B = v.m === 'line' ? H.L(v.b) : (v.b || '').split('');
+    var n = Math.max(A.length, B.length), h = '', add = 0, del = 0;
+    for (var i = 0; i < n; i++) {
+      var x = A[i], y = B[i];
+      if (x === y) { h += '<div style="color:#666">' + RT.esc(x == null ? '' : x) + '</div>'; }
+      else {
+        if (x != null) { h += '<div style="color:#9b1c1c;background:#fdf0f0">- ' + RT.esc(x) + '</div>'; del++; }
+        if (y != null) { h += '<div style="color:#1a6b55;background:#eef5f2">+ ' + RT.esc(y) + '</div>'; add++; }
+      }
+    }
+    return { out: '<div style="font-family:var(--mono);font-size:12.5px;line-height:1.7">' + h +
+      '</div><div style="margin-top:10px;font-size:12.5px;color:var(--ink-3)">新增 ' + add + ' 处，删除 ' + del + ' 处，相同 ' + (n - Math.max(add, del)) + ' 处</div>' };
+  } });
+
+tool({ id: 'text-similar', n: '文本相似度', c: 'text', d: '计算两段文字的相似度百分比，查重用',
+  f: [{ k: 'a', t: '文本 A', type: 'textarea', rows: 5 }, { k: 'b', t: '文本 B', type: 'textarea', rows: 5 },
+    { k: 'out', t: '相似度', type: 'out', metrics: 1 }],
+  run: function (v) {
+    var s = H.sim(v.a || '', v.b || '');
+    var A = (v.a || '').replace(/\s/g, ''), B = (v.b || '').replace(/\s/g, '');
+    var common = 0, m = {};
+    B.split('').forEach(function (c) { m[c] = (m[c] || 0) + 1; });
+    A.split('').forEach(function (c) { if (m[c]) { m[c]--; common++; } });
+    return { out: (s * 100).toFixed(1) + '% 相似',
+      metrics: [{ t: '编辑相似度', v: (s * 100).toFixed(0) + '%' }, { t: '字符重合', v: (common / Math.max(A.length, 1) * 100).toFixed(0) + '%' },
+        { t: 'A 长度', v: A.length }, { t: 'B 长度', v: B.length }] };
+  } });
+
+tool({ id: 'text-repeat', n: '重复生成', c: 'text', d: '把一段文字重复指定次数，可加序号或换行',
+  f: [{ k: 'in', t: '内容', type: 'textarea', rows: 2 },
+    { k: 'n', t: '次数', type: 'number', v: 10, min: 1, max: 5000 },
+    { k: 'sep', t: '间隔', type: 'text', v: '\\n', ph: '\\n 表示换行' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var n = Math.min(5000, Math.max(1, parseInt(v.n) || 1));
+    var sep = (v.sep || '').replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+    var r = [];
+    for (var i = 0; i < n; i++) r.push((v.in || '').replace(/\{i\}/g, i + 1).replace(/\{n\}/g, n));
+    return { out: r.join(sep), metrics: [{ t: '条数', v: n }, { t: '总字符', v: r.join(sep).length }] };
+  } });
+
+tool({ id: 'text-pad', n: '文本补齐', c: 'text', d: '给每行补到固定长度，前补或后补指定字符',
+  f: [{ k: 'in', t: '输入列表', type: 'textarea' },
+    { k: 'n', t: '目标长度', type: 'number', v: 10, min: 1 },
+    { k: 'ch', t: '补齐字符', type: 'text', v: '0' },
+    { k: 'm', t: '位置', type: 'seg', v: 'l', opts: [{ v: 'l', t: '前面补' }, { v: 'r', t: '后面补' }] },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) {
+    var n = parseInt(v.n) || 0, ch = (v.ch || '0').charAt(0);
+    return { out: H.O(H.L(v.in).map(function (l) {
+      while (l.length < n) l = v.m === 'l' ? ch + l : l + ch;
+      return l;
+    })) };
+  } });
+
+tool({ id: 'text-case-name', n: '命名格式转换', c: 'text', d: '驼峰、下划线、短横线、常量命名互转',
+  f: [{ k: 'in', t: '输入', type: 'textarea', rows: 3, ph: 'user_name 或 userName' },
+    { k: 'm', t: '目标格式', type: 'select', opts: [{ v: 'camel', t: '小驼峰 userName' }, { v: 'pascal', t: '大驼峰 UserName' }, { v: 'snake', t: '下划线 user_name' }, { v: 'kebab', t: '短横线 user-name' }, { v: 'const', t: '常量 USER_NAME' }, { v: 'title', t: '标题 User Name' }] },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) {
+    var words = H.L(v.in).map(function (l) {
+      return l.trim().replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+    });
+    return { out: H.O(words.map(function (ws) {
+      var low = ws.map(function (w) { return w.toLowerCase(); });
+      if (v.m === 'camel') return low.map(function (w, i) { return i ? w.charAt(0).toUpperCase() + w.slice(1) : w; }).join('');
+      if (v.m === 'pascal') return low.map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join('');
+      if (v.m === 'snake') return low.join('_');
+      if (v.m === 'kebab') return low.join('-');
+      if (v.m === 'const') return low.join('_').toUpperCase();
+      return low.map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+    })) };
+  } });
+
+tool({ id: 'text-escape', n: 'HTML 转义', c: 'text', d: '把 < > & 等符号转成实体，防止页面错乱',
+  f: [{ k: 'in', t: '原始内容', type: 'textarea', ph: '<div class="a">内容</div>' },
+    { k: 'm', t: '方向', type: 'seg', v: 'e', opts: [{ v: 'e', t: '转义' }, { v: 'u', t: '反转义' }] },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
   run: function (v) {
     var s = v.in || '';
     if (v.m === 'e') return { out: s.replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }) };
     return { out: s.replace(/&(amp|lt|gt|quot|#39|#x27|apos|nbsp);/g, function (m, p) {
       return { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", '#x27': "'", apos: "'", nbsp: ' ' }[p] || m;
     }) };
-  } };
+  } });
+
+tool({ id: 'text-slug', n: 'URL 别名生成', c: 'text', d: '把中文标题转成适合网址的英文短杠格式',
+  f: [{ k: 'in', t: '标题', type: 'textarea', rows: 2, ph: '2026年最全的在线工具箱' },
+    { k: 'keep', t: '保留中文', type: 'checkbox' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: H.O(H.L(v.in).map(function (l) {
+    var s = l.trim().toLowerCase();
+    if (!v.keep) s = s.replace(/[\u4e00-\u9fa5]/g, '');
+    return s.replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-').replace(/^-+|-+$/g, '');
+  })) }; } });
+
+tool({ id: 'text-truncate', n: '文本截断', c: 'text', d: '按字数截取并加省略号，中英文都算一个字',
+  f: [{ k: 'in', t: '原文', type: 'textarea' },
+    { k: 'n', t: '保留字数', type: 'number', v: 100, min: 1 },
+    { k: 'sfx', t: '结尾追加', type: 'text', v: '…' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var s = v.in || '', n = parseInt(v.n) || 0;
+    var arr = Array.from(s);
+    var cut = arr.slice(0, n).join('');
+    return { out: arr.length > n ? cut + (v.sfx || '') : s, metrics: [{ t: '原字数', v: arr.length }, { t: '截取后', v: Math.min(n, arr.length) }] };
+  } });
+
+tool({ id: 'text-wrap', n: '折行与去折行', c: 'text', d: '长文本强制折行，或把硬回车合并成一段',
+  f: [{ k: 'in', t: '原文', type: 'textarea' },
+    { k: 'm', t: '操作', type: 'seg', v: 'unwrap', opts: [{ v: 'unwrap', t: '去掉换行' }, { v: 'wrap', t: '按宽度折行' }] },
+    { k: 'n', t: '每行宽度', type: 'number', v: 40, min: 4 },
+    { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  run: function (v) {
+    var s = v.in || '';
+    if (v.m === 'unwrap') return { out: s.replace(/\r?\n/g, ' ').replace(/ +/g, ' ').trim() };
+    var n = parseInt(v.n) || 40, r = [];
+    H.L(s).forEach(function (line) {
+      if (!line.trim()) { r.push(''); return; }
+      var i = 0;
+      while (i < line.length) { r.push(line.substr(i, n)); i += n; }
+    });
+    return { out: r.join('\n') };
+  } });
+
+tool({ id: 'text-morse', n: '摩斯电码', c: 'text', d: '文字与摩斯电码互相转换，支持声光形式说明',
+  f: [{ k: 'in', t: '内容', type: 'textarea', ph: 'SOS 或 ... --- ...' },
+    { k: 'm', t: '方向', type: 'seg', v: 'e', opts: [{ v: 'e', t: '加密' }, { v: 'd', t: '解密' }] },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: v.m === 'e' ? H.mE(v.in || '') : H.mD(v.in || '') }; } });
+
+tool({ id: 'text-caesar', n: '凯撒密码', c: 'text', d: '字母按偏移量平移的经典加密，可暴力破解',
+  f: [{ k: 'in', t: '内容', type: 'textarea' },
+    { k: 'k', t: '偏移量', type: 'number', v: 3, min: -25, max: 25 },
+    { k: 'm', t: '方向', type: 'seg', v: 'e', opts: [{ v: 'e', t: '加密' }, { v: 'd', t: '解密' }] },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) {
+    var k = parseInt(v.k) || 0;
+    if (v.m === 'd') k = -k;
+    return { out: (v.in || '').replace(/[a-zA-Z]/g, function (c) {
+      var b = c <= 'Z' ? 65 : 97;
+      return String.fromCharCode((c.charCodeAt(0) - b + k + 26) % 26 + b);
+    }) };
+  } });
+
+tool({ id: 'text-rot13', n: 'ROT13 加密', c: 'text', d: '偏移 13 位的字母替换，加解密同一个操作',
+  f: [{ k: 'in', t: '内容', type: 'textarea' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: (v.in || '').replace(/[a-zA-Z]/g, function (c) {
+    var b = c <= 'Z' ? 65 : 97;
+    return String.fromCharCode((c.charCodeAt(0) - b + 13) % 26 + b);
+  }) }; } });
+
+tool({ id: 'text-rm-punct', n: '去除标点符号', c: 'text', d: '清理中英文标点，只保留文字和数字',
+  f: [{ k: 'in', t: '原文', type: 'textarea' },
+    { k: 'keep', t: '保留数字和字母', type: 'checkbox', v: true },
+    { k: 'out', t: '结果', type: 'out', dl: 1, metrics: 1 }],
+  run: function (v) {
+    var s = v.in || '', before = s.length;
+    var r = s.replace(/[\u3000-\u303F\uFF00-\uFFEF!-/:-@[-`{-~]/g, '');
+    if (!v.keep) r = r.replace(/[0-9a-zA-Z]/g, '');
+    return { out: r, metrics: [{ t: '原字符', v: before }, { t: '清理后', v: r.length }, { t: '去掉', v: before - r.length }] };
+  } });
+
+tool({ id: 'text-rm-html', n: '去除 HTML 标签', c: 'text', d: '把网页代码里的标签全部剥掉，只留文字',
+  f: [{ k: 'in', t: 'HTML 代码', type: 'textarea', rows: 6, mono: 1, ph: '<p>你好<span>世界</span></p>' },
+    { k: 'br', t: '保留换行', type: 'checkbox', v: true },
+    { k: 'out', t: '纯文本', type: 'out', dl: 1 }],
+  run: function (v) {
+    var s = v.in || '';
+    s = s.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
+    if (v.br) s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n');
+    s = s.replace(/<[^>]+>/g, '');
+    s = s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
+    return { out: s.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim() };
+  } });
+
+tool({ id: 'text-add-affix', n: '批量加前后缀', c: 'text', d: '给列表每一项统一加前缀、后缀或包起来',
+  f: [{ k: 'in', t: '输入列表', type: 'textarea', ph: '一行一个…' },
+    { k: 'p', t: '前缀', type: 'text', ph: '如 https://' },
+    { k: 's', t: '后缀', type: 'text', ph: '如 .html' },
+    { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: H.O(H.L(v.in).filter(function (l) { return l !== ''; }).map(function (l) { return (v.p || '') + l + (v.s || ''); })) }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "text-escape"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: text-escape'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

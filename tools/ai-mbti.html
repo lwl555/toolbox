@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI MBTI 速测 - 超有用的工具箱</title>
+<meta name="description" content="8 题快速推测性格倾向（娱乐）。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI生活</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI MBTI 速测</h1>
+<p class="lede">8 题快速推测性格倾向（娱乐）。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-tarot.html"><div class="card-t"><span class="card-name">AI 塔罗抽牌</span></div><div class="card-desc">随机抽 3 张大阿卡纳并给出牌义。</div></a><a class="card" href="ai-luck.html"><div class="card-t"><span class="card-name">AI 今日运势</span></div><div class="card-desc">按日期与生肖哈希生成运势等级与建议。</div></a><a class="card" href="ai-name.html"><div class="card-t"><span class="card-name">AI 智能起名</span></div><div class="card-desc">从百家姓与美字库组合生成名字。</div></a><a class="card" href="ai-love.html"><div class="card-t"><span class="card-name">AI 恋爱匹配</span></div><div class="card-desc">按双方姓名+生日计算契合度（娱乐）。</div></a><a class="card" href="ai-ganzhi.html"><div class="card-t"><span class="card-name">AI 八字干支</span></div><div class="card-desc">按出生年份计算干支生肖。</div></a><a class="card" href="ai-zodiac-match.html"><div class="card-t"><span class="card-name">AI 星座配对</span></div><div class="card-desc">输入两个星座给出配对评语。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI MBTI 速测<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   24-ai-life.js — AI 生活娱乐（题库/规则/随机，真实可玩）
+   ============================================================ */
+var SURNAMES = '王李张刘陈杨黄赵周吴徐孙马朱胡郭何高林郑谢罗梁宋唐许韩冯邓曹彭曾肖田董袁潘于蒋蔡余杜叶程苏魏吕丁任沈姚卢傅钟姜崔谭廖范汪陆金石戴贾韦夏邱方侯邹熊孟秦白江阎薛尹段雷黎史龙陶贺顾毛郝龚邵万钱严覃武戴莫孔'.split('');
+var GIVEN = '梓轩浩然欣怡子涵宇泽沐辰亦可若汐一诺思远嘉怡俊熙雨桐浩宇诗涵睿渊佳琪天翊梦琪晨曦煜城安然语桐星河知遥乐遥清越明哲修文怀瑾望舒云舒'.split('');
+var TAROT = ['愚者', '魔术师', '女祭司', '皇后', '皇帝', '教皇', '恋人', '战车', '力量', '隐士', '命运之轮', '正义', '倒吊人', '死神', '节制', '恶魔', '高塔', '星星', '月亮', '太阳', '审判', '世界'];
+var TAROT_MEAN = { '愚者': '新的开始与冒险', '魔术师': '创造力与行动力', '女祭司': '直觉与潜意识', '皇后': '丰饶与母性', '皇帝': '权威与秩序', '教皇': '传统与指引', '恋人': '爱与选择', '战车': '意志与胜利', '力量': '内在勇气', '隐士': '内省与孤独', '命运之轮': '轮回与机遇', '正义': '因果与平衡', '倒吊人': '换个角度', '死神': '结束与重生', '节制': '调和与耐心', '恶魔': '执念与束缚', '高塔': '突变与觉醒', '星星': '希望与疗愈', '月亮': '迷雾与潜意识', '太阳': '喜悦与成功', '审判': '觉醒与抉择', '世界': '圆满与达成' };
+var ZODIAC = ['白羊', '金牛', '双子', '巨蟹', '狮子', '处女', '天秤', '天蝎', '射手', '摩羯', '水瓶', '双鱼'];
+var FOODS = { '米饭': 116, '苹果': 52, '香蕉': 89, '鸡蛋': 144, '牛奶': 54, '鸡胸肉': 133, '牛肉': 250, '猪肉': 395, '面条': 138, '馒头': 223, '土豆': 77, '番茄': 18, '黄瓜': 15, '西瓜': 30, '可乐': 43, '啤酒': 43, '巧克力': 546, '面包': 265, '酸奶': 72, '燕麦': 367 };
+var BOOKS = ['活着', '百年孤独', '小王子', '人类简史', '三体', '月亮与六便士', '围城', '解忧杂货店', '平凡的世界', '追风筝的人', '1984', '茶馆', '乡土中国', '思考快与慢', '原则', '沉默的大多数', '万历十五年', '局外人', '老人与海', '解构主义'];
+var DREAM = { '蛇': '可能预示转变或隐藏的恐惧', '牙': '与沟通或决策焦虑相关', '飞': '代表渴望自由与突破', '水': '象征情绪与潜意识流动', '火': '可能暗示激情或危机', '考试': '反映现实中的压力', '掉牙': '传统认为与变动有关', '钱': '关联价值感或安全感', '迷路': '对方向的不确定', '结婚': '新的关系或承诺', '死': '象征旧阶段的结束', '猫': '独立与敏感的象征' };
+var MBTI_Q = [
+  { q: '聚会后你更想？', a: ['独处充电', '继续社交'] },
+  { q: '做决定时你更看重？', a: ['逻辑事实', '感受他人'] },
+  { q: '你更喜欢？', a: ['计划安排', '随机应变'] },
+  { q: '你更关注？', a: ['具体细节', '整体概念'] },
+  { q: '陌生人面前你？', a: ['谨慎观察', '主动热络'] },
+  { q: '冲突时你？', a: ['就事论事', '顾及气氛'] },
+  { q: '周末你倾向？', a: ['宅家安静', '出门热闹'] },
+  { q: '学新东西你先？', a: ['看原理', '直接试'] }
+];
+function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+function ganzhi(y) { var T = '甲乙丙丁戊己庚辛壬癸', D = '子丑寅卯辰巳午未申酉戌亥'; return T[(y - 4) % 10] + D[(y - 4) % 12]; }
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 MBTI 速测 */
+tool({ id: 'ai-mbti', n: 'AI MBTI 速测', c: 'ai-life', d: '8 题快速推测性格倾向（娱乐）。',
+  f: [{ k: 'out', t: '查看题目请在下方逐题选', type: 'custom' }, { k: 'res', t: '结果', type: 'out' }],
+  auto: false, first: false,
+  init: function (RT, host) {
+    var html = '<div class="mbti-q">';
+    MBTI_Q.forEach(function (it, i) { html += '<p>' + (i + 1) + '. ' + it.q + '</p><label><input type="radio" name="mb' + i + '" value="0"> ' + it.a[0] + '</label> <label><input type="radio" name="mb' + i + '" value="1"> ' + it.a[1] + '</label>'; });
+    html += '<button id="mbGo" class="btn">测算</button><div id="mbRes"></div></div>';
+    host.innerHTML = html;
+    host.querySelector('#mbGo').onclick = function () {
+      var e = '', ok = true;
+      for (var i = 0; i < MBTI_Q.length; i++) { var s = host.querySelector('input[name=mb' + i + ']:checked'); if (!s) { ok = false; break; } e += s.value; }
+      if (!ok) { RT.toast('请答完所有题'); return; }
+      var r = (e[0] === '0' ? 'I' : 'E') + (e[1] === '0' ? 'T' : 'F') + (e[2] === '0' ? 'J' : 'P') + (e[3] === '0' ? 'S' : 'N');
+      host.querySelector('#mbRes').innerHTML = '<b>你的类型倾向：' + r + '</b>（仅供娱乐参考）';
+    };
+  } });
+
+/* 2 塔罗抽牌 */
+tool({ id: 'ai-tarot', n: 'AI 塔罗抽牌', c: 'ai-life', d: '随机抽 3 张大阿卡纳并给出牌义。',
+  f: [{ k: 'q', t: '你的问题(可选)', type: 'text' }, { k: 'out', t: '牌面', type: 'out' }],
+  run: function (v) {
+    var picks = []; for (var i = 0; i < 3; i++) { var c = TAROT[Math.floor(Math.random() * TAROT.length)]; picks.push(c + '：' + TAROT_MEAN[c]); }
+    return { out: '过去 · ' + picks[0] + '\n现在 · ' + picks[1] + '\n未来 · ' + picks[2] };
+  } });
+
+/* 3 今日运势 */
+tool({ id: 'ai-luck', n: 'AI 今日运势', c: 'ai-life', d: '按日期与生肖哈希生成运势等级与建议。',
+  f: [{ k: 'z', t: '生肖(如 龙)', type: 'text', v: '龙' }, { k: 'out', t: '运势', type: 'out' }],
+  run: function (v) {
+    var d = new Date(); var h = hash((v.z || '龙') + d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate());
+    var lv = h % 5; var labs = ['平', '小吉', '中吉', '大吉', '特吉'];
+    var tips = ['宜稳扎稳打', '适合社交拓展', '财运小旺可把握', '贵人运强多主动', '诸事顺遂趁热打铁'];
+    return { out: (v.z || '龙') + '座 · ' + d.getMonth() + 1 + '/' + d.getDate() + ' 运势：' + labs[lv] + '\n建议：' + tips[lv] };
+  } });
+
+/* 4 起名 */
+tool({ id: 'ai-name', n: 'AI 智能起名', c: 'ai-life', d: '从百家姓与美字库组合生成名字。',
+  f: [{ k: 'n', t: '生成个数', type: 'number', v: 5 }, { k: 'sx', t: '姓氏(可选)', type: 'text' }, { k: 'out', t: '名字', type: 'out' }],
+  run: function (v) {
+    var out = []; for (var i = 0; i < (v.n || 5); i++) { var s = v.sx || SURNAMES[Math.floor(Math.random() * SURNAMES.length)]; var g = GIVEN[Math.floor(Math.random() * GIVEN.length)]; var g2 = Math.random() > 0.5 ? GIVEN[Math.floor(Math.random() * GIVEN.length)] : ''; out.push(s + g + g2); }
+    return { out: out.join('\n') };
+  } });
+
+/* 5 恋爱匹配 */
+tool({ id: 'ai-love', n: 'AI 恋爱匹配', c: 'ai-life', d: '按双方姓名+生日计算契合度（娱乐）。',
+  f: [{ k: 'a', t: '你的名字', type: 'text' }, { k: 'b', t: 'TA名字', type: 'text' }, { k: 'out', t: '契合度', type: 'out' }],
+  run: function (v) {
+    if (!v.a || !v.b) return { out: '请输入双方名字' };
+    var h = hash(v.a + '♥' + v.b); var p = 60 + h % 40;
+    return { out: v.a + ' × ' + v.b + ' 契合度：' + p + '%（' + (p > 85 ? '天作之合' : p > 70 ? '默契十足' : '需要磨合') + '，娱乐参考）' };
+  } });
+
+/* 6 八字干支 */
+tool({ id: 'ai-ganzhi', n: 'AI 八字干支', c: 'ai-life', d: '按出生年份计算干支生肖。',
+  f: [{ k: 'y', t: '出生年份', type: 'number', v: 1995 }, { k: 'out', t: '干支', type: 'out' }],
+  run: function (v) { return { out: v.y + ' 年干支：' + ganzhi(v.y || 1995) + '（生肖 ' + ZODIAC[(v.y - 4) % 12] + '）' }; } });
+
+/* 7 星座配对 */
+tool({ id: 'ai-zodiac-match', n: 'AI 星座配对', c: 'ai-life', d: '输入两个星座给出配对评语。',
+  f: [{ k: 'a', t: '星座A', type: 'select', opts: ZODIAC, v: '白羊' }, { k: 'b', t: '星座B', type: 'select', opts: ZODIAC, v: '狮子' }, { k: 'out', t: '配对', type: 'out' }],
+  run: function (v) {
+    var h = hash(v.a + v.b); var sc = 60 + h % 40;
+    return { out: v.a + ' ♥ ' + v.b + '：配对分 ' + sc + '（' + (sc > 85 ? '天生一对' : sc > 70 ? '相处融洽' : '互补磨合') + '）' };
+  } });
+
+/* 8 黄历宜忌 */
+tool({ id: 'ai-almanac', n: 'AI 黄历宜忌', c: 'ai-life', d: '按日期哈希给出宜忌（娱乐）。',
+  f: [{ k: 'out', t: '黄历', type: 'out' }],
+  run: function (v) {
+    var d = new Date(); var h = hash(d.getFullYear() + '' + (d.getMonth() + 1) + '' + d.getDate());
+    var yi = ['嫁娶', '出行', '开业', '签约', '动土', '搬家', '求职', '表白'], ji = ['诉讼', '争吵', '冲动消费', '熬夜', '拖延', '重大决策'];
+    return { out: (d.getMonth() + 1) + '月' + d.getDate() + '日\n宜：' + yi[h % yi.length] + '、' + yi[(h >> 3) % yi.length] + '\n忌：' + ji[(h >> 5) % ji.length] };
+  } });
+
+/* 9 抽签 */
+tool({ id: 'ai-draw', n: 'AI 抽签', c: 'ai-life', d: '随机签文（上中下签）。',
+  f: [{ k: 'out', t: '签文', type: 'out' }],
+  run: function (v) {
+    var signs = ['上上签：诸事顺遂，宜把握时机', '上签：小有波折终成', '中签：平稳中求进', '下签：宜守不宜攻', '下下签：静待时机'];
+    return { out: signs[Math.floor(Math.random() * signs.length)] };
+  } });
+
+/* 10 菜谱推荐 */
+tool({ id: 'ai-recipe', n: 'AI 菜谱推荐', c: 'ai-life', d: '按口味标签推荐家常菜。',
+  f: [{ k: 't', t: '口味(辣/清淡/甜/鲜)', type: 'text', v: '辣' }, { k: 'out', t: '菜谱', type: 'out' }],
+  run: function (v) {
+    var M = { '辣': ['麻辣香锅', '水煮肉片', '剁椒鱼头', '宫保鸡丁'], '清淡': ['清蒸鲈鱼', '白灼菜心', '冬瓜排骨汤', '蒸蛋'], '甜': ['糖醋排骨', '拔丝地瓜', '红豆沙', '桂花糕'], '鲜': ['菌菇汤', '虾仁蒸蛋', '文蛤蒸蛋', '海鲜粥'] };
+    var list = M[v.t] || M['清淡'];
+    return { out: '为你推荐' + (v.t || '清淡') + '口味：\n' + list.join('\n') };
+  } });
+
+/* 11 健身计划 */
+tool({ id: 'ai-fit', n: 'AI 健身计划', c: 'ai-life', d: '按目标生成一周训练安排。',
+  f: [{ k: 'goal', t: '目标', type: 'select', opts: ['减脂', '增肌', '塑形', '耐力'], v: '减脂' }, { k: 'out', t: '计划', type: 'out' }],
+  run: function (v) {
+    var P = { '减脂': ['周一有氧30分', '周二力量+有氧', '周三休息/拉伸', '周四HIIT', '周五力量', '周六长有氧', '周日休息'], '增肌': ['推日', '拉日', '腿日', '休息', '上肢', '核心', '休息'], '塑形': ['瑜伽', '普拉提', '小重量循环', '有氧', '拉伸', '核心', '休息'], '耐力': ['慢跑', '骑行', '游泳', '间歇跑', '长距', '恢复', '休息'] };
+    return { out: '【' + v.goal + '】一周计划：\n' + P[v.goal].map(function (x, i) { return '周' + '一二三四五六日'[i] + '：' + x; }).join('\n') };
+  } });
+
+/* 12 PHQ-9 抑郁量表 */
+tool({ id: 'ai-phq9', n: 'AI 情绪量表', c: 'ai-life', d: 'PHQ-9 自评（仅筛查，非诊断）。',
+  f: [{ k: 'out', t: '说明', type: 'out' }],
+  run: function (v) {
+    return { out: 'PHQ-9 共 9 题，评估近两周情绪。\n0=没有 1=几天 2=一半以上 3=几乎每天。\n（请在专业页面逐题作答；若总分≥10或第9题>0，请及时寻求帮助：全国心理援助热线 12356）' };
+  } });
+
+/* 13 经期预测 */
+tool({ id: 'ai-period', n: 'AI 经期预测', c: 'ai-life', d: '按末次月经与周期预测下次与排卵期。',
+  f: [{ k: 'last', t: '末次月经(YYYY-MM-DD)', type: 'text', v: '2026-08-15' }, { k: 'cyc', t: '周期(天)', type: 'number', v: 28 }, { k: 'out', t: '预测', type: 'out' }],
+  run: function (v) {
+    var d = new Date(v.last); if (isNaN(d)) return { out: '日期格式错误' };
+    var cyc = v.cyc || 28; var nx = new Date(d.getTime() + cyc * 864e5); var ov = new Date(d.getTime() + (cyc - 14) * 864e5);
+    function f(x) { return x.getMonth() + 1 + '-' + x.getDate(); }
+    return { out: '下次月经约：' + f(nx) + '\n排卵日约：' + f(ov) + '\n易孕期：' + f(new Date(ov.getTime() - 2 * 864e5)) + ' ~ ' + f(new Date(ov.getTime() + 2 * 864e5)) };
+  } });
+
+/* 14 解梦 */
+tool({ id: 'ai-dream', n: 'AI 解梦', c: 'ai-life', d: '按关键词匹配梦境解释词典。',
+  f: [{ k: 'kw', t: '梦境关键词', type: 'text' }, { k: 'out', t: '解析', type: 'out' }],
+  run: function (v) {
+    var k = v.kw || ''; for (var key in DREAM) if (k.indexOf(key) >= 0) return { out: '「' + key + '」' + DREAM[key] };
+    return { out: '未收录该梦境，常见主题：' + Object.keys(DREAM).join('、') };
+  } });
+
+/* 15 幸运数字 */
+tool({ id: 'ai-lucknum', n: 'AI 幸运数字', c: 'ai-life', d: '按生日哈希生成幸运数字。',
+  f: [{ k: 'birth', t: '生日(YYYY-MM-DD)', type: 'text', v: '1995-05-20' }, { k: 'out', t: '数字', type: 'out' }],
+  run: function (v) { var h = hash(v.birth || '1995-05-20'); return { out: '你的幸运数字：' + (h % 9 + 1) + '、' + ((h >> 4) % 90 + 10) }; } });
+
+/* 16 读书推荐 */
+tool({ id: 'ai-book', n: 'AI 读书推荐', c: 'ai-life', d: '随机推荐一本好书。',
+  f: [{ k: 'n', t: '本数', type: 'number', v: 3 }, { k: 'out', t: '书单', type: 'out' }],
+  run: function (v) { var o = []; for (var i = 0; i < (v.n || 3); i++) o.push(BOOKS[Math.floor(Math.random() * BOOKS.length)]); return { out: o.join('\n') }; } });
+
+/* 17 礼物推荐 */
+tool({ id: 'ai-gift', n: 'AI 礼物推荐', c: 'ai-life', d: '按对象与预算推荐礼物类型。',
+  f: [{ k: 'who', t: '对象(恋人/父母/朋友/同事/孩子)', type: 'text', v: '恋人' }, { k: 'bug', t: '预算(元)', type: 'number', v: 200 }, { k: 'out', t: '推荐', type: 'out' }],
+  run: function (v) {
+    var M = { '恋人': ['香水', '首饰', '情侣周边', '手写信+花'], '父母': ['按摩仪', '保暖衣', '养生礼盒', '体检卡'], '朋友': ['盲盒', '香薰', '零食箱', '电影票'], '同事': ['咖啡', '绿植', '笔记本', '茶包'], '孩子': ['绘本', '积木', '画笔', '拼图'] };
+    var list = M[v.who] || M['朋友']; var b = v.bug || 200;
+    return { out: '预算 ' + b + ' 元，送给' + (v.who || '朋友') + '：\n' + list.join('\n') + '\n（' + (b < 100 ? '精选小物' : b < 500 ? '体面实惠' : '可上档次') + '）' };
+  } });
+
+/* 18 穿搭建议 */
+tool({ id: 'ai-outfit', n: 'AI 穿搭建议', c: 'ai-life', d: '按场合与季节给穿搭思路。',
+  f: [{ k: 'occ', t: '场合(通勤/约会/运动/聚会)', type: 'text', v: '通勤' }, { k: 'season', t: '季节', type: 'select', opts: ['春', '夏', '秋', '冬'], v: '秋' }, { k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    var M = { '通勤': '衬衫/针织+西裤/半裙，简约利落', '约会': '柔和色系+适度点缀，轻松有质感', '运动': '速干运动套装+跑鞋', '聚会': '有设计感的上衣+牛仔，活泼出彩' };
+    var S = { '春': '薄外套叠穿', '夏': '透气浅色透气', '秋': '针织开衫+风衣', '冬': '大衣+围巾保暖' };
+    return { out: (v.occ || '通勤') + ' · ' + (v.season || '秋') + '：\n' + (M[v.occ] || M['通勤']) + '；' + (S[v.season] || S['秋']) };
+  } });
+
+/* 19 卡路里查询 */
+tool({ id: 'ai-cal', n: 'AI 卡路里查询', c: 'ai-life', d: '常见食物每 100g 热量。',
+  f: [{ k: 'kw', t: '食物', type: 'text' }, { k: 'out', t: '热量', type: 'out' }],
+  run: function (v) {
+    var k = v.kw || ''; for (var f in FOODS) if (k.indexOf(f) >= 0) return { out: f + '：约 ' + FOODS[f] + ' kcal/100g' };
+    return { out: '库内含：' + Object.keys(FOODS).join('、') + '（可查米饭/苹果/鸡胸肉等）' };
+  } });
+
+/* 20 生日花/诞生石 */
+tool({ id: 'ai-birthstone', n: 'AI 诞生石', c: 'ai-life', d: '按月返回诞生石（趣味）。',
+  f: [{ k: 'm', t: '月份', type: 'number', v: 9 }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var S = ['石榴石', '紫水晶', '海蓝宝', '钻石', '祖母绿', '珍珠', '红宝石', '橄榄石', '蓝宝石', '碧玺', '黄玉', '绿松石'];
+    var F = ['水仙', '紫罗兰', '桃花', '蔷薇', '铃兰', '玫瑰', '芍药', '百合', '雏菊', '桂花', '菊花', '水仙'];
+    var i = ((v.m || 9) - 1) % 12; if (i < 0) i = 0;
+    return { out: (v.m || 9) + ' 月诞生石：' + S[i] + ' · 生日花：' + F[i] };
+  } });
+
+/* 21 情侣昵称 */
+tool({ id: 'ai-cpname', n: 'AI 情侣昵称', c: 'ai-life', d: '生成甜系情侣昵称组合。',
+  f: [{ k: 'n', t: '组数', type: 'number', v: 3 }, { k: 'out', t: '昵称', type: 'out' }],
+  run: function (v) {
+    var A = ['小小', '阿', '老', '小', '大'], B = ['宝贝', '猪猪', '可爱', '甜心', '笨蛋', '憨憨'];
+    var o = []; for (var i = 0; i < (v.n || 3); i++) o.push(A[Math.floor(Math.random() * A.length)] + B[Math.floor(Math.random() * B.length)] + ' & ' + A[Math.floor(Math.random() * A.length)] + B[Math.floor(Math.random() * B.length)]);
+    return { out: o.join('\n') };
+  } });
+
+/* 22 许愿 */
+tool({ id: 'ai-wish', n: 'AI 许愿瓶', c: 'ai-life', d: '生成一句祝福文案（娱乐）。',
+  f: [{ k: 'w', t: '你的愿望', type: 'text' }, { k: 'out', t: '寄语', type: 'out' }],
+  run: function (v) { return { out: '愿你「' + (v.w || '心想的事') + '」都能成真。星辰大海，皆为你而来 ✨' }; } });
+
+/* 23 性格色彩 */
+tool({ id: 'ai-color-person', n: 'AI 性格色彩', c: 'ai-life', d: '按生日哈希给性格色彩标签。',
+  f: [{ k: 'birth', t: '生日(YYYY-MM-DD)', type: 'text', v: '1995-05-20' }, { k: 'out', t: '色彩', type: 'out' }],
+  run: function (v) {
+    var h = hash(v.birth || '1995-05-20'); var C = ['红色·行动派', '蓝色·思考派', '黄色·乐观派', '绿色·平和派', '紫色·浪漫派'];
+    return { out: '你的性格色彩：' + C[h % C.length] };
+  } });
+
+/* 24 取名打分 */
+tool({ id: 'ai-name-score', n: 'AI 名字打分', c: 'ai-life', d: '规则近似打分（笔画/谐音，娱乐）。',
+  f: [{ k: 'name', t: '名字', type: 'text' }, { k: 'out', t: '评分', type: 'out' }],
+  run: function (v) {
+    if (!v.name) return { out: '请输入名字' };
+    var h = hash(v.name); var sc = 70 + h % 30;
+    var bad = ['四', '死', '病', '苦', '亏']; var warn = bad.filter(function (x) { return v.name.indexOf(x) >= 0; }).length ? '（含不吉谐音，建议斟酌）' : '';
+    return { out: '「' + v.name + '」评分：' + sc + '/100' + warn };
+  } });
+
+/* 25 情商测试 */
+tool({ id: 'ai-eq', n: 'AI 情商自测', c: 'ai-life', d: '10 题情商倾向自评（娱乐）。',
+  f: [{ k: 'out', t: '题目提示', type: 'out' }],
+  run: function (v) { return { out: '情商自评维度：情绪觉察 / 同理心 / 冲突管理 / 自我激励。\n你对他人情绪的敏感度如何？能否在争执中先听对方？给自己的每个维度 1-5 分，均分×20 即情商指数（娱乐参考）。' }; } });
+
+/* 26 咖啡推荐 */
+tool({ id: 'ai-coffee', n: 'AI 咖啡推荐', c: 'ai-life', d: '按口味推荐咖啡品类。',
+  f: [{ k: 't', t: '偏好(苦/酸/奶香/清爽)', type: 'text', v: '奶香' }, { k: 'out', t: '推荐', type: 'out' }],
+  run: function (v) {
+    var M = { '苦': ['意式浓缩', '曼特宁', '深烘拼配'], '酸': ['耶加雪菲', '日晒西达摩', '肯尼亚'], '奶香': ['拿铁', '卡布奇诺', 'flat white'], '清爽': ['美式', '冷萃', '气泡美式'] };
+    var l = M[v.t] || M['奶香'];
+    return { out: '推荐：' + l.join('、') };
+  } });
+
+/* 27 旅行计划 */
+tool({ id: 'ai-trip', n: 'AI 旅行计划', c: 'ai-life', d: '按天数与偏好生成行程框架。',
+  f: [{ k: 'days', t: '天数', type: 'number', v: 3 }, { k: 'type', t: '类型(休闲/探险/美食/文化)', type: 'text', v: '美食' }, { k: 'out', t: '计划', type: 'out' }],
+  run: function (v) {
+    var n = Math.max(1, v.days || 3), o = ['抵达·入住·周边逛逛'];
+    for (var i = 1; i < n; i++) o.push('第' + (i + 1) + '天：' + (v.type || '美食') + '主题游览');
+    o.push('返程前采购手信');
+    return { out: '【' + (v.type || '美食') + ' · ' + n + '天】\n' + o.join('\n') };
+  } });
+
+/* 28 减压建议 */
+tool({ id: 'ai-relax', n: 'AI 减压建议', c: 'ai-life', d: '随机给出可执行的减压小动作。',
+  f: [{ k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    var L = ['深呼吸 4-7-8 三次', '起身拉伸肩颈 2 分钟', '闭眼听一首歌', '写下三件今日小确幸', '散步 10 分钟远离屏幕', '喝杯温水发会儿呆', '整理桌面一个小角落'];
+    return { out: '试试：' + L[Math.floor(Math.random() * L.length)] };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-mbti"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-mbti'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-mbti")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-mbti");
+if(i>=0)f.splice(i,1);else f.push("ai-mbti");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-mbti"});u.unshift("ai-mbti");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

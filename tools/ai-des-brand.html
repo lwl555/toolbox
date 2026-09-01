@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 品牌色建议 - 超有用的工具箱</title>
+<meta name="description" content="按行业气质推荐主色方向。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI设计</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 品牌色建议</h1>
+<p class="lede">按行业气质推荐主色方向。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-des-harmony.html"><div class="card-t"><span class="card-name">AI 配色方案</span></div><div class="card-desc">基于主色生成互补/类比/三角等和谐配色。</div></a><a class="card" href="ai-des-shades.html"><div class="card-t"><span class="card-name">AI 单色阶</span></div><div class="card-desc">由主色生成明度阶梯。</div></a><a class="card" href="ai-des-grad.html"><div class="card-t"><span class="card-name">AI 渐变生成</span></div><div class="card-desc">生成 CSS 线性渐变代码。</div></a><a class="card" href="ai-des-contrast.html"><div class="card-t"><span class="card-name">AI 对比度检查</span></div><div class="card-desc">WCAG 对比度比值与达标判断。</div></a><a class="card" href="ai-des-readable.html"><div class="card-t"><span class="card-name">AI 可读文字色</span></div><div class="card-desc">给定背景推荐对比达标的文字色。</div></a><a class="card" href="ai-des-font.html"><div class="card-t"><span class="card-name">AI 字体搭配</span></div><div class="card-desc">标题/正文中英文字体配对建议。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 品牌色建议<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   29-ai-design.js — AI 设计（真实色彩数学 + 模板，共 22 个）
+   ============================================================ */
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 颜色工具 */
+function h2r(h) { h = h.replace('#', ''); if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+function r2h(r) { return '#' + r.map(function (x) { var s = Math.max(0, Math.min(255, Math.round(x))).toString(16); return s.length === 1 ? '0' + s : s; }).join(''); }
+function r2hsl(r) { var R = r[0] / 255, G = r[1] / 255, B = r[2] / 255; var mx = Math.max(R, G, B), mn = Math.min(R, G, B), d = mx - mn, h = 0, s = 0, l = (mx + mn) / 2; if (d) { s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); if (mx === R) h = (G - B) / d + (G < B ? 6 : 0); else if (mx === G) h = (B - R) / d + 2; else h = (R - G) / d + 4; h *= 60; } return [h, s, l]; }
+function hsl2r(h, s, l) { h = (h % 360 + 360) % 360; var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r = 0, g = 0, b = 0; if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; } return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)]; }
+function lum(r) { var a = r.map(function (x) { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; }
+function contrast(r1, r2) { var L1 = lum(r1), L2 = lum(r2); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); }
+function sw(rgb) { var arr = (typeof rgb === 'string' && rgb[0] === '#') ? h2r(rgb) : rgb; var c = r2h(arr); return '<span style="display:inline-block;width:54px;height:54px;background:' + c + ';color:' + (lum(arr) > 0.5 ? '#222' : '#fff') + ';text-align:center;line-height:54px;font-size:12px;border-radius:6px">' + c + '</span>'; }
+
+/* 1 配色和谐方案 */
+tool({ id: 'ai-des-harmony', n: 'AI 配色方案', c: 'ai-design', d: '基于主色生成互补/类比/三角等和谐配色。',
+  f: [{ k: 'hex', t: '主色(#hex)', type: 'color', v: '#1a6b55' }, { k: 'out', t: '说明', type: 'out' }, { k: 'outhtml', t: '色板', type: 'outhtml' }],
+  run: function (v) {
+    var base; try { base = h2r(v.hex); } catch (e) { return { out: '颜色格式错误' }; }
+    var h = r2hsl(base)[0];
+    function rot(deg) { return r2h(hsl2r(h + deg, 0.6, 0.5)); }
+    var comp = [v.hex, rot(180)], ana = [rot(-30), v.hex, rot(30)], tri = [v.hex, rot(120), rot(240)], split = [v.hex, rot(150), rot(210)];
+    return { out: '互补 / 类比 / 三角 / 分裂互补 已生成', outhtml: '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      comp.map(sw).join('') + ' ' + ana.map(sw).join('') + ' ' + tri.map(sw).join('') + ' ' + split.map(sw).join('') + '</div>' };
+  } });
+
+/* 2 单色阶 */
+tool({ id: 'ai-des-shades', n: 'AI 单色阶', c: 'ai-design', d: '由主色生成明度阶梯。',
+  f: [{ k: 'hex', t: '主色', type: 'color', v: '#1a6b55' }, { k: 'out', t: 'HEX 列表', type: 'out' }, { k: 'outhtml', t: '色板', type: 'outhtml' }],
+  run: function (v) {
+    var base = h2r(v.hex); var hsl = r2hsl(base); var arr = [];
+    [0.92, 0.78, 0.64, 0.5, 0.38, 0.26, 0.16].forEach(function (l) { arr.push(r2h(hsl2r(hsl[0], hsl[1], l))); });
+    return { out: arr.join(' '), outhtml: '<div style="display:flex;gap:4px">' + arr.map(sw).join('') + '</div>' };
+  } });
+
+/* 3 渐变生成 */
+tool({ id: 'ai-des-grad', n: 'AI 渐变生成', c: 'ai-design', d: '生成 CSS 线性渐变代码。',
+  f: [{ k: 'a', t: '色A', type: 'color', v: '#1a6b55' }, { k: 'b', t: '色B', type: 'color', v: '#ff8fab' }, { k: 'deg', t: '角度', type: 'number', v: 135 }, { k: 'out', t: 'CSS', type: 'out' }, { k: 'outhtml', t: '预览', type: 'outhtml' }],
+  run: function (v) {
+    var css = 'background: linear-gradient(' + (v.deg || 135) + 'deg, ' + v.a + ', ' + v.b + ');';
+    return { out: css, outhtml: '<div style="height:60px;border-radius:8px;' + css + '"></div>' };
+  } });
+
+/* 4 对比度检查 */
+tool({ id: 'ai-des-contrast', n: 'AI 对比度检查', c: 'ai-design', d: 'WCAG 对比度比值与达标判断。',
+  f: [{ k: 'fg', t: '前景色', type: 'color', v: '#222222' }, { k: 'bg', t: '背景色', type: 'color', v: '#ffffff' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var r = contrast(h2r(v.fg), h2r(v.bg));
+    var aa = r >= 4.5 ? '通过 AA(正文)' : (r >= 3 ? '仅通过 AA(大字)' : '未通过 AA');
+    return { out: '对比度：' + Math.round(r * 100) / 100 + ' : 1 ｜ ' + aa };
+  } });
+
+/* 5 无障碍文字色 */
+tool({ id: 'ai-des-readable', n: 'AI 可读文字色', c: 'ai-design', d: '给定背景推荐对比达标的文字色。',
+  f: [{ k: 'bg', t: '背景色', type: 'color', v: '#1a6b55' }, { k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    var bg = h2r(v.bg); var c = lum(bg) > 0.4 ? '#ffffff' : '#111111';
+    return { out: '建议文字色：' + c + '（与背景对比 ' + Math.round(contrast(bg, h2r(c)) * 100) / 100 + ':1）' };
+  } });
+
+/* 6 字体搭配 */
+tool({ id: 'ai-des-font', n: 'AI 字体搭配', c: 'ai-design', d: '标题/正文中英文字体配对建议。',
+  f: [{ k: 'mood', t: '风格', type: 'select', opts: ['现代简约', '文艺气质', '科技感', '可爱圆润', '商务稳重'], v: '现代简约' }, { k: 'out', t: '方案', type: 'out' }],
+  run: function (v) {
+    var m = { '现代简约': '标题 PingFang/思源黑体 · 正文 同族常规', '文艺气质': '标题 宋体/Noto Serif · 正文 楷体感', '科技感': '标题 等宽/Orbitron · 正文 Inter', '可爱圆润': '标题 圆体/Comic · 正文 苹方', '商务稳重': '标题 思源黑体 Bold · 正文 宋体' };
+    return { out: m[v.mood] || m['现代简约'] };
+  } });
+
+/* 7 字阶(模块化比例) */
+tool({ id: 'ai-des-type', n: 'AI 字阶比例', c: 'ai-design', d: '按比率生成标题字号阶梯。',
+  f: [{ k: 'base', t: '基础字号(px)', type: 'number', v: 16 }, { k: 'ratio', t: '比例', type: 'number', v: 1.25 }, { k: 'out', t: '字阶', type: 'out' }],
+  run: function (v) {
+    var b = +v.base || 16, r = +v.ratio || 1.25, s = '';
+    for (var i = 0; i < 6; i++) s += 'H' + (6 - i) + ': ' + Math.round(b * Math.pow(r, 5 - i)) + 'px\n';
+    return { out: s + '正文: ' + b + 'px' };
+  } });
+
+/* 8 间距体系 */
+tool({ id: 'ai-des-space', n: 'AI 间距体系', c: 'ai-design', d: '4/8px 基准间距刻度。',
+  f: [{ k: 'unit', t: '基准(px)', type: 'number', v: 8 }, { k: 'out', t: '间距', type: 'out' }],
+  run: function (v) {
+    var u = +v.unit || 8, s = '';
+    [0.5, 1, 2, 3, 4, 6, 8].forEach(function (m) { s += (m) + '× = ' + (u * m) + 'px\n'; });
+    return { out: s };
+  } });
+
+/* 9 阴影生成 */
+tool({ id: 'ai-des-shadow', n: 'AI 阴影生成', c: 'ai-design', d: '生成分层柔和阴影 CSS。',
+  f: [{ k: 'soft', t: '柔和度', type: 'select', opts: ['轻', '中', '重'], v: '中' }, { k: 'out', t: 'CSS', type: 'out' }, { k: 'outhtml', t: '预览', type: 'outhtml' }],
+  run: function (v) {
+    var map = { '轻': '0 1px 3px rgba(0,0,0,.08)', '中': '0 4px 12px rgba(0,0,0,.12)', '重': '0 12px 32px rgba(0,0,0,.18)' };
+    var css = 'box-shadow: ' + (map[v.soft] || map['中']);
+    return { out: css + ';', outhtml: '<div style="height:60px;width:120px;margin:10px auto;background:#fff;border-radius:10px;' + css + '"></div>' };
+  } });
+
+/* 10 圆角建议 */
+tool({ id: 'ai-des-radius', n: 'AI 圆角建议', c: 'ai-design', d: '按元素类型推荐圆角值。',
+  f: [{ k: 'el', t: '元素', type: 'select', opts: ['按钮', '卡片', '输入框', '头像', '标签'], v: '卡片' }, { k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    var m = { '按钮': '8-10px', '卡片': '12-16px', '输入框': '8px', '头像': '50%', '标签': '6px' };
+    return { out: v.el + ' 推荐圆角：' + (m[v.el] || '12px') };
+  } });
+
+/* 11 最近色名 */
+tool({ id: 'ai-des-name', n: 'AI 色名识别', c: 'ai-design', d: '识别最接近的常用颜色名。',
+  f: [{ k: 'hex', t: '颜色', type: 'color', v: '#1a6b55' }, { k: 'out', t: '色名', type: 'out' }],
+  run: function (v) {
+    var NAMES = { '#ff0000': '红', '#00ff00': '绿', '#0000ff': '蓝', '#ffff00': '黄', '#ff00ff': '品红', '#00ffff': '青', '#000000': '黑', '#ffffff': '白', '#808080': '灰', '#ffa500': '橙', '#800080': '紫', '#ffc0cb': '粉', '#a52a2a': '棕', '#1a6b55': '松绿', '#1e90ff': '道奇蓝', '#ff8fab': '樱粉' };
+    var cur = h2r(v.hex), best = '', bd = 1e9;
+    Object.keys(NAMES).forEach(function (k) { var r = h2r(k); var d = Math.abs(r[0] - cur[0]) + Math.abs(r[1] - cur[1]) + Math.abs(r[2] - cur[2]); if (d < bd) { bd = d; best = NAMES[k]; } });
+    return { out: '最接近：' + best + '（' + v.hex + '）' };
+  } });
+
+/* 12 三色主题 */
+tool({ id: 'ai-des-tri', n: 'AI 三色主题', c: 'ai-design', d: '生成主/辅/强调三色主题。',
+  f: [{ k: 'hex', t: '主色', type: 'color', v: '#1a6b55' }, { k: 'out', t: '主题', type: 'out' }, { k: 'outhtml', t: '色板', type: 'outhtml' }],
+  run: function (v) {
+    var h = r2hsl(h2r(v.hex))[0]; var a = r2h(hsl2r(h + 180, 0.55, 0.55)), b = r2h(hsl2r(h + 30, 0.7, 0.6));
+    return { out: '主 ' + v.hex + ' 辅 ' + a + ' 强调 ' + b, outhtml: '<div style="display:flex;gap:6px">' + sw(h2r(v.hex)) + sw(h2r(a)) + sw(h2r(b)) + '</div>' };
+  } });
+
+/* 13 暗色模式适配 */
+tool({ id: 'ai-des-dark', n: 'AI 暗色适配', c: 'ai-design', d: '把浅色给出暗色版建议。',
+  f: [{ k: 'hex', t: '原色', type: 'color', v: '#1a6b55' }, { k: 'out', t: '暗色版', type: 'out' }],
+  run: function (v) {
+    var hsl = r2hsl(h2r(v.hex)); var dark = r2h(hsl2r(hsl[0], Math.min(1, hsl[1] + 0.1), Math.max(0.2, hsl[2] * 0.55)));
+    return { out: '暗色背景建议：' + dark + '（降低明度、保持色相）' };
+  } });
+
+/* 14 品牌色建议 */
+tool({ id: 'ai-des-brand', n: 'AI 品牌色建议', c: 'ai-design', d: '按行业气质推荐主色方向。',
+  f: [{ k: 'ind', t: '行业', type: 'text', v: '科技' }, { k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    var m = { '科技': '蓝/青，信任与未来感', '餐饮': '橙/红，刺激食欲', '美妆': '粉/金，精致', '金融': '深蓝/绿，稳健', '环保': '绿，自然', '儿童': '高饱和多彩' };
+    return { out: (m[v.ind] || '根据定位选色：活力用橙红，专业用蓝，高端用黑金') };
+  } });
+
+/* 15 UI 组件配色 */
+tool({ id: 'ai-des-ui', n: 'AI 组件配色', c: 'ai-design', d: '给出按钮/背景/边框等语义色。',
+  f: [{ k: 'brand', t: '品牌色', type: 'color', v: '#1a6b55' }, { k: 'out', t: '配色', type: 'out' }],
+  run: function (v) {
+    return { out: '主按钮 ' + v.brand + ' · 成功 #2e9e5b · 警告 #e0a800 · 危险 #d9534f · 背景 #f7f8fa · 边框 #e5e7eb · 文字 #1f2329' };
+  } });
+
+/* 16 色彩心理学 */
+tool({ id: 'ai-des-psy', n: 'AI 色彩心理学', c: 'ai-design', d: '常见颜色的情绪联想。',
+  f: [{ k: 'hex', t: '颜色', type: 'color', v: '#ff8fab' }, { k: 'out', t: '联想', type: 'out' }],
+  run: function (v) {
+    var r = h2r(v.hex), h = r2hsl(r)[0];
+    var m = { 0: '红：热情/紧迫', 30: '橙：活力/友好', 60: '黄：乐观/注意', 120: '绿：自然/成长', 180: '青：清新/科技', 240: '蓝：信任/冷静', 280: '紫：高贵/神秘', 320: '粉：温柔/可爱' };
+    var key = Math.round(h / 60) * 60 % 360; var txt = m[key] || '中性色：稳重/克制';
+    return { out: txt };
+  } });
+
+/* 17 色盲友好检查 */
+tool({ id: 'ai-des-cvd', n: 'AI 色盲友好', c: 'ai-design', d: '检查两色对红绿色盲是否可辨。',
+  f: [{ k: 'a', t: '色A', type: 'color', v: '#1a6b55' }, { k: 'b', t: '色B', type: 'color', v: '#d9534f' }, { k: 'out', t: '结果', type: 'out' }],
+  run: function (v) {
+    var r = contrast(h2r(v.a), h2r(v.b));
+    return { out: '对比度 ' + Math.round(r * 100) / 100 + ':1，' + (r >= 3 ? '对多数色觉障碍者仍可区分' : '建议加图形/文字区分，不只靠颜色') };
+  } });
+
+/* 18 渐变文字 */
+tool({ id: 'ai-des-gradtext', n: 'AI 渐变文字', c: 'ai-design', d: '生成渐变文字 CSS。',
+  f: [{ k: 'a', t: '色A', type: 'color', v: '#1a6b55' }, { k: 'b', t: '色B', type: 'color', v: '#ff8fab' }, { k: 'out', t: 'CSS', type: 'out' }],
+  run: function (v) {
+    return { out: 'background: linear-gradient(90deg,' + v.a + ',' + v.b + ');-webkit-background-clip:text;background-clip:text;color:transparent;' };
+  } });
+
+/* 19 海报构图 */
+tool({ id: 'ai-des-poster', n: 'AI 海报构图', c: 'ai-design', d: '给出版式与视觉焦点建议。',
+  f: [{ k: 'theme', t: '主题', type: 'text' }, { k: 'out', t: '构图', type: 'out' }],
+  run: function (v) {
+    return { out: '主题：' + (v.theme || '') + '\n构图：主视觉居中偏上，标题大字压视觉，副信息底部；留白≥30%；主色占60%辅色30%强调10%；一眼看焦点。' };
+  } });
+
+/* 20 图标风格 */
+tool({ id: 'ai-des-icon', n: 'AI 图标风格', c: 'ai-design', d: '按产品调性推荐图标风格。',
+  f: [{ k: 'mood', t: '调性', type: 'select', opts: ['可爱', '专业', '极简', '拟物'], v: '极简' }, { k: 'out', t: '建议', type: 'out' }],
+  run: function (v) {
+    var m = { '可爱': '圆角粗描边、填充糖色', '专业': '线性 1.5px、几何规整', '极简': '单色线性、负空间大', '拟物': '写实渐变质感' };
+    return { out: m[v.mood] || m['极简'] };
+  } });
+
+/* 21 设计系统清单 */
+tool({ id: 'ai-des-check', n: 'AI 设计系统清单', c: 'ai-design', d: '检查设计是否体系化。',
+  f: [{ k: 'out', t: '清单', type: 'out' }],
+  run: function (v) {
+    return { out: '□ 主色/辅助/语义色  □ 字阶比例  □ 间距标尺  □ 圆角层级  □ 阴影层级  □ 组件状态(默认/悬停/禁用)  □ 暗色模式  □ 无障碍对比度' };
+  } });
+
+/* 22 双色主题 */
+tool({ id: 'ai-des-duo', n: 'AI 双色主题', c: 'ai-design', d: '生成高对比双色搭配。',
+  f: [{ k: 'hex', t: '主色', type: 'color', v: '#1a6b55' }, { k: 'out', t: '双色', type: 'out' }, { k: 'outhtml', t: '色板', type: 'outhtml' }],
+  run: function (v) {
+    var h = r2hsl(h2r(v.hex))[0]; var duo = r2h(hsl2r(h + 180, 0.7, 0.5));
+    return { out: '主 ' + v.hex + ' + 撞色 ' + duo, outhtml: '<div style="display:flex;gap:6px">' + sw(h2r(v.hex)) + sw(h2r(duo)) + '</div>' };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-des-brand"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-des-brand'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-des-brand")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-des-brand");
+if(i>=0)f.splice(i,1);else f.push("ai-des-brand");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-des-brand"});u.unshift("ai-des-brand");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

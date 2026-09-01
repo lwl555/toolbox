@@ -34,13 +34,38 @@ Lf.tip = ['每天喝够 8 杯水。', '久坐一小时起来活动 2 分钟。',
 Lf.pomodoroState = null;
 Lf.stopwatch = null;
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "life-countdown-timer", n: "倒计时器", c: "life", d: "设定分钟数，到点响铃提醒",
-  custom: null,
-  fields: [{"k":"min","t":"分钟","type":"number","v":10,"min":1,"max":600},{"k":"cv","t":"倒计时","type":"custom","html":"<div style=\"text-align:center;padding:24px\"><div id=\"cdTime\" style=\"font-size:48px;font-weight:700;font-variant-numeric:tabular-nums\">10:00</div><div style=\"margin-top:14px\"><button id=\"cdToggle\" class=\"btn btn-pri\">开始</button> <button id=\"cdReset\" class=\"btn btn-sec\">重置</button></div></div>"}],
-  auto: true,
-  first: true,
-  init: function (RT) {
+tool({ id: 'life-pomodoro', n: '番茄钟', c: 'life', d: '25 分钟专注 + 5 分钟休息（可自定义）',
+  f: [{ k: 'work', t: '专注分钟', type: 'number', v: 25, min: 1, max: 120 }, { k: 'break', t: '休息分钟', type: 'number', v: 5, min: 1, max: 60 }, { k: 'cv', t: '计时器', type: 'custom', html: '<div id="pomo" style="text-align:center;padding:24px"><div id="pomoTime" style="font-size:52px;font-weight:700;font-variant-numeric:tabular-nums">25:00</div><div id="pomoMode" style="color:var(--ink-3);margin:6px 0 14px">专注</div><button id="pomoToggle" class="btn btn-pri">开始</button> <button id="pomoReset" class="btn btn-sec">重置</button></div><div id="pomoLog" style="font-size:12px;color:var(--ink-3);margin-top:10px"></div>' }],
+  run: function () {}, init: function (RT) {
+    var time = document.getElementById('pomoTime'), mode = document.getElementById('pomoMode'), tog = document.getElementById('pomoToggle'), reset = document.getElementById('pomoReset'), log = document.getElementById('pomoLog');
+    var s = Lf.pomodoroState || { left: 25 * 60, running: false, phase: 'work', done: 0 }; Lf.pomodoroState = s;
+    function show() { var m = Math.floor(s.left / 60), ss = s.left % 60; time.textContent = (m < 10 ? '0' : '') + m + ':' + (ss < 10 ? '0' : '') + ss; mode.textContent = s.phase === 'work' ? '专注' : '休息'; }
+    function tick() { if (!s.running) return; s.left--; if (s.left <= 0) { s.phase = s.phase === 'work' ? 'break' : 'work'; if (s.phase === 'work') { s.done++; log.textContent = '已完成 ' + s.done + ' 个番茄'; } s.left = (s.phase === 'work' ? (document.getElementById('f_work') ? +document.getElementById('f_work').value : 25) : (document.getElementById('f_break') ? +document.getElementById('f_break').value : 5)) * 60; }
+      show(); }
+    tog.onclick = function () { s.running = !s.running; tog.textContent = s.running ? '暂停' : '开始'; if (s.running && !Lf.pomoTimer) Lf.pomoTimer = setInterval(tick, 1000); if (!s.running && Lf.pomoTimer) { clearInterval(Lf.pomoTimer); Lf.pomoTimer = null; } };
+    reset.onclick = function () { s.left = (document.getElementById('f_work') ? +document.getElementById('f_work').value : 25) * 60; s.running = false; s.phase = 'work'; tog.textContent = '开始'; if (Lf.pomoTimer) { clearInterval(Lf.pomoTimer); Lf.pomoTimer = null; } show(); };
+    s.left = (document.getElementById('f_work') ? +document.getElementById('f_work').value : 25) * 60; show();
+  } });
+
+tool({ id: 'life-stopwatch', n: '秒表', c: 'life', d: '精确计时，支持分圈记录',
+  f: [{ k: 'cv', t: '秒表', type: 'custom', html: '<div style="text-align:center;padding:24px"><div id="swTime" style="font-size:48px;font-weight:700;font-variant-numeric:tabular-nums">00:00.00</div><div style="margin:14px 0"><button id="swToggle" class="btn btn-pri">开始</button> <button id="swLap" class="btn btn-sec">分圈</button> <button id="swReset" class="btn btn-sec">重置</button></div><div id="swLaps" style="font-size:13px;text-align:left;max-height:140px;overflow:auto"></div></div>' }],
+  run: function () {}, init: function () {
+    var t = document.getElementById('swTime'), tog = document.getElementById('swToggle'), lap = document.getElementById('swLap'), reset = document.getElementById('swReset'), laps = document.getElementById('swLaps');
+    var s = Lf.stopwatch || { ms: 0, running: false, last: 0, list: [] }; Lf.stopwatch = s;
+    function show() { var m = Math.floor(s.ms / 60000), sec = Math.floor(s.ms / 1000) % 60, cs = Math.floor(s.ms / 10) % 100; t.textContent = (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec + '.' + (cs < 10 ? '0' : '') + cs; }
+    function tick() { if (!s.running) return; s.ms += 37; show(); }
+    tog.onclick = function () { s.running = !s.running; tog.textContent = s.running ? '暂停' : '继续'; if (s.running) { s.last = Date.now(); if (!Lf.swTimer) Lf.swTimer = setInterval(function () { if (s.running) { s.ms += Date.now() - s.last; s.last = Date.now(); show(); } }, 37); } };
+    lap.onclick = function () { if (!s.running && s.ms === 0) return; s.list.push(s.ms); laps.innerHTML = s.list.map(function (ms, i) { var sec = (ms / 1000).toFixed(2); var fast = i > 0 && ms - s.list[i - 1] < s.list[i - 1] ? 'color:#1a6b55;font-weight:600' : ''; return '<div style="' + fast + '">圈 ' + (i + 1) + '：' + sec + 's</div>'; }).join(''); };
+    reset.onclick = function () { s.ms = 0; s.running = false; s.list = []; tog.textContent = '开始'; if (Lf.swTimer) { clearInterval(Lf.swTimer); Lf.swTimer = null; } laps.innerHTML = ''; show(); };
+    show();
+  } });
+
+tool({ id: 'life-countdown-timer', n: '倒计时器', c: 'life', d: '设定分钟数，到点响铃提醒',
+  f: [{ k: 'min', t: '分钟', type: 'number', v: 10, min: 1, max: 600 }, { k: 'cv', t: '倒计时', type: 'custom', html: '<div style="text-align:center;padding:24px"><div id="cdTime" style="font-size:48px;font-weight:700;font-variant-numeric:tabular-nums">10:00</div><div style="margin-top:14px"><button id="cdToggle" class="btn btn-pri">开始</button> <button id="cdReset" class="btn btn-sec">重置</button></div></div>' }],
+  run: function () {}, init: function (RT) {
     var t = document.getElementById('cdTime'), tog = document.getElementById('cdToggle'), reset = document.getElementById('cdReset');
     var min = document.getElementById('f_min') ? +document.getElementById('f_min').value : 10; var left = min * 60; var running = false, timer = null;
     function show() { var m = Math.floor(left / 60), s = left % 60; t.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
@@ -48,8 +73,127 @@ window.TOOL = { id: "life-countdown-timer", n: "倒计时器", c: "life", d: "�
     tog.onclick = function () { running = !running; tog.textContent = running ? '暂停' : '开始'; if (running && !timer) timer = setInterval(function () { if (!running) return; left--; show(); if (left <= 0) { clearInterval(timer); timer = null; running = false; tog.textContent = '开始'; beep(); } }, 1000); };
     reset.onclick = function () { left = (document.getElementById('f_min') ? +document.getElementById('f_min').value : 10) * 60; running = false; if (timer) clearInterval(timer); timer = null; tog.textContent = '开始'; show(); };
     show();
-  },
-  run: function () {} };
+  } });
+
+tool({ id: 'life-worldclock', n: '世界时钟', c: 'life', d: '同时显示多个城市当前时间',
+  f: [{ k: 'cv', t: '时钟', type: 'custom', html: '<div id="wclocks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px"></div>' }],
+  run: function () {}, init: function () {
+    var box = document.getElementById('wclocks'); var zones = [['北京', 'Asia/Shanghai'], ['东京', 'Asia/Tokyo'], ['伦敦', 'Europe/London'], ['巴黎', 'Europe/Paris'], ['纽约', 'America/New_York'], ['洛杉矶', 'America/Los_Angeles'], ['悉尼', 'Australia/Sydney'], ['迪拜', 'Asia/Dubai']];
+    box.innerHTML = zones.map(function (z) { return '<div style="border:1px solid var(--ink-2);border-radius:10px;padding:10px"><div style="font-size:12px;color:var(--ink-3)">' + z[0] + '</div><div class="wtz" data-z="' + z[1] + '" style="font-size:18px;font-weight:600;font-variant-numeric:tabular-nums">--:--:--</div></div>'; }).join('');
+    function upd() { box.querySelectorAll('.wtz').forEach(function (el) { el.textContent = new Intl.DateTimeFormat('zh-CN', { timeZone: el.dataset.z, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date()); }); }
+    upd(); setInterval(upd, 1000);
+  } });
+
+tool({ id: 'life-todo', n: '待办清单', c: 'life', d: '本地保存的 Todo（刷新不丢）',
+  f: [{ k: 'cv', t: '清单', type: 'custom', html: '<div style="display:flex;gap:8px;margin-bottom:10px"><input id="todoIn" class="ipt" placeholder="添加待办…" style="flex:1"><button id="todoAdd" class="btn btn-pri">添加</button></div><div id="todoList"></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'life_todo_v2'; var list = document.getElementById('todoList'), inp = document.getElementById('todoIn'), add = document.getElementById('todoAdd');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(a) { localStorage.setItem(KEY, JSON.stringify(a)); }
+    function render() { var a = load(); list.innerHTML = a.map(function (it, i) { return '<div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--ink-2);border-radius:8px;margin-bottom:6px"><input type="checkbox" ' + (it.done ? 'checked' : '') + ' data-i="' + i + '" class="tcheck"><span style="' + (it.done ? 'text-decoration:line-through;color:var(--ink-3)' : '') + ';flex:1">' + RT.esc(it.t) + '</span><button data-di="' + i + '" class="fx">×</button></div>'; }).join('') || '<div style="color:var(--ink-3);font-size:13px">暂无待办</div>'; list.querySelectorAll('.tcheck').forEach(function (c) { c.onchange = function () { var a = load(); a[+c.dataset.i].done = c.checked; save(a); render(); }; }); list.querySelectorAll('[data-di]').forEach(function (b) { b.onclick = function () { var a = load(); a.splice(+b.dataset.di, 1); save(a); render(); }; }); }
+    add.onclick = function () { if (!inp.value.trim()) return; var a = load(); a.push({ t: inp.value.trim(), done: false }); save(a); inp.value = ''; render(); };
+    inp.onkeydown = function (e) { if (e.key === 'Enter') add.onclick(); };
+    render();
+  } });
+
+tool({ id: 'life-habit', n: '习惯打卡', c: 'life', d: '每天点一下，记录连续天数',
+  f: [{ k: 'name', t: '习惯名', type: 'text', v: '阅读' }, { k: 'cv', t: '打卡', type: 'custom', html: '<div id="habitBox" style="text-align:center;padding:16px"><div id="habitDays" style="font-size:40px;font-weight:700">0</div><div style="color:var(--ink-3);margin:4px 0 12px">连续天数</div><button id="habitDo" class="btn btn-pri">今日打卡</button> <button id="habitReset" class="btn btn-sec">清零</button></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'life_habit_v2'; var name = document.getElementById('f_name').value; var daysEl = document.getElementById('habitDays'), doBtn = document.getElementById('habitDo'), reset = document.getElementById('habitReset');
+    function get() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
+    function show() { var d = get()[name] || { days: 0, last: '' }; daysEl.textContent = d.days; }
+    doBtn.onclick = function () { var d = get(); var today = new Date().toDateString(); var cur = d[name] || { days: 0, last: '' }; if (cur.last === today) { RT.toast('今天已打卡'); return; } var y = new Date(Date.now() - 86400000).toDateString(); cur.days = cur.last === y ? cur.days + 1 : 1; cur.last = today; d[name] = cur; localStorage.setItem(KEY, JSON.stringify(d)); show(); RT.toast('打卡成功，连续 ' + cur.days + ' 天'); };
+    reset.onclick = function () { var d = get(); d[name] = { days: 0, last: '' }; localStorage.setItem(KEY, JSON.stringify(d)); show(); };
+    show();
+  } });
+
+tool({ id: 'life-weight', n: '体重记录', c: 'life', d: '记录每日体重，看变化趋势',
+  f: [{ k: 'cv', t: '记录', type: 'custom', html: '<div style="display:flex;gap:8px;margin-bottom:10px"><input id="wIn" class="ipt" type="number" placeholder="今日体重kg" style="flex:1"><button id="wAdd" class="btn btn-pri">记录</button></div><div id="wList" style="font-size:13px"></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'life_weight_v2'; var inp = document.getElementById('wIn'), add = document.getElementById('wAdd'), list = document.getElementById('wList');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(a) { localStorage.setItem(KEY, JSON.stringify(a)); }
+    function render() { var a = load(); if (!a.length) { list.innerHTML = '<div style="color:var(--ink-3)">暂无记录</div>'; return; } var first = a[0].w, last = a[a.length - 1].w; var diff = (last - first).toFixed(1); list.innerHTML = '<div style="margin-bottom:6px">共 ' + a.length + ' 条，变化 <b style="color:' + (diff <= 0 ? '#1a6b55' : '#9b1c1c') + '">' + (diff > 0 ? '+' : '') + diff + ' kg</b></div>' + a.slice(-8).reverse().map(function (r) { return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--ink-1)"><span>' + r.d + '</span><b>' + r.w + ' kg</b></div>'; }).join(''); }
+    add.onclick = function () { if (!inp.value) return; var a = load(); a.push({ d: new Date().toLocaleDateString(), w: parseFloat(inp.value) }); save(a); inp.value = ''; render(); };
+    render();
+  } });
+
+tool({ id: 'life-anniversary', n: '纪念日', c: 'life', d: '算某个重要日子过去多少天',
+  f: [{ k: 'date', t: '日期', type: 'text', v: '2024-01-01' }, { k: 'name', t: '名称', type: 'text', v: '在一起' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var m = (v.date || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (!m) return { out: '', note: '格式如 2024-01-01', warn: true }; var d = new Date(+m[1], +m[2] - 1, +m[3]); var days = Math.floor((Date.now() - d) / 86400000); return { out: (v.name || '该日') + ' 已 ' + days + ' 天', metrics: [{ t: '天数', v: days }, { t: '约', v: (days / 365.25).toFixed(2) + ' 年' }] }; } });
+
+tool({ id: 'life-read-progress', n: '读书进度', c: 'life', d: '按已读/总页算进度百分比',
+  f: [{ k: 'cur', t: '已读页', type: 'number', v: 120 }, { k: 'total', t: '总页', type: 'number', v: 300 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var p = v.total ? v.cur / v.total * 100 : 0; var bar = Math.round(p / 10); return { out: p.toFixed(1) + '%  [' + '█'.repeat(bar) + '░'.repeat(10 - bar) + ']', metrics: [{ t: '进度', v: p.toFixed(1) + '%' }, { t: '剩余', v: (v.total - v.cur) + ' 页' }] }; } });
+
+tool({ id: 'life-group', n: '随机分组', c: 'life', d: '把名单随机分成 N 组',
+  f: [{ k: 'list', t: '名单（一行一个）', type: 'textarea', ph: '张三\n李四\n王五' }, { k: 'g', t: '组数', type: 'number', v: 3, min: 1, max: 20 }, { k: 'out', t: '结果', type: 'out', dl: 1 }],
+  auto: false, run: function (v) { var arr = (v.list || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (arr.length < v.g) return { out: '', note: '人数少于组数', warn: true }; for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } var groups = []; for (var k = 0; k < v.g; k++) groups.push([]); arr.forEach(function (x, idx) { groups[idx % v.g].push(x); }); return { out: groups.map(function (g, i) { return '第 ' + (i + 1) + ' 组：\n' + g.join('、') + '\n'; }).join('\n') }; } });
+
+tool({ id: 'life-seat', n: '随机座位', c: 'life', d: '随机排座位（输入人数自动排成方阵）',
+  f: [{ k: 'n', t: '人数', type: 'number', v: 30, min: 1, max: 100 }, { k: 'per', t: '每行人数', type: 'number', v: 6, min: 1, max: 20 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var arr = []; for (var i = 1; i <= v.n; i++) arr.push(i); for (var j = arr.length - 1; j > 0; j--) { var k = Math.floor(Math.random() * (j + 1)); var t = arr[j]; arr[j] = arr[k]; arr[k] = t; } var r = ''; arr.forEach(function (x, i) { r += (x < 10 ? ' ' + x : x) + '  '; if ((i + 1) % v.per === 0) r += '\n'; }); return { out: r.trim() }; } });
+
+tool({ id: 'life-drink', n: '喝水提醒', c: 'life', d: '按体重算每日饮水量',
+  f: [{ k: 'w', t: '体重 kg', type: 'number', v: 65 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var ml = v.w * 35; var cups = Math.ceil(ml / 250); return { out: '约 ' + ml + ' mL/天（' + cups + ' 杯）', metrics: [{ t: '总量', v: ml + ' mL' }, { t: '约', v: cups + ' 杯(250ml)' }] }; } });
+
+tool({ id: 'life-decide', n: '决定助手', c: 'life', d: '纠结时帮你随机拍板',
+  f: [{ k: 'a', t: '选项A', type: 'text', v: '去' }, { k: 'b', t: '选项B', type: 'text', v: '不去' }, { k: 'out', t: '结果', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Math.random() < 0.5 ? '选：' + v.a : '选：' + v.b }; } });
+
+tool({ id: 'life-quote', n: '每日一句', c: 'life', d: '随机一句正能量语录',
+  f: [{ k: 'out', t: '语录', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Lf.quote[Math.floor(Math.random() * Lf.quote.length)] }; } });
+
+tool({ id: 'life-tip', n: '健康小贴士', c: 'life', d: '随机一条健康小提醒',
+  f: [{ k: 'out', t: '贴士', type: 'out', dl: 1 }], auto: false, run: function (v) { return { out: Lf.tip[Math.floor(Math.random() * Lf.tip.length)] }; } });
+
+tool({ id: 'life-metronome', n: '节拍器', c: 'life', d: '设定 BPM 打节拍（WebAudio）',
+  f: [{ k: 'bpm', t: 'BPM', type: 'number', v: 60, min: 20, max: 240 }, { k: 'cv', t: '节拍', type: 'custom', html: '<div style="text-align:center;padding:20px"><div id="metBeep" style="width:60px;height:60px;border-radius:50%;background:var(--accent);margin:0 auto 14px;transition:transform .1s"></div><button id="metToggle" class="btn btn-pri">开始</button></div>' }],
+  run: function () {}, init: function (RT) {
+    var bpm = document.getElementById('f_bpm'); var tog = document.getElementById('metToggle'); var dot = document.getElementById('metBeep'); var running = false, timer = null, ctx = null;
+    function beat() { try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); var o = ctx.createOscillator(), g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value = 1000; o.start(); g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05); o.stop(ctx.currentTime + 0.05); dot.style.transform = 'scale(1.3)'; setTimeout(function () { dot.style.transform = 'scale(1)'; }, 100); } catch (e) {} }
+    tog.onclick = function () { running = !running; tog.textContent = running ? '停止' : '开始'; if (running) timer = setInterval(beat, 60000 / (bpm ? +bpm.value : 60)); else if (timer) clearInterval(timer); };
+  } });
+
+tool({ id: 'life-counter', n: '点击计数器', c: 'life', d: '简单计数，可加减清零',
+  f: [{ k: 'cv', t: '计数', type: 'custom', html: '<div style="text-align:center;padding:20px"><div id="cntNum" style="font-size:56px;font-weight:700">0</div><div style="margin-top:12px"><button id="cntMinus" class="btn btn-sec">−1</button> <button id="cntPlus" class="btn btn-pri">+1</button> <button id="cntReset" class="btn btn-sec">清零</button></div></div>' }],
+  run: function () {}, init: function () { var n = document.getElementById('cntNum'), p = document.getElementById('cntPlus'), m = document.getElementById('cntMinus'), r = document.getElementById('cntReset'); var c = 0; function show() { n.textContent = c; } p.onclick = function () { c++; show(); }; m.onclick = function () { c--; show(); }; r.onclick = function () { c = 0; show(); }; show(); } });
+
+tool({ id: 'life-budget', n: '记账本', c: 'life', d: '本地记收支，看结余',
+  f: [{ k: 'cv', t: '记账', type: 'custom', html: '<div style="display:flex;gap:6px;margin-bottom:8px"><select id="bgType" class="sel"><option value="-">支出</option><option value="+">收入</option></select><input id="bgAmt" class="ipt" type="number" placeholder="金额" style="flex:1"><input id="bgNote" class="ipt" placeholder="备注" style="flex:1"><button id="bgAdd" class="btn btn-pri">记</button></div><div id="bgList" style="font-size:13px"></div>' }],
+  run: function () {}, init: function (RT) {
+    var KEY = 'life_budget_v2'; var type = document.getElementById('bgType'), amt = document.getElementById('bgAmt'), note = document.getElementById('bgNote'), add = document.getElementById('bgAdd'), list = document.getElementById('bgList');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(a) { localStorage.setItem(KEY, JSON.stringify(a)); }
+    function render() { var a = load(); var sum = a.reduce(function (s, r) { return s + (r.t === '+' ? r.a : -r.a); }, 0); list.innerHTML = '<div style="margin-bottom:6px;font-weight:600">结余：' + sum.toFixed(2) + ' 元</div>' + a.slice(-10).reverse().map(function (r) { return '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--ink-1)"><span>' + RT.esc(r.note || '') + '</span><b style="color:' + (r.t === '+' ? '#1a6b55' : '#9b1c1c') + '">' + r.t + r.a + '</b></div>'; }).join(''); }
+    add.onclick = function () { if (!amt.value) return; var a = load(); a.push({ t: type.value, a: parseFloat(amt.value), note: note.value }); save(a); amt.value = ''; note.value = ''; render(); };
+    render();
+  } });
+
+tool({ id: 'life-rest', n: '休息提醒', c: 'life', d: '按工作时长提醒该休息了',
+  f: [{ k: 'min', t: '每多少分钟提醒', type: 'number', v: 45, min: 5, max: 180 }, { k: 'out', t: '建议', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { return { out: '工作 ' + v.min + ' 分钟，起来活动 5 分钟', metrics: [{ t: '工作', v: v.min + ' 分' }, { t: '休息', v: '5 分' }, { t: '一天8h休息', v: Math.floor(480 / v.min) + ' 次' }] }; } });
+
+tool({ id: 'life-gift', n: '礼物抽签', c: 'life', d: '从名单里随机抽一个当送礼对象',
+  f: [{ k: 'list', t: '名单（一行一个）', type: 'textarea', ph: '小明\n小红' }, { k: 'out', t: '结果', type: 'out', dl: 1 }], auto: false, run: function (v) { var arr = (v.list || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (!arr.length) return { out: '', note: '请输入名单', warn: true }; return { out: '🎁 送给：' + arr[Math.floor(Math.random() * arr.length)] }; } });
+
+tool({ id: 'life-week-plan', n: '周计划模板', c: 'life', d: '生成一周七天的待填模板',
+  f: [{ k: 'out', t: '模板', type: 'out', dl: 1, mono: 1 }], auto: false, run: function (v) { var days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']; return { out: days.map(function (d) { return d + '：\n  - \n'; }).join('\n') }; } });
+
+tool({ id: 'life-pick-one', n: '抽签', c: 'life', d: '从一个列表里随机抽一个',
+  f: [{ k: 'list', t: '选项（一行一个）', type: 'textarea', ph: 'A\nB\nC' }, { k: 'out', t: '结果', type: 'out', dl: 1 }], auto: false, run: function (v) { var arr = (v.list || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean); if (!arr.length) return { out: '', note: '请输入选项', warn: true }; return { out: '🎲 ' + arr[Math.floor(Math.random() * arr.length)] }; } });
+
+tool({ id: 'life-menses', n: '经期周期', c: 'life', d: '按上次月经日估算下个周期（粗略）',
+  f: [{ k: 'last', t: '上次首日', type: 'text', v: '2026-09-01' }, { k: 'cycle', t: '周期天数', type: 'number', v: 28, min: 21, max: 40 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var m = (v.last || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (!m) return { out: '', note: '格式如 2026-09-01', warn: true }; var d = new Date(+m[1], +m[2] - 1, +m[3]); d.setDate(d.getDate() + v.cycle); var next = d.toISOString().slice(0, 10); var预测 = new Date(d); 预测.setDate(预测.getDate() + 14); return { out: '下次约：' + next, metrics: [{ t: '下次经期', v: next }, { t: '排卵期约', v: 预测.toISOString().slice(0, 10) }, { t: '注意', v: '仅为估算' }] }; } });
+
+tool({ id: 'life-sleep-need', n: '睡眠需求', c: 'life', d: '按年龄建议睡眠时长',
+  f: [{ k: 'age', t: '年龄', type: 'number', v: 30, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var h; if (v.age <= 1) h = '12-16'; else if (v.age <= 5) h = '10-14'; else if (v.age <= 13) h = '9-11'; else if (v.age <= 17) h = '8-10'; else if (v.age <= 64) h = '7-9'; else h = '7-8'; return { out: '建议 ' + h + ' 小时/天', metrics: [{ t: '推荐', v: h + ' 小时' }] }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "life-countdown-timer"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: life-countdown-timer'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

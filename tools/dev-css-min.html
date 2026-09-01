@@ -35,14 +35,132 @@ Dh.HTTP = { 200: 'OK 成功', 201: 'Created 已创建', 204: 'No Content 无内�
 Dh.MIME = { html: 'text/html', css: 'text/css', js: 'application/javascript', json: 'application/json', xml: 'application/xml', png: 'image/png', jpg: 'image/jpeg', gif: 'image/gif', svg: 'image/svg+xml', pdf: 'application/pdf', mp3: 'audio/mpeg', mp4: 'video/mp4', txt: 'text/plain', csv: 'text/csv', zip: 'application/zip', md: 'text/markdown', woff2: 'font/woff2' };
 Dh.PORTS = { 80: 'HTTP', 443: 'HTTPS', 21: 'FTP', 22: 'SSH', 25: 'SMTP', 3306: 'MySQL', 5432: 'PostgreSQL', 6379: 'Redis', 27017: 'MongoDB', 8080: 'HTTP 代理/备用', 8000: '开发服务器', 6379: 'Redis', 11211: 'Memcached', 9200: 'Elasticsearch', 5672: 'RabbitMQ', 1521: 'Oracle', 1433: 'SQL Server', 389: 'LDAP' };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "dev-css-min", n: "CSS 压缩", c: "dev", d: "去掉 CSS 里的空白和注释",
-  custom: null,
-  fields: [{"k":"in","t":"CSS","type":"textarea","mono":1},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) { var s = (v.in || '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}'); return { out: s.trim(), metrics: [{ t: '字节', v: s.trim().length }] }; } };
+tool({ id: 'dev-regex', n: '正则表达式测试', c: 'dev', d: '实时高亮匹配并展示捕获分组',
+  f: [{ k: 're', t: '正则表达式', type: 'text', ph: '(\d{3})-(\d{4})' }, { k: 'flags', t: '标志', type: 'text', v: 'g', ph: 'g i m' }, { k: 'src', t: '测试文本', type: 'textarea', ph: '电话 138-1234 或 139-5678' }, { k: 'out', t: '匹配结果', type: 'outhtml' }],
+  run: function (v) {
+    if (!v.re) return { out: '<span class="out-empty">输入正则</span>' };
+    var rx; try { rx = new RegExp(v.re, v.flags || ''); } catch (e) { return { out: '<span style="color:#9b1c1c">正则错误：' + RT.esc(e.message) + '</span>' }; }
+    var s = v.src || '', html = '', m, cnt = 0, groups = [];
+    if (rx.global) { while ((m = rx.exec(s)) !== null) { if (m.index === rx.lastIndex) rx.lastIndex++; cnt++; groups.push(m.slice(1).join(' | ')); var pre = s.slice(0, m.index).replace(/</g, '&lt;'); var hit = RT.esc(m[0]).replace(/</g, '&lt;'); html += pre + '<mark style="background:#fde68a;padding:0 2px">' + hit + '</mark>'; s = s.slice(m.index + m[0].length); } html += RT.esc(s).replace(/</g, '&lt;'); }
+    else { m = rx.exec(s); if (m) { cnt = 1; groups.push(m.slice(1).join(' | ')); html = RT.esc(s).replace(m[0], '<mark style="background:#fde68a">' + RT.esc(m[0]) + '</mark>'); } }
+    var ghtml = groups.length ? '<div style="margin-top:8px;font-size:12px;color:var(--ink-3)">分组：<br>' + groups.map(function (g, i) { return '匹配' + (i + 1) + ': ' + RT.esc(g); }).join('<br>') + '</div>' : '';
+    return { out: (cnt ? html : '<span class="out-empty">无匹配</span>') + '<div style="margin-top:6px;font-size:12.5px;color:var(--accent)">共 ' + cnt + ' 处</div>' + ghtml };
+  } });
+
+tool({ id: 'dev-json-fmt', n: 'JSON 格式化', c: 'dev', d: '美化压缩的 JSON，带缩进',
+  f: [{ k: 'in', t: 'JSON', type: 'textarea', mono: 1, ph: '{"a":1,"b":[2,3]}' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var o = Dh.tryJSON(v.in); if (!o) return { out: '', note: 'JSON 解析失败', warn: true }; return { out: JSON.stringify(o, null, 2), metrics: [{ t: '格式', v: '美化' }, { t: '字节', v: JSON.stringify(o).length }] }; } });
+
+tool({ id: 'dev-json-min', n: 'JSON 压缩', c: 'dev', d: '去掉所有空白，压缩成一行',
+  f: [{ k: 'in', t: 'JSON', type: 'textarea', mono: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var o = Dh.tryJSON(v.in); if (!o) return { out: '', note: 'JSON 解析失败', warn: true }; var s = JSON.stringify(o); return { out: s, metrics: [{ t: '压缩后', v: s.length + ' 字节' }] }; } });
+
+tool({ id: 'dev-json-check', n: 'JSON 校验', c: 'dev', d: '检查 JSON 是否合法并定位错误',
+  f: [{ k: 'in', t: 'JSON', type: 'textarea', mono: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var o = Dh.tryJSON(v.in); if (!o) return { out: '❌ 不是合法 JSON', note: '请检查括号、引号、逗号', warn: true }; return { out: '✅ 合法 JSON', metrics: [{ t: '类型', v: Array.isArray(o) ? '数组' : typeof o === 'object' ? '对象' : typeof o }, { t: '顶层键', v: o && typeof o === 'object' ? Object.keys(o).length : '-' }] }; } });
+
+tool({ id: 'dev-json-csv', n: 'JSON 转 CSV', c: 'dev', d: '把 JSON 数组转成 CSV 表格',
+  f: [{ k: 'in', t: 'JSON 数组', type: 'textarea', mono: 1, ph: '[{"name":"小明","age":18}]' }, { k: 'out', t: 'CSV', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var o = Dh.tryJSON(v.in); if (!o || !Array.isArray(o)) return { out: '', note: '需是 JSON 数组', warn: true }; var keys = []; o.forEach(function (r) { Object.keys(r).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); }); }); var rows = [keys.join(',')]; o.forEach(function (r) { rows.push(keys.map(function (k) { var c = r[k]; return '"' + (c == null ? '' : ('' + c).replace(/"/g, '""')) + '"'; }).join(',')); }); return { out: rows.join('\n'), metrics: [{ t: '行数', v: o.length }, { t: '列数', v: keys.length }] }; } });
+
+tool({ id: 'dev-csv-json', n: 'CSV 转 JSON', c: 'dev', d: '把 CSV 转成 JSON 数组',
+  f: [{ k: 'in', t: 'CSV', type: 'textarea', mono: 1, ph: 'name,age\n小明,18' }, { k: 'out', t: 'JSON', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var lines = (v.in || '').split('\n').filter(function (l) { return l.trim(); }); if (lines.length < 2) return { out: '', note: '至少两行（表头+数据）', warn: true }; function split(l) { return l.split(',').map(function (x) { return x.trim(); }); } var head = split(lines[0]); var arr = []; for (var i = 1; i < lines.length; i++) { var c = split(lines[i]); var o = {}; head.forEach(function (h, idx) { o[h] = c[idx] || ''; }); arr.push(o); } return { out: JSON.stringify(arr, null, 2) }; } });
+
+tool({ id: 'dev-json-xml', n: 'JSON 转 XML', c: 'dev', d: '把 JSON 对象转成 XML 字符串',
+  f: [{ k: 'in', t: 'JSON', type: 'textarea', mono: 1, ph: '{"root":{"a":1}}' }, { k: 'root', t: '根节点名', type: 'text', v: 'root' }, { k: 'out', t: 'XML', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var o = Dh.tryJSON(v.in); if (o == null) return { out: '', note: 'JSON 解析失败', warn: true }; function toXml(o) { if (o == null) return ''; if (typeof o !== 'object') return RT.esc('' + o); var s = ''; if (Array.isArray(o)) { o.forEach(function (x) { s += toXml(x); }); return s; } Object.keys(o).forEach(function (k) { s += '<' + k + '>' + toXml(o[k]) + '</' + k + '>'; }); return s; } return { out: '<?xml version="1.0"?>\n<' + v.root + '>' + toXml(o) + '</' + v.root + '>' }; } });
+
+tool({ id: 'dev-xml-fmt', n: 'XML 格式化', c: 'dev', d: '给 XML 加缩进，方便阅读',
+  f: [{ k: 'in', t: 'XML', type: 'textarea', mono: 1, ph: '<root><a>1</a></root>' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = (v.in || '').replace(/>\s*</g, '><'); var out = '', depth = 0; for (var i = 0; i < s.length; i++) { var c = s[i]; if (c === '<') { if (s[i + 1] === '/') depth--; var tag = ''; while (i < s.length && s[i] !== '>') tag += s[i++]; out += '\n' + '  '.repeat(Math.max(0, depth)) + tag + '>'; if (s[i - 1] !== '/' && s[i - 1] !== '?' && tag.indexOf('</') !== 0 && tag.indexOf('<') === 0 && s[i - 1] !== '!') depth++; } else out += c; } return { out: out.trim() }; } });
+
+tool({ id: 'dev-url', n: 'URL 解析', c: 'dev', d: '拆解网址的协议/域名/路径/参数',
+  f: [{ k: 'in', t: 'URL', type: 'text', ph: 'https://a.com/p?x=1&y=2' }, { k: 'out', t: '解析', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var u; try { u = new URL(v.in || ''); } catch (e) { return { out: '', note: '不是合法 URL', warn: true }; } var m = []; u.searchParams.forEach(function (val, key) { m.push(key + ' = ' + val); }); return { out: '协议：' + u.protocol + '\n域名：' + u.hostname + '\n端口：' + (u.port || '默认') + '\n路径：' + u.pathname + '\n锚点：' + u.hash, metrics: [{ t: '查询参数', v: m.length ? m.join('\n') : '无' }] }; } });
+
+tool({ id: 'dev-html-preview', n: 'HTML 实时预览', c: 'dev', d: '把代码渲染成网页预览（沙箱隔离）',
+  f: [{ k: 'in', t: 'HTML 代码', type: 'textarea', rows: 8, mono: 1, ph: '<h1>Hello</h1>' }, { k: 'out', t: '预览', type: 'outhtml' }],
+  run: function (v) { return { out: '<iframe sandbox="allow-scripts" style="width:100%;height:240px;border:1px solid var(--ink-2);border-radius:8px;background:#fff" srcdoc="' + RT.esc(v.in || '').replace(/"/g, '&quot;') + '"></iframe>' }; } });
+
+tool({ id: 'dev-css-fmt', n: 'CSS 格式化', c: 'dev', d: '把压缩的 CSS 展开成多行',
+  f: [{ k: 'in', t: 'CSS', type: 'textarea', mono: 1, ph: '.a{color:red;font-size:14px}' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = (v.in || '').replace(/\s*([{}:;])\s*/g, '$1').replace(/;/g, ';\n  ').replace(/{/g, ' {\n  ').replace(/}/g, '\n}\n'); return { out: s.trim() }; } });
+
+tool({ id: 'dev-css-min', n: 'CSS 压缩', c: 'dev', d: '去掉 CSS 里的空白和注释',
+  f: [{ k: 'in', t: 'CSS', type: 'textarea', mono: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = (v.in || '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\s*([{}:;,>])\s*/g, '$1').replace(/;}/g, '}'); return { out: s.trim(), metrics: [{ t: '字节', v: s.trim().length }] }; } });
+
+tool({ id: 'dev-js-min', n: 'JS 压缩', c: 'dev', d: '去除注释和多余空白（保守压缩）',
+  f: [{ k: 'in', t: 'JavaScript', type: 'textarea', mono: 1 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = (v.in || '').replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\n\s*\n/g, '\n').replace(/^\s+/gm, ''); return { out: s.trim(), metrics: [{ t: '体积', v: s.trim().length + ' 字节' }] }; } });
+
+tool({ id: 'dev-sql-fmt', n: 'SQL 格式化', c: 'dev', d: '把 SQL 关键字换行，便于阅读',
+  f: [{ k: 'in', t: 'SQL', type: 'textarea', mono: 1, ph: 'select * from t where id=1' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var kw = 'select|from|where|and|or|insert|into|values|update|set|delete|create|table|join|left|right|inner|on|group|by|order|limit|having'; var s = (v.in || '').replace(new RegExp('\\b(' + kw + ')\\b', 'gi'), '\n$1').replace(/\s*=\s*/g, ' = '); return { out: s.replace(/^\n/, '').trim() }; } });
+
+tool({ id: 'dev-ua', n: 'User-Agent 解析', c: 'dev', d: '识别 UA 里的浏览器/系统/设备',
+  f: [{ k: 'in', t: 'User-Agent', type: 'text', ph: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0)' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = v.in || '', os = '未知', br = '未知', dev = '桌面'; if (/iPhone|iPad|iPod/.test(s)) { os = 'iOS'; dev = '移动'; } else if (/Android/.test(s)) { os = 'Android'; dev = '移动'; } else if (/Windows/.test(s)) os = 'Windows'; else if (/Mac OS/.test(s)) os = 'macOS'; else if (/Linux/.test(s)) os = 'Linux'; if (/Edg\//.test(s)) br = 'Edge'; else if (/Chrome\//.test(s) && !/Edg/.test(s)) br = 'Chrome'; else if (/Firefox\//.test(s)) br = 'Firefox'; else if (/Safari\//.test(s)) br = 'Safari'; return { out: '系统：' + os + '\n浏览器：' + br + '\n设备：' + dev, metrics: [{ t: '系统', v: os }, { t: '浏览器', v: br }, { t: '设备', v: dev }] }; } });
+
+tool({ id: 'dev-http', n: 'HTTP 状态码查询', c: 'dev', d: '查状态码含义，也可反向按含义搜',
+  f: [{ k: 'in', t: '状态码（如 404）', type: 'text', ph: '404' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var code = (v.in || '').trim(); var desc = Dh.HTTP[code]; if (!desc) { var found = Object.keys(Dh.HTTP).filter(function (k) { return Dh.HTTP[k].indexOf(code) >= 0; }); return { out: found.length ? found.map(function (k) { return k + ' → ' + Dh.HTTP[k]; }).join('\n') : '常见状态码中未找到', note: found.length ? '按关键词匹配' : '试试 200/404/500' }; } return { out: code + ' → ' + desc, metrics: [{ t: '类别', v: code[0] + 'xx' }] }; } });
+
+tool({ id: 'dev-mime', n: 'MIME 类型查询', c: 'dev', d: '查文件扩展名对应的 Content-Type',
+  f: [{ k: 'in', t: '扩展名（如 json）', type: 'text', ph: 'json' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var e = (v.in || '').replace(/\./g, '').toLowerCase(); var r = Dh.MIME[e]; if (r) return { out: r }; var found = Object.keys(Dh.MIME).filter(function (k) { return Dh.MIME[k].indexOf(e) >= 0; }); return { out: found.length ? found.map(function (k) { return k + ' → ' + Dh.MIME[k]; }).join('\n') : '未收录该扩展名' }; } });
+
+tool({ id: 'dev-pwd-strength', n: '密码强度检测', c: 'dev', d: '评估密码复杂度并给出建议',
+  f: [{ k: 'in', t: '密码', type: 'text', ph: 'Abc123!@#' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var s = v.in || ''; var score = 0, tips = []; if (s.length >= 8) score += 1; else tips.push('至少8位'); if (/[a-z]/.test(s)) score += 1; else tips.push('加小写'); if (/[A-Z]/.test(s)) score += 1; else tips.push('加大写'); if (/\d/.test(s)) score += 1; else tips.push('加数字'); if (/[^a-zA-Z0-9]/.test(s)) score += 1; else tips.push('加符号'); var lv = score <= 2 ? '弱' : score <= 4 ? '中等' : '强'; var bits = s.length * Math.log2((/[a-z]/.test(s) ? 26 : 0) + (/[A-Z]/.test(s) ? 26 : 0) + (/\d/.test(s) ? 10 : 0) + (/[^a-zA-Z0-9]/.test(s) ? 20 : 0) || 1); return { out: lv + '（' + score + '/5）', metrics: [{ t: '强度', v: lv }, { t: '长度', v: s.length }, { t: '熵', v: bits.toFixed(0) + ' bits' }, { t: '建议', v: tips.length ? tips.join('、') : '已较强' }] }; } });
+
+tool({ id: 'dev-cron', n: 'Cron 表达式解释', c: 'dev', d: '把 5 段 cron 翻译成人话',
+  f: [{ k: 'in', t: 'Cron（分 时 日 月 周）', type: 'text', ph: '0 9 * * 1-5' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var p = (v.in || '').trim().split(/\s+/); if (p.length !== 5) return { out: '', note: '需 5 个字段：分 时 日 月 周', warn: true }; function f(x, max) { if (x === '*') return '每' + max; if (x.indexOf('/') >= 0) { var a = x.split('/'); return '每' + a[1] + max.slice(0, 1) + '（从' + (a[0] === '*' ? 0 : a[0]) + '起）'; } if (x.indexOf('-') >= 0) return x + ' 区间'; if (x.indexOf(',') >= 0) return '在 ' + x; return '第 ' + x + ' ' + max; } return { out: '分：' + f(p[0], '分钟') + '\n时：' + f(p[1], '小时') + '\n日：' + f(p[2], '天') + '\n月：' + f(p[3], '月') + '\n周：' + f(p[4], '周') }; } });
+
+tool({ id: 'dev-port', n: '端口号对照', c: 'dev', d: '查常用端口对应的服务',
+  f: [{ k: 'in', t: '端口号', type: 'text', ph: '8080' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var p = (v.in || '').trim(); var svc = Dh.PORTS[p]; if (svc) return { out: p + ' → ' + svc, metrics: [{ t: '服务', v: svc }] }; return { out: p + ' 未收录常见服务', note: '常见端口：80/443/22/3306/6379/5432' }; } });
+
+tool({ id: 'dev-curl', n: '生成 curl 命令', c: 'dev', d: '按表单生成 curl 请求（GET/POST）',
+  f: [{ k: 'url', t: 'URL', type: 'text', ph: 'https://api.example.com/user' }, { k: 'method', t: '方法', type: 'select', opts: [{ v: 'GET', t: 'GET' }, { v: 'POST', t: 'POST' }, { v: 'PUT', t: 'PUT' }, { v: 'DELETE', t: 'DELETE' }] }, { k: 'body', t: 'JSON 请求体（POST/PUT用）', type: 'textarea', rows: 3, mono: 1, ph: '{"name":"小明"}' }, { k: 'out', t: 'curl', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var c = 'curl -X ' + v.method + ' "' + v.url + '"'; c += ' -H "Content-Type: application/json"'; if (v.body && /POST|PUT/.test(v.method)) c += ' -d \'' + (v.body || '') + '\''; return { out: c }; } });
+
+tool({ id: 'dev-fetch', n: '生成 fetch 代码', c: 'dev', d: '把请求参数转成 JS fetch 片段',
+  f: [{ k: 'url', t: 'URL', type: 'text', ph: 'https://api.example.com/user' }, { k: 'method', t: '方法', type: 'select', opts: [{ v: 'GET', t: 'GET' }, { v: 'POST', t: 'POST' }] }, { k: 'body', t: 'JSON 体（POST用）', type: 'textarea', rows: 3, mono: 1 }, { k: 'out', t: '代码', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var code = "fetch('" + v.url + "', {\n  method: '" + v.method + "',\n  headers: { 'Content-Type': 'application/json' }" + (v.body && v.method === 'POST' ? ",\n  body: JSON.stringify(" + v.body + ")" : "") + "\n})\n  .then(r => r.json())\n  .then(data => console.log(data));"; return { out: code }; } });
+
+tool({ id: 'dev-ascii', n: 'ASCII 码表', c: 'dev', d: '打印完整 ASCII 可打印字符对照',
+  f: [{ k: 'out', t: '码表', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = []; for (var i = 32; i < 127; i++) r.push((i < 100 ? ' ' : '') + i + ':' + String.fromCharCode(i)); return { out: r.join('  ') }; } });
+
+tool({ id: 'dev-jsonpath', n: 'JSON 路径提取', c: 'dev', d: '用 a.b.0 路径从 JSON 取值',
+  f: [{ k: 'in', t: 'JSON', type: 'textarea', mono: 1, ph: '{"user":{"name":"小明","tags":["a","b"]}}' }, { k: 'path', t: '路径', type: 'text', ph: 'user.tags.1' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var o = Dh.tryJSON(v.in); if (o == null) return { out: '', note: 'JSON 解析失败', warn: true }; var cur = o; var ok = true; (v.path || '').split('.').forEach(function (k) { if (cur == null) { ok = false; return; } cur = cur[k]; }); if (!ok || cur === undefined) return { out: '', note: '路径不存在', warn: true }; return { out: typeof cur === 'object' ? JSON.stringify(cur, null, 2) : '' + cur }; } });
+
+tool({ id: 'dev-lines', n: '代码行数统计', c: 'dev', d: '统计代码行数（含注释/空行）',
+  f: [{ k: 'in', t: '代码', type: 'textarea', mono: 1, ph: '// 注释\nfunction a(){}\n' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var lines = (v.in || '').split('\n'); var total = lines.length; var blank = lines.filter(function (l) { return !l.trim(); }).length; var comment = lines.filter(function (l) { return /^\s*(\/\/|#|--|\/\*)/.test(l); }).length; return { out: '总行数：' + total, metrics: [{ t: '总行', v: total }, { t: '空行', v: blank }, { t: '注释行', v: comment }, { t: '代码行', v: total - blank - comment }] }; } });
+
+tool({ id: 'dev-uuid-list', n: '批量 UUID', c: 'dev', d: '一次生成多个 UUID（调试用）',
+  f: [{ k: 'n', t: '数量', type: 'number', v: 10, min: 1, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  auto: false, run: function (v) { var r = []; for (var i = 0; i < v.n; i++) r.push('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var x = Math.random() * 16 | 0; return (c === 'x' ? x : (x & 0x3 | 0x8)).toString(16); })); return { out: r.join('\n') }; } });
+
+tool({ id: 'dev-random-ua', n: '随机 UA 生成', c: 'dev', d: '生成一个逼真的随机 User-Agent',
+  f: [{ k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }], auto: false,
+  run: function (v) { var ver = 100 + Math.floor(Math.random() * 40); var ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + ver + '.0.0.0 Safari/537.36'; return { out: ua }; } });
+
+tool({ id: 'dev-query-build', n: 'Query 参数拼接', c: 'dev', d: '把键值对拼成 URL 查询字符串',
+  f: [{ k: 'in', t: '每行 键=值', type: 'textarea', ph: 'page=1\nq=hello' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var ps = []; (v.in || '').split('\n').forEach(function (l) { var p = l.split('='); if (p.length >= 2) ps.push(encodeURIComponent(p[0].trim()) + '=' + encodeURIComponent(p.slice(1).join('=').trim())); }); return { out: ps.join('&') }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "dev-css-min"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: dev-css-min'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

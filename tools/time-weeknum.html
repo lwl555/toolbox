@@ -39,14 +39,126 @@ Th.workdays = function (a, b) { var n = 0, d = new Date(a); while (d <= b) { var
 Th.add = function (d, days) { var r = new Date(d); r.setDate(r.getDate() + days); return r; };
 Th.addMonths = function (d, m) { var r = new Date(d); r.setMonth(r.getMonth() + m); return r; };
 
+var T = [];
+function tool(o) { T.push(o); }
 
-window.TOOL = { id: "time-weeknum", n: "年内第几周", c: "time", d: "算某天是当年的第几周",
-  custom: null,
-  fields: [{"k":"dt","t":"日期","type":"text","v":"2026-09-01"},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
-  auto: true,
-  first: true,
-  init: null,
-  run: function (v) { var d = Th.parse(v.dt) || new Date(); var start = new Date(d.getFullYear(), 0, 1); var days = Math.floor((d - start) / 86400000) + 1; var wk = Math.ceil((days + start.getDay()) / 7); return { out: '第 ' + wk + ' 周', metrics: [{ t: '第几天', v: days }, { t: '全年周数', v: Math.ceil((365 + (Th.isLeap ? 0 : 0) + start.getDay() + (d.getFullYear() % 4 === 0 && d.getFullYear() % 100 !== 0 || d.getFullYear() % 400 === 0 ? 1 : 0)) / 7) }] }; } };
+tool({ id: 'time-now', n: '当前时间戳', c: 'time', d: '显示现在的 Unix 秒/毫秒时间戳',
+  f: [{ k: 'out', t: '当前时间', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  auto: false,
+  run: function (v) { var n = Date.now(); var d = new Date(); return { out: String(Math.floor(n / 1000)), metrics: [{ t: '秒级', v: Math.floor(n / 1000) }, { t: '毫秒级', v: n }, { t: '本地时间', v: Th.fmt(d) }, { t: 'UTC', v: d.toUTCString() }] }; } });
+
+tool({ id: 'time-ts2date', n: '时间戳转日期', c: 'time', d: '把 Unix 时间戳还原成可读日期',
+  f: [{ k: 'ts', t: '时间戳（秒或毫秒）', type: 'text', ph: '1690000000' }, { k: 'out', t: '日期', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var t = parseFloat(v.ts); if (isNaN(t)) return { out: '', note: '请输入数字', warn: true }; if (t < 1e11) t *= 1000; var d = new Date(t); if (isNaN(d)) return { out: '', note: '时间戳无效', warn: true }; return { out: Th.fmt(d), metrics: [{ t: '年-月-日', v: Th.fmt(d, 'Y-M-D') }, { t: '星期', v: Th.wk[d.getDay()] }, { t: 'ISO', v: d.toISOString() }] }; } });
+
+tool({ id: 'time-date2ts', n: '日期转时间戳', c: 'time', d: '把日期转成 Unix 时间戳',
+  f: [{ k: 'dt', t: '日期时间', type: 'text', ph: '2026-09-01 12:00:00' }, { k: 'm', t: '单位', type: 'seg', v: 's', opts: [{ v: 's', t: '秒' }, { v: 'ms', t: '毫秒' }] }, { k: 'out', t: '时间戳', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var d = Th.parse(v.dt); if (!d) return { out: '', note: '格式如 2026-09-01 12:00:00', warn: true }; var ms = d.getTime(); return { out: (v.m === 's' ? Math.floor(ms / 1000) : ms) + '' }; } });
+
+tool({ id: 'time-diff', n: '日期差值', c: 'time', d: '算两个日期相差多少天/周/月/年',
+  f: [{ k: 'a', t: '开始日期', type: 'text', ph: '2026-01-01' }, { k: 'b', t: '结束日期', type: 'text', ph: '2026-12-31' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var da = Th.parse(v.a), db = Th.parse(v.b); if (!da || !db) return { out: '', note: '日期格式如 2026-01-01', warn: true }; var diff = Math.abs(db - da); var days = Math.floor(diff / 86400000); return { out: days + ' 天', metrics: [{ t: '天数', v: days }, { t: '周数', v: (days / 7).toFixed(1) }, { t: '小时', v: days * 24 }, { t: '分钟', v: days * 1440 }, { t: '工作日', v: Th.workdays(da < db ? da : db, da < db ? db : da) }] }; } });
+
+tool({ id: 'time-add', n: '日期加减', c: 'time', d: '在日期上加减天/月/年',
+  f: [{ k: 'dt', t: '日期', type: 'text', v: '2026-09-01' }, { k: 'n', t: '数量', type: 'number', v: 30 }, { k: 'u', t: '单位', type: 'select', opts: [{ v: 'd', t: '天' }, { v: 'm', t: '月' }, { v: 'y', t: '年' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var d = Th.parse(v.dt); if (!d) return { out: '', note: '格式如 2026-09-01', warn: true }; var r = v.u === 'd' ? Th.add(d, v.n) : v.u === 'm' ? Th.addMonths(d, v.n) : new Date(d.getFullYear() + v.n, d.getMonth(), d.getDate()); return { out: Th.fmt(r, 'Y-M-D') + ' ' + Th.wk[r.getDay()] }; } });
+
+tool({ id: 'time-weekday', n: '星期几', c: 'time', d: '查某天是星期几',
+  f: [{ k: 'dt', t: '日期', type: 'text', v: '2026-09-01' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var d = Th.parse(v.dt); if (!d) return { out: '', note: '格式如 2026-09-01', warn: true }; return { out: Th.fmt(d, 'Y-M-D') + ' 是 ' + Th.wk[d.getDay()] }; } });
+
+tool({ id: 'time-age', n: '年龄计算', c: 'time', d: '按生日算精确年龄（岁/月/天）',
+  f: [{ k: 'birth', t: '出生日期', type: 'text', ph: '1995-06-15' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var b = Th.parse(v.birth); if (!b) return { out: '', note: '格式如 1995-06-15', warn: true }; var n = new Date(); var y = n.getFullYear() - b.getFullYear(); var m = n.getMonth() - b.getMonth(); var d = n.getDate() - b.getDate(); if (m < 0 || (m === 0 && d < 0)) y--; var total = Math.floor((n - b) / 86400000); return { out: y + ' 岁', metrics: [{ t: '周岁', v: y }, { t: '总天数', v: total }, { t: '约月', v: (total / 30.44).toFixed(1) }, { t: '生肖', v: Th.sxz(b.getFullYear()) }, { t: '星座', v: Th.zodiac(b.getMonth() + 1, b.getDate()) }] }; } });
+
+tool({ id: 'time-countdown', n: '倒计时', c: 'time', d: '算到目标日期还有多久',
+  f: [{ k: 'target', t: '目标日期', type: 'text', ph: '2026-10-01' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  auto: false,
+  run: function (v) { var t = Th.parse(v.target); if (!t) return { out: '', note: '格式如 2026-10-01', warn: true }; var diff = t - new Date(); if (diff <= 0) return { out: '已经过了', metrics: [{ t: '状态', v: '已过期' }] }; var days = Math.floor(diff / 86400000); var h = Math.floor(diff % 86400000 / 3600000); var mi = Math.floor(diff % 3600000 / 60000); return { out: days + ' 天 ' + h + ' 小时 ' + mi + ' 分', metrics: [{ t: '剩余天数', v: days }, { t: '剩余小时', v: (diff / 3600000).toFixed(1) }] }; } });
+
+tool({ id: 'time-zone', n: '时区转换', c: 'time', d: '把当前时间转换到世界各地时区',
+  f: [{ k: 'tz', t: '目标时区', type: 'select', opts: [{ v: 'America/New_York', t: '纽约' }, { v: 'Europe/London', t: '伦敦' }, { v: 'Europe/Paris', t: '巴黎' }, { v: 'Asia/Tokyo', t: '东京' }, { v: 'Asia/Shanghai', t: '北京' }, { v: 'Asia/Dubai', t: '迪拜' }, { v: 'Australia/Sydney', t: '悉尼' }, { v: 'America/Los_Angeles', t: '洛杉矶' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var d = new Date(); var s = new Intl.DateTimeFormat('zh-CN', { timeZone: v.tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(d); return { out: s, metrics: [{ t: '时区', v: v.tz }, { t: 'UTC偏移', v: (function () { try { return s; } catch (e) { return ''; } })() }, { t: '本地时间', v: Th.fmt(d) }] }; } });
+
+tool({ id: 'time-workday', n: '工作日计算', c: 'time', d: '算两个日期之间有多少个工作日（不含周末）',
+  f: [{ k: 'a', t: '开始', type: 'text', v: '2026-09-01' }, { k: 'b', t: '结束', type: 'text', v: '2026-09-30' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var da = Th.parse(v.a), db = Th.parse(v.b); if (!da || !db) return { out: '', note: '格式如 2026-09-01', warn: true }; if (da > db) { var t = da; da = db; db = t; } return { out: Th.workdays(da, db) + ' 个工作日', metrics: [{ t: '总天数', v: Math.floor((db - da) / 86400000) + 1 }] }; } });
+
+tool({ id: 'time-leap', n: '闰年判断', c: 'time', d: '判断某年是不是闰年',
+  f: [{ k: 'y', t: '年份', type: 'number', v: 2026 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = (v.y % 4 === 0 && v.y % 100 !== 0) || v.y % 400 === 0; return { out: v.y + ' 年' + (r ? ' 是闰年（366天）' : ' 不是闰年（365天）') }; } });
+
+tool({ id: 'time-sec2hms', n: '秒转时分秒', c: 'time', d: '把秒数拆成 时:分:秒',
+  f: [{ k: 's', t: '秒数', type: 'number', v: 3661, min: 0 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = Math.max(0, Math.floor(v.s)); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60; return { out: Th.pad(h) + ':' + Th.pad(m) + ':' + Th.pad(sec) }; } });
+
+tool({ id: 'time-hms2sec', n: '时分秒转秒', c: 'time', d: '把 时:分:秒 转成总秒数',
+  f: [{ k: 't', t: '时间（H:I:S）', type: 'text', ph: '1:01:01' }, { k: 'out', t: '秒数', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var p = (v.t || '').split(':').map(function (x) { return parseInt(x) || 0; }); var s = (p[0] || 0) * 3600 + (p[1] || 0) * 60 + (p[2] || 0); return { out: String(s) }; } });
+
+tool({ id: 'time-format', n: '日期格式化', c: 'time', d: '把日期转成多种常用格式',
+  f: [{ k: 'dt', t: '日期', type: 'text', v: '2026-09-01 08:30:00' }, { k: 'out', t: '格式', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var d = Th.parse(v.dt) || new Date(); return { out: Th.fmt(d), metrics: [{ t: 'YYYY-MM-DD', v: Th.fmt(d, 'Y-M-D') }, { t: 'YYYY/MM/DD', v: d.getFullYear() + '/' + Th.pad(d.getMonth() + 1) + '/' + Th.pad(d.getDate()) }, { t: '中文', v: d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日' }, { t: 'ISO', v: d.toISOString().slice(0, 10) }] }; } });
+
+tool({ id: 'time-month-start', n: '月初月末', c: 'time', d: '查某月的第一天和最后一天',
+  f: [{ k: 'y', t: '年份', type: 'number', v: 2026 }, { k: 'm', t: '月份', type: 'number', v: 9, min: 1, max: 12 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var first = new Date(v.y, v.m - 1, 1); var last = new Date(v.y, v.m, 0); return { out: '开始 ' + Th.fmt(first, 'Y-M-D') + ' / 结束 ' + Th.fmt(last, 'Y-M-D'), metrics: [{ t: '当月天数', v: last.getDate() }, { t: '第一天星期', v: Th.wk[first.getDay()] }] }; } });
+
+tool({ id: 'time-quarter', n: '季度计算', c: 'time', d: '查某日期属于第几季度及起止月',
+  f: [{ k: 'dt', t: '日期', type: 'text', v: '2026-09-01' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var d = Th.parse(v.dt) || new Date(); var q = Math.floor(d.getMonth() / 3) + 1; var sm = (q - 1) * 3 + 1; var sy = new Date(d.getFullYear(), sm - 1, 1), ey = new Date(d.getFullYear(), sm + 2, 0); return { out: '第 ' + q + ' 季度', metrics: [{ t: '季度', v: q }, { t: '起始', v: Th.fmt(sy, 'Y-M-D') }, { t: '结束', v: Th.fmt(ey, 'Y-M-D') }] }; } });
+
+tool({ id: 'time-weeknum', n: '年内第几周', c: 'time', d: '算某天是当年的第几周',
+  f: [{ k: 'dt', t: '日期', type: 'text', v: '2026-09-01' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var d = Th.parse(v.dt) || new Date(); var start = new Date(d.getFullYear(), 0, 1); var days = Math.floor((d - start) / 86400000) + 1; var wk = Math.ceil((days + start.getDay()) / 7); return { out: '第 ' + wk + ' 周', metrics: [{ t: '第几天', v: days }, { t: '全年周数', v: Math.ceil((365 + (Th.isLeap ? 0 : 0) + start.getDay() + (d.getFullYear() % 4 === 0 && d.getFullYear() % 100 !== 0 || d.getFullYear() % 400 === 0 ? 1 : 0)) / 7) }] }; } });
+
+tool({ id: 'time-zodiac', n: '星座查询', c: 'time', d: '输入生日查星座',
+  f: [{ k: 'm', t: '月份', type: 'number', v: 9, min: 1, max: 12 }, { k: 'd', t: '日', type: 'number', v: 1, min: 1, max: 31 }, { k: 'out', t: '星座', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: Th.zodiac(v.m, v.d) + '座', metrics: [{ t: '出生', v: v.m + '月' + v.d + '日' }] }; } });
+
+tool({ id: 'time-shengxiao', n: '生肖查询', c: 'time', d: '输入年份查生肖',
+  f: [{ k: 'y', t: '年份', type: 'number', v: 2026 }, { k: 'out', t: '生肖', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { return { out: Th.sxz(v.y) + '年', metrics: [{ t: '生肖', v: Th.sxz(v.y) }] }; } });
+
+tool({ id: 'time-add-hours', n: '时间加减', c: 'time', d: '在时间点上加/减小时分钟',
+  f: [{ k: 'dt', t: '时间', type: 'text', v: '2026-09-01 08:30' }, { k: 'h', t: '小时', type: 'number', v: 2 }, { k: 'mi', t: '分钟', type: 'number', v: 30 }, { k: 'm', t: '加减', type: 'seg', v: 'add', opts: [{ v: 'add', t: '加' }, { v: 'sub', t: '减' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var d = Th.parse(v.dt); if (!d) return { out: '', note: '格式如 2026-09-01 08:30', warn: true }; var sign = v.m === 'add' ? 1 : -1; d = new Date(d.getTime() + sign * (v.h * 60 + v.mi) * 60000); return { out: Th.fmt(d, 'Y-M-D H:I') }; } });
+
+tool({ id: 'time-utc-local', n: 'UTC 与本地', c: 'time', d: '互转 UTC 时间和本地时间',
+  f: [{ k: 'dt', t: '时间（留空用现在）', type: 'text', ph: '2026-09-01T00:00:00Z' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
+  run: function (v) { var d = v.dt ? new Date(v.dt) : new Date(); if (isNaN(d)) return { out: '', note: '时间格式有误', warn: true }; return { out: Th.fmt(d), metrics: [{ t: '本地', v: Th.fmt(d) }, { t: 'UTC', v: d.toUTCString() }, { t: 'ISO', v: d.toISOString() }] }; } });
+
+tool({ id: 'time-ms-human', n: '毫秒转可读', c: 'time', d: '把毫秒数转成 天/时/分/秒',
+  f: [{ k: 'ms', t: '毫秒', type: 'number', v: 90061000, min: 0 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var ms = Math.max(0, v.ms); var d = Math.floor(ms / 86400000); var h = Math.floor(ms % 86400000 / 3600000); var m = Math.floor(ms % 3600000 / 60000); var s = Math.floor(ms % 60000 / 1000); return { out: (d ? d + '天 ' : '') + h + '时 ' + m + '分 ' + s + '秒' }; } });
+
+tool({ id: 'time-next-weekday', n: '下一个星期X', c: 'time', d: '算从今天起下一个周几的日期',
+  f: [{ k: 'w', t: '目标星期', type: 'select', opts: [{ v: '1', t: '周一' }, { v: '2', t: '周二' }, { v: '3', t: '周三' }, { v: '4', t: '周四' }, { v: '5', t: '周五' }, { v: '6', t: '周六' }, { v: '0', t: '周日' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var now = new Date(); var target = +v.w; var diff = (target - now.getDay() + 7) % 7; if (diff === 0) diff = 7; var r = new Date(now); r.setDate(now.getDate() + diff); return { out: Th.fmt(r, 'Y-M-D') + '（' + Th.wk[r.getDay()] + '）' }; } });
+
+tool({ id: 'time-timer-split', n: '时段拆分', c: 'time', d: '把一整天按 N 段均分，给每段起止时间',
+  f: [{ k: 'n', t: '分段数', type: 'number', v: 4, min: 1, max: 48 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var r = [], step = 1440 / v.n; for (var i = 0; i < v.n; i++) { var s = i * step, e = (i + 1) * step; var sh = Math.floor(s / 60), sm = Math.round(s % 60); var eh = Math.floor(e / 60), em = Math.round(e % 60); r.push(Th.pad(sh) + ':' + Th.pad(sm) + ' - ' + Th.pad(eh) + ':' + Th.pad(em)); } return { out: r.join('\n') }; } });
+
+tool({ id: 'time-age-days', n: '活了多少天', c: 'time', d: '按生日算出生至今的总天数',
+  f: [{ k: 'birth', t: '出生日期', type: 'text', ph: '1995-06-15' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var b = Th.parse(v.birth); if (!b) return { out: '', note: '格式如 1995-06-15', warn: true }; var days = Math.floor((Date.now() - b) / 86400000); return { out: days + ' 天', metrics: [{ t: '约', v: (days / 365.25).toFixed(2) + ' 年' }, { t: '约小时', v: (days * 24).toLocaleString() }] }; } });
+
+tool({ id: 'time-compare-now', n: '距今多久', c: 'time', d: '算某日期距离现在过去/未来多久',
+  f: [{ k: 'dt', t: '日期', type: 'text', ph: '2025-01-01' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var d = Th.parse(v.dt); if (!d) return { out: '', note: '格式如 2025-01-01', warn: true }; var diff = Date.now() - d; var past = diff >= 0; var days = Math.floor(Math.abs(diff) / 86400000); var lbl = past ? '前' : '后'; if (days < 1) return { out: '就在今天' }; if (days < 30) return { out: days + ' 天' + lbl }; if (days < 365) return { out: (days / 30.44).toFixed(1) + ' 个月' + lbl }; return { out: (days / 365.25).toFixed(1) + ' 年' + lbl }; } });
+
+tool({ id: 'time-iso-week', n: 'ISO 周日期', c: 'time', d: '输出 ISO 8601 周日期（如 2026-W36-2）',
+  f: [{ k: 'dt', t: '日期', type: 'text', v: '2026-09-01' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var d = Th.parse(v.dt) || new Date(); var day = (d.getDay() + 6) % 7; var thursday = new Date(d); thursday.setDate(d.getDate() - day + 3); var firstThu = new Date(thursday.getFullYear(), 0, 4); var wk = 1 + Math.floor((thursday - firstThu) / 604800000); return { out: thursday.getFullYear() + '-W' + Th.pad(wk) + '-' + (day + 1) }; } });
+
+tool({ id: 'time-sleep', n: '睡眠时长', c: 'time', d: '算入睡到起床的睡眠小时数',
+  f: [{ k: 'a', t: '入睡（如 23:30）', type: 'text', ph: '23:30' }, { k: 'b', t: '起床（如 7:20）', type: 'text', ph: '7:20' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { function toMin(s) { var p = s.split(':'); return (+p[0]) * 60 + (+p[1]); } var a = toMin(v.a), b = toMin(v.b); var diff = b - a; if (diff <= 0) diff += 1440; return { out: (diff / 60).toFixed(2) + ' 小时', metrics: [{ t: '分钟', v: diff }, { t: '是否达标', v: diff >= 420 ? '充足(≥7h)' : '偏少' }] }; } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "time-weeknum"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: time-weeknum'); }
 var FK='toolbox_fav_v2';
 function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
 var fv=document.getElementById('fv');

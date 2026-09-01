@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 深度学习摘要 - 超有用的工具箱</title>
+<meta name="description" content="transformers.js 抽取式摘要模型推理。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">AI影音</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">AI 深度学习摘要</h1>
+<p class="lede">transformers.js 抽取式摘要模型推理。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-tts.html"><div class="card-t"><span class="card-name">AI 文字转语音</span></div><div class="card-desc">浏览器原生 Web Speech 朗读（真实 AI 语音）。</div></a><a class="card" href="ai-stt.html"><div class="card-t"><span class="card-name">AI 语音转文字</span></div><div class="card-desc">浏览器原生语音识别听写（需授权麦克风）。</div></a><a class="card" href="ai-img-resize.html"><div class="card-t"><span class="card-name">AI 图片缩放</span></div><div class="card-desc">canvas 按目标宽高缩放并下载。</div></a><a class="card" href="ai-img-compress.html"><div class="card-t"><span class="card-name">AI 图片压缩</span></div><div class="card-desc">调整质量压缩 JPEG/PNG 体积。</div></a><a class="card" href="ai-img-crop.html"><div class="card-t"><span class="card-name">AI 中心裁剪</span></div><div class="card-desc">按比例中心裁剪正方形/指定比例。</div></a><a class="card" href="ai-img-filter.html"><div class="card-t"><span class="card-name">AI 图片滤镜</span></div><div class="card-desc">灰度/反相/怀旧/锐化等 canvas 滤镜。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · AI 深度学习摘要<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   25-ai-media.js — AI 图像/语音（Web Speech / canvas / 真模型，init 自渲染模式）
+   说明：所有交互工具均为 init 模式，自渲染全部 UI（含输入与结果区），
+   不依赖被 boot 覆盖的 f 字段；auto:false + first:false 避免空 run()。
+   ============================================================ */
+/* ---------- 通用：文件读图 ---------- */
+function imgFromFile(file) {
+  return new Promise(function (res, rej) {
+    var u = URL.createObjectURL(file);
+    var im = new Image();
+    im.onload = function () { res(im); };
+    im.onerror = function () { rej(new Error('图片读取失败')); };
+    im.src = u;
+  });
+}
+function drawTo(el, c) { el.innerHTML = ''; el.appendChild(c); }
+
+var T = [];
+function tool(o) { T.push(o); }
+
+/* 1 文字转语音(TTS) */
+tool({ id: 'ai-tts', n: 'AI 文字转语音', c: 'ai-media', d: '浏览器原生 Web Speech 朗读（真实 AI 语音）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<textarea id="txt" class="ipt" rows="4" placeholder="要朗读的文字">你好，这是一段测试语音。</textarea>' +
+      '<div style="margin:8px 0"><label>语言 </label><select id="lang" class="ipt"><option value="zh-CN">中文</option><option value="en-US">English</option><option value="ja-JP">日本語</option></select></div>' +
+      '<button id="go" class="btn">▶ 朗读</button> <span id="st" style="color:var(--ink-4)"></span></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var txt = host.querySelector('#txt').value;
+      var lang = host.querySelector('#lang').value;
+      if (!('speechSynthesis' in window)) { RT.toast('当前浏览器不支持语音合成（建议 Chrome/Edge）'); return; }
+      speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(txt); u.lang = lang; u.rate = 1;
+      u.onstart = function () { host.querySelector('#st').textContent = '朗读中…'; };
+      u.onend = function () { host.querySelector('#st').textContent = '完成'; };
+      speechSynthesis.speak(u);
+    };
+  } });
+
+/* 2 语音转文字(STT) */
+tool({ id: 'ai-stt', n: 'AI 语音转文字', c: 'ai-media', d: '浏览器原生语音识别听写（需授权麦克风）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<button id="go" class="btn">🎤 开始聆听</button> <button id="stop" class="btn btn-sec">停止</button>' +
+      '<div id="st" style="margin-top:10px;white-space:pre-wrap;min-height:60px;color:var(--ink-2)">点击下方按钮后说话…</div></div></div>';
+    var rec = null;
+    host.querySelector('#go').onclick = function () {
+      var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { RT.toast('当前浏览器不支持语音识别（建议 Chrome）'); return; }
+      rec = new SR(); rec.lang = 'zh-CN'; rec.interimResults = true; rec.continuous = true;
+      rec.onresult = function (e) { var s = ''; for (var i = 0; i < e.results.length; i++) s += e.results[i][0].transcript; host.querySelector('#st').textContent = s; };
+      rec.onerror = function () { RT.toast('识别出错或已停止'); };
+      rec.start(); host.querySelector('#go').textContent = '聆听中…';
+    };
+    host.querySelector('#stop').onclick = function () { if (rec) rec.stop(); host.querySelector('#go').textContent = '🎤 开始聆听'; };
+  } });
+
+/* 3 智能图片缩放 */
+tool({ id: 'ai-img-resize', n: 'AI 图片缩放', c: 'ai-media', d: 'canvas 按目标宽高缩放并下载。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:8px 0"><label>目标宽度(px) </label><input type="number" id="w" class="ipt" value="800"></div>' +
+      '<button id="go" class="btn">缩放并预览</button><div id="prev" style="margin-top:10px"></div></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      var W = +host.querySelector('#w').value || 800;
+      imgFromFile(f).then(function (im) {
+        var h = Math.round(im.naturalHeight * W / im.naturalWidth);
+        var c = RT.mkCanvas(W, h); c.getContext('2d').drawImage(im, 0, 0, W, h);
+        drawTo(host.querySelector('#prev'), c);
+        RT.dlCanvas(c, 'resized.png');
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 4 图片压缩 */
+tool({ id: 'ai-img-compress', n: 'AI 图片压缩', c: 'ai-media', d: '调整质量压缩 JPEG/PNG 体积。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:8px 0"><label>质量 </label><input type="range" id="q" min="0.1" max="1" step="0.05" value="0.7"><span id="qv">0.7</span></div>' +
+      '<button id="go" class="btn">压缩</button><div id="prev" style="margin-top:10px"></div></div></div>';
+    host.querySelector('#q').oninput = function () { host.querySelector('#qv').textContent = host.querySelector('#q').value; };
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      var q = +host.querySelector('#q').value;
+      imgFromFile(f).then(function (im) {
+        var c = RT.mkCanvas(im.naturalWidth, im.naturalHeight); c.getContext('2d').drawImage(im, 0, 0);
+        c.toBlob(function (b) { RT.dl('compressed.jpg', b); RT.toast('已下载，约 ' + RT.fmtSize(b.size)); }, 'image/jpeg', q);
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 5 中心裁剪 */
+tool({ id: 'ai-img-crop', n: 'AI 中心裁剪', c: 'ai-media', d: '按比例中心裁剪正方形/指定比例。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:8px 0"><label>裁剪比例 </label><select id="r" class="ipt"><option value="1">1:1 正方形</option><option value="0.75">3:4 竖</option><option value="1.333">4:3 横</option><option value="0.5625">9:16 手机</option></select></div>' +
+      '<button id="go" class="btn">裁剪</button><div id="prev" style="margin-top:10px"></div></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      var r = +host.querySelector('#r').value;
+      imgFromFile(f).then(function (im) {
+        var W = im.naturalWidth, H = im.naturalHeight; var cw, ch;
+        if (W / H > r) { ch = H; cw = Math.round(H * r); } else { cw = W; ch = Math.round(W / r); }
+        var c = RT.mkCanvas(cw, ch); c.getContext('2d').drawImage(im, (W - cw) / 2, (H - ch) / 2, cw, ch, 0, 0, cw, ch);
+        drawTo(host.querySelector('#prev'), c); RT.dlCanvas(c, 'crop.png');
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 6 滤镜 */
+tool({ id: 'ai-img-filter', n: 'AI 图片滤镜', c: 'ai-media', d: '灰度/反相/怀旧/锐化等 canvas 滤镜。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:8px 0"><label>滤镜 </label><select id="fx" class="ipt"><option value="gray">灰度</option><option value="inv">反相</option><option value="sepia">怀旧</option><option value="blur">柔化</option><option value="edge">描边</option></select></div>' +
+      '<button id="go" class="btn">应用</button><div id="prev" style="margin-top:10px"></div></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      var fx = host.querySelector('#fx').value;
+      imgFromFile(f).then(function (im) {
+        var c = RT.mkCanvas(im.naturalWidth, im.naturalHeight); var x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        var d = x.getImageData(0, 0, c.width, c.height), p = d.data, i, r, g, b;
+        if (fx === 'gray') { for (i = 0; i < p.length; i += 4) { var v = (p[i] * 0.3 + p[i + 1] * 0.59 + p[i + 2] * 0.11); p[i] = p[i + 1] = p[i + 2] = v; } }
+        else if (fx === 'inv') { for (i = 0; i < p.length; i += 4) { p[i] = 255 - p[i]; p[i + 1] = 255 - p[i + 1]; p[i + 2] = 255 - p[i + 2]; } }
+        else if (fx === 'sepia') { for (i = 0; i < p.length; i += 4) { r = p[i]; g = p[i + 1]; b = p[i + 2]; p[i] = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189); p[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168); p[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131); } }
+        else if (fx === 'blur') { x.filter = 'blur(3px)'; x.drawImage(im, 0, 0); }
+        else if (fx === 'edge') { var o = x.getImageData(0, 0, c.width, c.height); for (i = 0; i < p.length; i += 4) { var j = i - 4 * c.width; if (j >= 0) { p[i] = Math.abs(p[i] - o.data[j]); p[i + 1] = Math.abs(p[i + 1] - o.data[j + 1]); p[i + 2] = Math.abs(p[i + 2] - o.data[j + 2]); } } }
+        x.putImageData(d, 0, 0); drawTo(host.querySelector('#prev'), c); RT.dlCanvas(c, 'filter.png');
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 7 调色 */
+tool({ id: 'ai-img-tone', n: 'AI 图片调色', c: 'ai-media', d: '亮度/对比度/饱和度实时调节。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:6px 0">亮度 <input type="range" id="br" min="-50" max="50" value="0"></div>' +
+      '<div style="margin:6px 0">对比 <input type="range" id="ct" min="-50" max="50" value="0"></div>' +
+      '<div style="margin:6px 0">饱和 <input type="range" id="sa" min="-50" max="50" value="0"></div>' +
+      '<button id="go" class="btn">应用并下载</button><div id="prev" style="margin-top:10px"></div></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      var br = +host.querySelector('#br').value, ct = +host.querySelector('#ct').value, sa = +host.querySelector('#sa').value;
+      imgFromFile(f).then(function (im) {
+        var c = RT.mkCanvas(im.naturalWidth, im.naturalHeight); var x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        x.filter = 'brightness(' + (1 + br / 100) + ') contrast(' + (1 + ct / 100) + ') saturate(' + (1 + sa / 100) + ')';
+        x.drawImage(c, 0, 0);
+        drawTo(host.querySelector('#prev'), c); RT.dlCanvas(c, 'tone.png');
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 8 表情包生成 */
+tool({ id: 'ai-meme', n: 'AI 表情包生成', c: 'ai-media', d: '上传图片加顶部/底部白字黑边文字。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:6px 0"><input id="top" class="ipt" placeholder="顶部文字"></div>' +
+      '<div style="margin:6px 0"><input id="bot" class="ipt" placeholder="底部文字"></div>' +
+      '<button id="go" class="btn">生成</button><div id="prev" style="margin-top:10px"></div></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      imgFromFile(f).then(function (im) {
+        var c = RT.mkCanvas(im.naturalWidth, im.naturalHeight); var x = c.getContext('2d');
+        x.drawImage(im, 0, 0); x.textAlign = 'center'; x.fillStyle = '#fff'; x.strokeStyle = '#000'; x.lineWidth = Math.max(3, c.width / 40);
+        x.font = 'bold ' + Math.round(c.width / 12) + 'px sans-serif';
+        var top = host.querySelector('#top').value, bot = host.querySelector('#bot').value;
+        if (top) { x.strokeText(top, c.width / 2, c.width / 10); x.fillText(top, c.width / 2, c.width / 10); }
+        if (bot) { x.strokeText(bot, c.width / 2, c.height - c.width / 14); x.fillText(bot, c.width / 2, c.height - c.width / 14); }
+        drawTo(host.querySelector('#prev'), c); RT.dlCanvas(c, 'meme.png');
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 9 去背景（规则法：近白透明） */
+tool({ id: 'ai-bg-remove', n: 'AI 去背景', c: 'ai-media', d: '将接近白色/纯色的背景扣除为透明（规则法，适合白底图）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><div style="margin:6px 0"><label>容差 </label><input type="range" id="tol" min="10" max="80" value="40"><span id="tolv">40</span></div>' +
+      '<button id="go" class="btn">去背景</button><div id="prev" style="margin-top:10px;background:repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 50%/20px 20px"></div></div></div>';
+    host.querySelector('#tol').oninput = function () { host.querySelector('#tolv').textContent = host.querySelector('#tol').value; };
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      var tol = +host.querySelector('#tol').value;
+      imgFromFile(f).then(function (im) {
+        var c = RT.mkCanvas(im.naturalWidth, im.naturalHeight); var x = c.getContext('2d'); x.drawImage(im, 0, 0);
+        var d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+        for (var i = 0; i < p.length; i += 4) { if (Math.abs(p[i] - 255) < tol && Math.abs(p[i + 1] - 255) < tol && Math.abs(p[i + 2] - 255) < tol) p[i + 3] = 0; }
+        x.putImageData(d, 0, 0); drawTo(host.querySelector('#prev'), c); RT.dlCanvas(c, 'nobg.png');
+      }).catch(function (e) { RT.toast(e.message); });
+    };
+  } });
+
+/* 10 图片文字识别(OCR) tesseract.js */
+tool({ id: 'ai-ocr', n: 'AI 图片文字识别', c: 'ai-media', d: 'tesseract.js 真实 OCR（中英文，首次需联网下载模型）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><button id="go" class="btn">识别</button>' +
+      '<div id="st" style="color:var(--ink-4);margin:6px 0"></div>' +
+      '<textarea id="out" class="ipt" rows="6" readonly placeholder="识别结果"></textarea></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      host.querySelector('#st').textContent = '加载 OCR 引擎…';
+      RT.lib(['https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js']).then(function () {
+        host.querySelector('#st').textContent = '识别中…';
+        Tesseract.recognize(URL.createObjectURL(f), 'chi_sim+eng').then(function (r) {
+          host.querySelector('#out').value = r.data.text;
+          host.querySelector('#st').textContent = '完成，共 ' + (r.data.text || '').length + ' 字';
+        }).catch(function (e) { host.querySelector('#st').textContent = '识别失败：' + e.message; });
+      }).catch(function (e) { host.querySelector('#st').textContent = '引擎加载失败：' + e.message; });
+    };
+  } });
+
+/* 11 二维码识别 jsQR */
+tool({ id: 'ai-qr-decode', n: 'AI 二维码识别', c: 'ai-media', d: 'jsQR 解析图片中的二维码/条形码内容。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<input type="file" id="fi" accept="image/*"><button id="go" class="btn">解码</button>' +
+      '<textarea id="out" class="ipt" rows="4" readonly placeholder="解码内容"></textarea></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var f = host.querySelector('#fi').files[0]; if (!f) { RT.toast('请先上传图片'); return; }
+      RT.lib(['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js']).then(function () {
+        imgFromFile(f).then(function (im) {
+          var c = RT.mkCanvas(im.naturalWidth, im.naturalHeight); c.getContext('2d').drawImage(im, 0, 0);
+          var d = c.getContext('2d').getImageData(0, 0, c.width, c.height);
+          var r = jsQR(d.data, c.width, c.height);
+          host.querySelector('#out').value = r ? r.data : '未检测到二维码';
+          if (!r) RT.toast('未检测到二维码');
+        }).catch(function (e) { RT.toast(e.message); });
+      }).catch(function (e) { RT.toast('jsQR 加载失败：' + e.message); });
+    };
+  } });
+
+/* 12 旋律生成(WebAudio) */
+tool({ id: 'ai-music', n: 'AI 旋律生成', c: 'ai-media', d: '随机生成一段和声旋律并播放（WebAudio 合成）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<div style="margin:6px 0"><label>音符数 </label><input type="number" id="n" class="ipt" value="8" min="3" max="24"></div>' +
+      '<button id="go" class="btn">🎵 生成并播放</button> <span id="st" style="color:var(--ink-4)"></span></div></div>';
+    host.querySelector('#go').onclick = function () {
+      var n = Math.max(3, Math.min(24, +host.querySelector('#n').value || 8));
+      var ac = new (window.AudioContext || window.webkitAudioContext)();
+      var scale = [261.63, 293.66, 329.63, 349.23, 392, 440, 493.88, 523.25];
+      var t = ac.currentTime, seq = [];
+      for (var i = 0; i < n; i++) { var f = scale[Math.floor(Math.random() * scale.length)]; seq.push(f);
+        var o = ac.createOscillator(), g = ac.createGain(); o.type = 'triangle'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 0.36); t += 0.32;
+      }
+      host.querySelector('#st').textContent = '播放中：' + seq.map(function (x) { return Math.round(x); }).join(' ');
+    };
+  } });
+
+/* 13 真·情感分析(transformers.js) */
+tool({ id: 'ai-nlp-sentiment', n: 'AI 深度学习情感分析', c: 'ai-media', d: 'transformers.js 加载中文情感模型真实推理（首次联网下载）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<textarea id="txt" class="ipt" rows="4" placeholder="输入中文文本"></textarea><button id="go" class="btn">分析</button>' +
+      '<div id="st" style="color:var(--ink-4);margin:6px 0"></div><div id="res" style="white-space:pre-wrap;color:var(--ink-2)"></div></div></div>';
+    var pipe = null;
+    host.querySelector('#go').onclick = function () {
+      var txt = host.querySelector('#txt').value; if (!txt) { RT.toast('请输入文本'); return; }
+      var run = function () {
+        host.querySelector('#st').textContent = '推理中…';
+        pipe(txt).then(function (r) {
+          var o = Array.isArray(r) ? r[0] : r;
+          host.querySelector('#res').textContent = '标签：' + o.label + '\n分数：' + (o.score != null ? o.score.toFixed(4) : '');
+          host.querySelector('#st').textContent = '完成';
+        }).catch(function (e) { host.querySelector('#st').textContent = '推理失败：' + e.message; });
+      };
+      if (pipe) return run();
+      host.querySelector('#st').textContent = '加载模型（首次较慢）…';
+      import('https://cdn.jsdelivr.net/npm/@xenova/transformers@1.14.1').then(function (mod) {
+        var tr = mod.default || mod; var classifier = tr.pipeline('sentiment-analysis', 'Xenova/distilbert-base-uncased-finetuned-sst-2-english');
+        Promise.resolve(classifier).then(function (p) { pipe = p; run(); });
+      }).catch(function (e) { host.querySelector('#st').textContent = '模型加载失败：' + e.message; });
+    };
+  } });
+
+/* 14 真·文本分类(transformers.js) */
+tool({ id: 'ai-nlp-classify', n: 'AI 深度学习文本分类', c: 'ai-media', d: 'transformers.js 零样本分类（可自定义标签）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<textarea id="txt" class="ipt" rows="3" placeholder="待分类文本"></textarea>' +
+      '<div style="margin:6px 0"><input id="labs" class="ipt" value="新闻,广告,闲聊,技术" placeholder="候选标签，逗号分隔"></div>' +
+      '<button id="go" class="btn">分类</button><div id="st" style="color:var(--ink-4);margin:6px 0"></div>' +
+      '<div id="res" style="white-space:pre-wrap;color:var(--ink-2)"></div></div></div>';
+    var pipe = null;
+    host.querySelector('#go').onclick = function () {
+      var txt = host.querySelector('#txt').value; var labs = host.querySelector('#labs').value.split(',');
+      if (!txt) { RT.toast('请输入文本'); return; }
+      var run = function () { host.querySelector('#st').textContent = '推理中…';
+        pipe(txt, labs).then(function (r) {
+          var seq = Array.isArray(r) ? r : (r.sequence || r.labels ? [{ labels: r.labels, scores: r.scores }] : [r]);
+          var out = seq.labels.map(function (l, i) { return l + '：' + (seq.scores[i] * 100).toFixed(1) + '%'; }).join('\n');
+          host.querySelector('#res').textContent = out; host.querySelector('#st').textContent = '完成';
+        }).catch(function (e) { host.querySelector('#st').textContent = '失败：' + e.message; });
+      };
+      if (pipe) return run();
+      host.querySelector('#st').textContent = '加载模型…';
+      import('https://cdn.jsdelivr.net/npm/@xenova/transformers@1.14.1').then(function (mod) {
+        var tr = mod.default || mod; var p = tr.pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncased-mnli');
+        Promise.resolve(p).then(function (x) { pipe = x; run(); });
+      }).catch(function (e) { host.querySelector('#st').textContent = '模型加载失败：' + e.message; });
+    };
+  } });
+
+/* 15 真·摘要(transformers.js) */
+tool({ id: 'ai-nlp-sum', n: 'AI 深度学习摘要', c: 'ai-media', d: 'transformers.js 抽取式摘要模型推理。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<textarea id="txt" class="ipt" rows="5" placeholder="输入英文长文"></textarea><button id="go" class="btn">生成摘要</button>' +
+      '<div id="st" style="color:var(--ink-4);margin:6px 0"></div><div id="res" style="white-space:pre-wrap;color:var(--ink-2)"></div></div></div>';
+    var pipe = null;
+    host.querySelector('#go').onclick = function () {
+      var txt = host.querySelector('#txt').value; if (!txt) { RT.toast('请输入文本'); return; }
+      var run = function () { host.querySelector('#st').textContent = '推理中…';
+        pipe(txt, { max_new_tokens: 80 }).then(function (r) { host.querySelector('#res').textContent = (r.summary_text || (r[0] && r[0].summary_text) || JSON.stringify(r)); host.querySelector('#st').textContent = '完成'; })
+          .catch(function (e) { host.querySelector('#st').textContent = '失败：' + e.message; }); };
+      if (pipe) return run();
+      host.querySelector('#st').textContent = '加载模型…';
+      import('https://cdn.jsdelivr.net/npm/@xenova/transformers@1.14.1').then(function (mod) {
+        var tr = mod.default || mod; var p = tr.pipeline('summarization', 'Xenova/distilbart-cnn-6-6');
+        Promise.resolve(p).then(function (x) { pipe = x; run(); });
+      }).catch(function (e) { host.querySelector('#st').textContent = '模型加载失败：' + e.message; });
+    };
+  } });
+
+/* 16 真·翻译(transformers.js NLLB) */
+tool({ id: 'ai-nlp-trans', n: 'AI 深度学习翻译', c: 'ai-media', d: 'transformers.js NLLB 多语言互译（真实推理）。',
+  auto: false, first: false, f: [],
+  init: function (RT, host) {
+    host.innerHTML = '<div class="pane-box"><div class="pane-bd">' +
+      '<textarea id="txt" class="ipt" rows="3" placeholder="待翻译文本"></textarea>' +
+      '<div style="margin:6px 0"><label>目标 </label><select id="to" class="ipt"><option value="zho_Hans">中文</option><option value="eng_Latn">英文</option><option value="jpn_Jpan">日文</option><option value="fra_Latn">法文</option></select></div>' +
+      '<button id="go" class="btn">翻译</button><div id="st" style="color:var(--ink-4);margin:6px 0"></div>' +
+      '<div id="res" style="white-space:pre-wrap;color:var(--ink-2)"></div></div></div>';
+    var pipe = null;
+    host.querySelector('#go').onclick = function () {
+      var txt = host.querySelector('#txt').value; var to = host.querySelector('#to').value; if (!txt) { RT.toast('请输入文本'); return; }
+      var run = function () { host.querySelector('#st').textContent = '翻译中…';
+        pipe(txt, { src_lang: 'eng_Latn', tgt_lang: to }).then(function (r) { host.querySelector('#res').textContent = (r[0] && r[0].translation_text) || JSON.stringify(r); host.querySelector('#st').textContent = '完成'; })
+          .catch(function (e) { host.querySelector('#st').textContent = '失败：' + e.message; }); };
+      if (pipe) return run();
+      host.querySelector('#st').textContent = '加载模型（较大，首次慢）…';
+      import('https://cdn.jsdelivr.net/npm/@xenova/transformers@1.14.1').then(function (mod) {
+        var tr = mod.default || mod; var p = tr.pipeline('translation', 'Xenova/nllb-200-distilled-600M');
+        Promise.resolve(p).then(function (x) { pipe = x; run(); });
+      }).catch(function (e) { host.querySelector('#st').textContent = '模型加载失败：' + e.message; });
+    };
+  } });
+
+
+window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "ai-nlp-sum"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
+if (!window.TOOL) { console.error('tool not found: ai-nlp-sum'); }
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("ai-nlp-sum")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("ai-nlp-sum");
+if(i>=0)f.splice(i,1);else f.push("ai-nlp-sum");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-nlp-sum"});u.unshift("ai-nlp-sum");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>
