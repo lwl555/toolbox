@@ -185,7 +185,7 @@ tool({ id: 'life-pick-one', n: '抽签', c: 'life', d: '从一个列表里随机
 
 tool({ id: 'life-menses', n: '经期周期', c: 'life', d: '按上次月经日估算下个周期（粗略）',
   f: [{ k: 'last', t: '上次首日', type: 'text', v: '2026-09-01' }, { k: 'cycle', t: '周期天数', type: 'number', v: 28, min: 21, max: 40 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],
-  run: function (v) { var m = (v.last || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (!m) return { out: '', note: '格式如 2026-09-01', warn: true }; var d = new Date(+m[1], +m[2] - 1, +m[3]); d.setDate(d.getDate() + v.cycle); var next = d.toISOString().slice(0, 10); var预测 = new Date(d); 预测.setDate(预测.getDate() + 14); return { out: '下次约：' + next, metrics: [{ t: '下次经期', v: next }, { t: '排卵期约', v: 预测.toISOString().slice(0, 10) }, { t: '注意', v: '仅为估算' }] }; } });
+  run: function (v) { var m = (v.last || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/); if (!m) return { out: '', note: '格式如 2026-09-01', warn: true }; var d = new Date(+m[1], +m[2] - 1, +m[3]); d.setDate(d.getDate() + v.cycle); var fmt = function (x) { return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2); }; var next = fmt(d); var ovul = new Date(d); ovul.setDate(ovul.getDate() + 14); return { out: '下次约：' + next, metrics: [{ t: '下次经期', v: next }, { t: '排卵期约', v: fmt(ovul) }, { t: '注意', v: '仅为估算' }] }; } });
 
 tool({ id: 'life-sleep-need', n: '睡眠需求', c: 'life', d: '按年龄建议睡眠时长',
   f: [{ k: 'age', t: '年龄', type: 'number', v: 30, min: 0, max: 100 }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1, metrics: 1 }],

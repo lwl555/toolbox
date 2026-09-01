@@ -40,6 +40,8 @@ a{color:inherit;text-decoration:none}
 button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none}
 ::selection{background:#cfe3dc}
+/* 触感优化：去掉 300ms 点击延迟与蓝块高亮，提升手机端点击反馈 */
+button,.btn,.cat-tab,.card-fav,.seg button,.top-links a,a.card{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 
 /* ---------- 顶部导航 ---------- */
 .top{
@@ -88,11 +90,12 @@ button{cursor:pointer;background:none;border:none}
 .cats-in{
   max-width:1240px;margin:0 auto;padding:0 16px;
   display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;overscroll-behavior-x:contain;
 }
 .cats-in::-webkit-scrollbar{display:none}
 .cat-tab{
   padding:9px 11px;font-size:13px;color:var(--ink-2);white-space:nowrap;
-  border-bottom:2px solid transparent;margin-bottom:-1px;
+  border-bottom:2px solid transparent;margin-bottom:-1px;scroll-snap-align:start;
 }
 .cat-tab:hover{color:var(--ink)}
 .cat-tab.on{color:var(--accent-ink);border-bottom-color:var(--accent);font-weight:600}
@@ -358,7 +361,11 @@ button{cursor:pointer;background:none;border:none}
   .tool-top-in{padding:9px 12px;gap:8px}
   .tool-title{font-size:14px}
   .ta{min-height:96px}
-  .btn{padding:8px 13px}
+  .btn{padding:8px 13px;min-height:40px}
+  .seg button{min-height:38px}
+  .card-fav{padding:6px;font-size:16px}
+  .search input{height:38px}
+  .aifind-btn{min-height:44px}
   .sec-head h2{font-size:14px}
   .metric b{font-size:15px}
 }
@@ -370,4 +377,14 @@ button{cursor:pointer;background:none;border:none}
 @media print{
   .top,.cats,.foot,.acts,.rel{display:none}
   .panes{grid-template-columns:1fr}
+}
+
+/* ---------- 聊天/智能体 UI 移动端适配（buildChat 内联结构，此处补触控与紧凑） ---------- */
+.pane-box #log{scroll-behavior:smooth}
+.pane-box #msg{line-height:1.5}
+@media (max-width:640px){
+  .pane-box #log{height:220px}
+  .pane-box #msg{rows:3;min-height:54px}
+  .pane-box #send{min-height:44px}
+  .pane-box #prov,.pane-box #key,.pane-box #base,.pane-box #model{height:38px}
 }

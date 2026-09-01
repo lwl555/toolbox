@@ -165,4 +165,34 @@ document.addEventListener('DOMContentLoaded', function () {
     var t = TOOLS[Math.floor(Math.random() * TOOLS.length)];
     location.href = 'tools/' + t.id + '.html';
   };
+
+  /* 分类导航：点击平滑滚动到对应区块，并把当前 tab 滚到可视区中央；滚动时高亮当前分类（scroll-spy） */
+  var tabEls = Array.prototype.slice.call(document.querySelectorAll('.cat-tab'));
+  tabEls.forEach(function (tab) {
+    tab.addEventListener('click', function (e) {
+      var id = tab.getAttribute('href');
+      if (id && id.charAt(0) === '#') {
+        var sec = document.querySelector(id);
+        if (sec) {
+          e.preventDefault();
+          sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }
+    });
+  });
+  var spy = function () {
+    var cur = null, best = 1e9;
+    document.querySelectorAll('.sec').forEach(function (sec) {
+      var r = sec.getBoundingClientRect();
+      var top = r.top - 120;
+      if (top <= 0 && -top < best) { best = -top; cur = sec.id; }
+    });
+    tabEls.forEach(function (t) {
+      var href = t.getAttribute('href') || '';
+      t.classList.toggle('on', cur && href === '#' + cur);
+    });
+  };
+  window.addEventListener('scroll', spy, { passive: true });
+  spy();
 });

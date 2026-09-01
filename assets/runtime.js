@@ -402,7 +402,7 @@
   }
 
   /* ---------- 输出渲染 ---------- */
-  function render(res, fields) {
+  function render(res, fields, silent) {
     if (!res) return;
     fields.forEach(function (f) {
       var el = document.getElementById('f_' + f.k);
@@ -452,7 +452,9 @@
     });
     var nb = document.getElementById('noteBox');
     if (nb) {
-      if (res.note) { nb.style.display = ''; nb.className = 'note' + (res.warn ? ' warn' : ''); nb.innerHTML = res.note; }
+      // 首次自动运行且仅为「缺输入」类友好提示时，不显示橙色警告（输入框 placeholder 已给格式提示），避免一打开就像报错；
+      // 真实出错或用户交互后的运行照常显示。
+      if (res.note && !(silent && res.warn)) { nb.style.display = ''; nb.className = 'note' + (res.warn ? ' warn' : ''); nb.innerHTML = res.note; }
       else nb.style.display = 'none';
     }
   }
@@ -462,6 +464,8 @@
     document.title = TOOL.name + ' - 超有用的工具箱';
     var host = document.getElementById('app');
     if (!host) return;
+    // 仅 auto 工具在加载时自动跑一次；该次若输出为空且仅为「缺输入」类警告，则不显示橙色提示
+    var _firstRun = (TOOL.auto !== false);
 
     var html = '';
     if (TOOL.custom) {
@@ -547,7 +551,7 @@
       try {
         res = TOOL.run(v, RT);
       } catch (e) {
-        render({ note: '出错了：' + (e && e.message ? e.message : e) , warn: true }, TOOL.fields.filter(function (f) { return /^out/.test(f.type); }));
+        render({ note: '出错了：' + (e && e.message ? e.message : e) , warn: true }, TOOL.fields.filter(function (f) { return /^out/.test(f.type); }), false);
         TOOL.fields.forEach(function (f) {
           if (/^out/.test(f.type)) {
             var el = document.getElementById('f_' + f.k);
@@ -556,10 +560,11 @@
         });
         return;
       }
+      function done(r) { render(r, TOOL.fields, _firstRun); _firstRun = false; }
       if (res && typeof res.then === 'function') {
-        res.then(function (r) { render(r, TOOL.fields); })
-          .catch(function (e) { RT.toast('处理失败：' + (e && e.message ? e.message : e)); });
-      } else render(res, TOOL.fields);
+        res.then(done)
+          .catch(function (e) { RT.toast('处理失败：' + (e && e.message ? e.message : e)); _firstRun = false; });
+      } else done(res);
     }
 
     var tm;
@@ -596,8 +601,9 @@
     };
 
     if (TOOL.init) TOOL.init(RT, document.getElementById('app'));
+    // auto:false 工具（需点「执行」）不在加载时自动运行，避免一打开就显示校验警告；
+    // 仅 auto 工具在加载/输入变化时自动计算。init 工具自行管理 UI，不自动跑。
     if (TOOL.auto !== false) run();
-    else if (TOOL.first !== false) run();
   };
 
   window.RT = RT;
