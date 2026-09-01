@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>文件转 Base64 - 超有用的工具箱</title>
+<meta name="description" content="任意文件编码为 Base64 文本。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">文件工具</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">文件转 Base64</h1>
+<p class="lede">任意文件编码为 Base64 文本。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="fl-md5.html"><div class="card-t"><span class="card-name">文件 MD5</span></div><div class="card-desc">计算文件的 MD5 校验值。</div></a><a class="card" href="fl-sha.html"><div class="card-t"><span class="card-name">文件 SHA256</span></div><div class="card-desc">计算文件的 SHA-256 校验值（需安全环境）。</div></a><a class="card" href="fl-b64d.html"><div class="card-t"><span class="card-name">Base64 转文件</span></div><div class="card-desc">把 Base64 还原为可下载文件。</div></a><a class="card" href="fl-diff.html"><div class="card-t"><span class="card-name">文本差异对比</span></div><div class="card-desc">逐行对比，标记新增/删除。</div></a><a class="card" href="fl-split.html"><div class="card-t"><span class="card-name">文件分块</span></div><div class="card-desc">按大小切分为多个片段（便于传输）。</div></a><a class="card" href="fl-hex.html"><div class="card-t"><span class="card-name">十六进制预览</span></div><div class="card-desc">查看文件头部字节（前 256 字节）。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 文件转 Base64<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   19-file.js — 文件工具（哈希 / 差分 / 拆分 / 编码，本地计算）
+   ============================================================ */
+
+  
+window.TOOL = { id: "fl-b64", n: "文件转 Base64", c: "file", d: "任意文件编码为 Base64 文本。",
+  custom: null,
+  fields: [{"k":"file","t":"文件","type":"file"},{"k":"out","t":"Base64","type":"out","mono":true}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+      if (!v.file) return { out: '' };
+      return RT.fileToBuf(v.file).then(function (b) {
+        var bytes = bufToBytes(b), bin = ''; for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        return { out: btoa(bin) };
+      });
+    } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("fl-b64")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("fl-b64");
+if(i>=0)f.splice(i,1);else f.push("fl-b64");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="fl-b64"});u.unshift("fl-b64");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

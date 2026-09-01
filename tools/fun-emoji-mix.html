@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Emoji 组合 - 超有用的工具箱</title>
+<meta name="description" content="随机组合几个 emoji 当表情。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">趣味娱乐</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">Emoji 组合</h1>
+<p class="lede">随机组合几个 emoji 当表情</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="fun-wc.html"><div class="card-t"><span class="card-name">朋友圈文案</span></div><div class="card-desc">随机生成一条发圈文案</div></a><a class="card" href="fun-joke.html"><div class="card-t"><span class="card-name">冷笑话</span></div><div class="card-desc">随机一条冷笑话</div></a><a class="card" href="fun-tongue.html"><div class="card-t"><span class="card-name">绕口令</span></div><div class="card-desc">随机一条绕口令练嘴皮</div></a><a class="card" href="fun-bless.html"><div class="card-t"><span class="card-name">祝福语生成</span></div><div class="card-desc">按场景生成祝福语</div></a><a class="card" href="fun-emoticon.html"><div class="card-t"><span class="card-name">颜文字</span></div><div class="card-desc">随机一个可爱颜文字</div></a><a class="card" href="fun-riddle.html"><div class="card-t"><span class="card-name">猜谜语</span></div><div class="card-desc">出题+点开看答案</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · Emoji 组合<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 趣味 / 创作 — 16 个 */
+var Fn = {};
+Fn.wc = ['今天也要加油鸭！💪', '生活明朗，万物可爱。', '保持热爱，奔赴山海。', '努力成为一个很哇塞的人。', '所有的好，都不如刚刚好。', '慢慢变好，是给自己最好的礼物。', '你若盛开，蝴蝶自来。', '且将新火试新茶，诗酒趁年华。', '愿你眼里有光，活成自己想要的模样。', '生活有望穿秋水的期待，也有意想不到的惊喜。'];
+Fn.joke = ['为什么数学书总是忧郁？因为它有太多的问题。', '小明为什么能一直不说话？因为他是个哑谜。', '什么东西越洗越脏？水。', '有一只企鹅去北极会怎样？变成冰棍。', '为什么电脑很笨？因为它只懂二进制。', '什么书你不能在暗处看？说明书（你需要光）。', '一根筷子容易折，一把筷子难折断——团结就是力量。', '虾和蚌吵架谁赢了？蚌，因为虾（瞎）了。', '为什么海鸥飞过海面？因为海上有鸥（偶）遇。', '世界上最长的单词是什么？微笑（因为 SMILE 里有 MILE 英里）。'];
+Fn.tongue = ['吃葡萄不吐葡萄皮，不吃葡萄倒吐葡萄皮。', '红鲤鱼与绿鲤鱼与驴。', '四是四，十是十，十四是十四，四十是四十。', '板凳宽，扁担长，扁担想绑在板凳上。', '黑化肥发灰，灰化肥发黑。', '牛郎恋刘娘，刘娘恋牛郎。', '门口蹲个胖娃娃，娃娃端个大盘瓜。', '范文芳和黄宏放，黄宏放和范文芳。'];
+Fn.bless = { birthday: ['生日快乐！愿你岁岁平安，年年喜乐。', 'Happy Birthday！新的一岁继续闪闪发光。', '愿所有的好运都流向你，生日快乐！'], newyear: ['新年快乐！万事胜意，钱兔无量。', '辞旧迎新，愿新年胜旧年。', '龙腾虎跃新一年，祝你前程似锦！'], love: ['遇见你，是我所有运气的总和。', '世界很大，幸好有你。', '想和你一起，虚度每一个黄昏。'], general: ['愿你所求皆如愿，所行化坦途。', '平安喜乐，万事顺遂。', '前程似锦，未来可期。'] };
+Fn.emoticon = ['(´▽`ʃ♡ƪ)', '(๑•̀ㅂ•́)و✧', '(◕‿◕)', 'ヽ(°▽°)ノ', '(￣▽ￏ)', '(๑˃̵ᴗ˂̵)و', '(ง •̀_•́)ง', '(*≧ω≦)', '(つ≧▽≦)つ', '（づ￣3￣）づ'];
+Fn.riddle = [['白天不见，夜里出来，照亮别人，自己黑暗。', '月亮'], ['一个老头，不跑不走，请他睡觉，他就摇头。', '不倒翁'], ['有头没有颈，身上冷冰冰，有翅不能飞，无脚也能行。', '鱼'], ['远看山有色，近听水无声。', '画'], ['千条线，万条线，落在水里看不见。', '雨'], ['一个娃娃白又胖，坐在雪里变红胖。', '冰糖葫芦']];
+Fn.brain = [['什么越洗越脏？', '水'], ['什么东西天气越热它爬得越高？', '温度计'], ['小明的爸爸有三个儿子，大儿子叫大毛，二儿子叫二毛，三儿子叫什么？', '小明'], ['什么东西越生气它越大？', '脾气'], ['什么东西不能吃？', '亏'], ['一个盒子有几个边？', '里边和外边，两个边']];
+Fn.love = ['我想去你的心里逛逛。', '你今天有点怪，怪好看的。', '近朱者赤，近你者甜。', '我也想喝一口你藏的温柔。', '你是我的北方，我是你的南方，我们刚好拼成完整的方向。', '我的被子太轻了，需要你压一压。'];
+
+
+window.TOOL = { id: "fun-emoji-mix", n: "Emoji 组合", c: "fun", d: "随机组合几个 emoji 当表情",
+  custom: null,
+  fields: [{"k":"n","t":"数量","type":"number","v":3,"min":1,"max":6},{"k":"out","t":"结果","type":"out","dl":1,"metrics":1}],
+  auto: false,
+  first: true,
+  init: null,
+  run: function (v) { var pool = '🎉🔥💡🌟🌈🍰🐱🌸⚡🍀🌊🎈💎🍓🌻🚀🌙⭐🍑🌿'; var r = ''; for (var i = 0; i < v.n; i++) r += pool[Math.floor(Math.random() * pool.length)]; return { out: r, metrics: [{ t: '组合', v: r }] }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("fun-emoji-mix")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("fun-emoji-mix");
+if(i>=0)f.splice(i,1);else f.push("fun-emoji-mix");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="fun-emoji-mix"});u.unshift("fun-emoji-mix");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

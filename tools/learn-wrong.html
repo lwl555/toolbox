@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>错题本 - 超有用的工具箱</title>
+<meta name="description" content="记录错题，可标注掌握。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">学习教育</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">错题本</h1>
+<p class="lede">记录错题，可标注掌握</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="learn-mindmap.html"><div class="card-t"><span class="card-name">思维导图</span></div><div class="card-desc">缩进大纲一键生成可折叠树状图</div></a><a class="card" href="learn-flow.html"><div class="card-t"><span class="card-name">流程图</span></div><div class="card-desc">用 节点→下一节点 生成简单流程图</div></a><a class="card" href="learn-flashcard.html"><div class="card-t"><span class="card-name">闪卡复习</span></div><div class="card-desc">自定义卡片，正反面翻牌记忆</div></a><a class="card" href="learn-timer.html"><div class="card-t"><span class="card-name">学习计时</span></div><div class="card-desc">按科目计时，统计今日专注</div></a><a class="card" href="learn-ebb.html"><div class="card-t"><span class="card-name">艾宾浩斯复习</span></div><div class="card-desc">输入学习日，算出最佳复习时间点</div></a><a class="card" href="learn-words.html"><div class="card-t"><span class="card-name">背单词</span></div><div class="card-desc">随机抽词，点一下看释义</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 错题本<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 学习 / 记忆 — 12 个 */
+var Lr = {};
+Lr.words = [['apple', '苹果'], ['banana', '香蕉'], ['computer', '电脑'], ['happy', '开心'], ['science', '科学'], ['knowledge', '知识'], ['student', '学生'], ['teacher', '老师'], ['language', '语言'], ['memory', '记忆'], ['practice', '练习'], ['progress', '进步'], ['future', '未来'], ['dream', '梦想'], ['friend', '朋友'], ['family', '家庭'], ['health', '健康'], ['success', '成功'], ['courage', '勇气'], ['wisdom', '智慧'], ['nature', '自然'], ['travel', '旅行'], ['music', '音乐'], ['book', '书'], ['time', '时间'], ['world', '世界'], ['idea', '想法'], ['skill', '技能'], ['goal', '目标'], ['habit', '习惯']];
+
+
+window.TOOL = { id: "learn-wrong", n: "错题本", c: "learn", d: "记录错题，可标注掌握",
+  custom: null,
+  fields: [{"k":"cv","t":"错题","type":"custom","html":"<div style=\"display:flex;gap:6px;margin-bottom:8px\"><input id=\"wkQ\" class=\"ipt\" placeholder=\"题目\" style=\"flex:1\"><input id=\"wkA\" class=\"ipt\" placeholder=\"答案\" style=\"flex:1\"><button id=\"wkAdd\" class=\"btn btn-pri\">记</button></div><div id=\"wkList\" style=\"font-size:13px\"></div>"}],
+  auto: true,
+  first: true,
+  init: function (RT) {
+    var KEY = 'learn_wrong_v2'; var q = document.getElementById('wkQ'), a = document.getElementById('wkA'), add = document.getElementById('wkAdd'), list = document.getElementById('wkList');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(x) { localStorage.setItem(KEY, JSON.stringify(x)); }
+    function render() { var arr = load(); list.innerHTML = arr.length ? arr.map(function (r, i) { return '<div style="padding:6px;border-bottom:1px solid var(--ink-1)"><div style="font-weight:600">' + RT.esc(r.q) + '</div><div style="font-size:12px;color:var(--ink-3)">答：' + RT.esc(r.a) + (r.ok ? ' ✓已掌握' : '') + ' <button class="fx" data-i="' + i + '">掌握</button></div></div>'; }).join('') : '<div style="color:var(--ink-3)">暂无错题</div>'; list.querySelectorAll('[data-i]').forEach(function (b) { b.onclick = function () { var arr = load(); arr[+b.dataset.i].ok = true; save(arr); render(); }; }); }
+    add.onclick = function () { if (!q.value) return; var arr = load(); arr.push({ q: q.value, a: a.value, ok: false }); save(arr); q.value = ''; a.value = ''; render(); };
+    render();
+  },
+  run: function () {} };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("learn-wrong")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("learn-wrong");
+if(i>=0)f.splice(i,1);else f.push("learn-wrong");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="learn-wrong"});u.unshift("learn-wrong");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

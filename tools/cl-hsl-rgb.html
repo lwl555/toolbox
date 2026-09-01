@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HSL 转 RGB - 超有用的工具箱</title>
+<meta name="description" content="HSL 转 RGB。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">设计配色</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">HSL 转 RGB</h1>
+<p class="lede">HSL 转 RGB</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="cl-hex-rgb.html"><div class="card-t"><span class="card-name">HEX 转 RGB</span></div><div class="card-desc">十六进制颜色转 RGB</div></a><a class="card" href="cl-rgb-hex.html"><div class="card-t"><span class="card-name">RGB 转 HEX</span></div><div class="card-desc">RGB 转十六进制</div></a><a class="card" href="cl-rgb-hsl.html"><div class="card-t"><span class="card-name">RGB 转 HSL</span></div><div class="card-desc">RGB 转 HSL 色彩空间</div></a><a class="card" href="cl-scheme.html"><div class="card-t"><span class="card-name">配色方案生成</span></div><div class="card-desc">按主色生成互补/类比/三角等配色</div></a><a class="card" href="cl-contrast.html"><div class="card-t"><span class="card-name">对比度检查</span></div><div class="card-desc">按 WCAG 检查两色文字可读性</div></a><a class="card" href="cl-mix.html"><div class="card-t"><span class="card-name">颜色混合</span></div><div class="card-desc">按比例混合两种颜色</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · HSL 转 RGB<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 颜色 / 设计 — 26 个 */
+var Cl = {};
+Cl.hex2rgb = function (h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(function (x) { return x + x; }).join(''); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; };
+Cl.rgb2hex = function (r, g, b) { function h(x) { return ('0' + Math.round(x).toString(16)).slice(-2); } return '#' + h(r) + h(g) + h(b); };
+Cl.rgb2hsl = function (r, g, b) { r /= 255; g /= 255; b /= 255; var mx = Math.max(r, g, b), mn = Math.min(r, g, b), h, s, l = (mx + mn) / 2; if (mx === mn) { h = s = 0; } else { var d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); switch (mx) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; default: h = (r - g) / d + 4; } h /= 6; } return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)]; };
+Cl.hsl2rgb = function (h, s, l) { s /= 100; l /= 100; var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r = 0, g = 0, b = 0; if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; } return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)]; };
+Cl.relLum = function (r, g, b) { function f(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); } return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+Cl.contrast = function (c1, c2) { var l1 = Cl.relLum.apply(null, c1), l2 = Cl.relLum.apply(null, c2); var hi = Math.max(l1, l2), lo = Math.min(l1, l2); return (hi + 0.05) / (lo + 0.05); };
+Cl.mix = function (a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; };
+Cl.sw = function (c) { return '<span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:' + Cl.rgb2hex.apply(null, c) + ';vertical-align:middle;margin-right:4px;border:1px solid rgba(0,0,0,.1)"></span>'; };
+Cl.scheme = function (hex, type) { var rgb = Cl.hex2rgb(hex), hsl = Cl.rgb2hsl.apply(null, rgb), h = hsl[0], r = []; var adds = { comp: [180], analogic: [-30, 30], triadic: [120, 240], split: [150, 210], tetradic: [90, 180, 270], mono: [0, 0, 0] }; var list = type === 'mono' ? [hsl, [hsl[0], hsl[1], Math.min(95, hsl[2] + 20)], [hsl[0], hsl[1], Math.max(10, hsl[2] - 20)]] : adds[type].map(function (a) { return [((h + a) % 360 + 360) % 360, hsl[1], hsl[2]]; }); list.forEach(function (h2) { r.push(Cl.hsl2rgb.apply(null, h2)); }); return r; };
+
+
+window.TOOL = { id: "cl-hsl-rgb", n: "HSL 转 RGB", c: "color", d: "HSL 转 RGB",
+  custom: null,
+  fields: [{"k":"h","t":"H (0-360)","type":"number","v":160,"min":0,"max":360},{"k":"s","t":"S (%)","type":"number","v":61,"min":0,"max":100},{"k":"l","t":"L (%)","type":"number","v":26,"min":0,"max":100},{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) { var rgb = Cl.hsl2rgb(v.h, v.s, v.l); return { out: 'rgb(' + rgb[0] + ', ' + rgb[1] + ', ' + rgb[2] + ')\n' + Cl.rgb2hex.apply(null, rgb) }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("cl-hsl-rgb")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("cl-hsl-rgb");
+if(i>=0)f.splice(i,1);else f.push("cl-hsl-rgb");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="cl-hsl-rgb"});u.unshift("cl-hsl-rgb");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

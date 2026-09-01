@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>排列组合 - 超有用的工具箱</title>
+<meta name="description" content="算 C(n,k) 组合数与 A(n,k) 排列数。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">数字数学</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">排列组合</h1>
+<p class="lede">算 C(n,k) 组合数与 A(n,k) 排列数</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="num-arith.html"><div class="card-t"><span class="card-name">四则运算</span></div><div class="card-desc">输入一组数字和运算符，算出结果</div></a><a class="card" href="num-percent.html"><div class="card-t"><span class="card-name">百分比计算</span></div><div class="card-desc">算 A 占 B 的百分之几，或某百分比对应的值</div></a><a class="card" href="num-change.html"><div class="card-t"><span class="card-name">增减百分比</span></div><div class="card-desc">算从旧值到新值涨了还是跌了多少</div></a><a class="card" href="num-ratio.html"><div class="card-t"><span class="card-name">比例分配</span></div><div class="card-desc">把总数按给定比例拆分</div></a><a class="card" href="num-stats.html"><div class="card-t"><span class="card-name">统计汇总</span></div><div class="card-desc">求一组数的总和、均值、中位数、众数、最大最小</div></a><a class="card" href="num-gcd.html"><div class="card-t"><span class="card-name">最大公约数</span></div><div class="card-desc">求两个数的最大公约数</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 排列组合<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 数字 / 数学 — 32 个 */
+var Nh = {};
+Nh.sum = function (a) { return a.reduce(function (x, y) { return x + y; }, 0); };
+Nh.mean = function (a) { return a.length ? Nh.sum(a) / a.length : 0; };
+Nh.med = function (a) { if (!a.length) return 0; var b = a.slice().sort(function (x, y) { return x - y; }); var m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+Nh.mode = function (a) { var m = {}, r = []; a.forEach(function (x) { m[x] = (m[x] || 0) + 1; }); var mx = 0; for (var k in m) if (m[k] > mx) mx = m[k]; if (mx <= 1) return []; for (var k2 in m) if (m[k2] === mx) r.push(+k2); return r; };
+Nh.gcd = function (a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = b; b = a % b; a = t; } return a || 1; };
+Nh.lcm = function (a, b) { return Math.abs(a * b) / Nh.gcd(a, b); };
+Nh.isPrime = function (n) { if (n < 2) return false; for (var i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; };
+Nh.factor = function (n) { n = Math.abs(n); var r = [], p = 2; while (p * p <= n) { while (n % p === 0) { r.push(p); n /= p; } p++; } if (n > 1) r.push(n); return r; };
+Nh.fib = function (n) { if (n < 1) return []; var a = [0, 1], r = [0]; for (var i = 1; i < n; i++) { r.push(a[1]); a = [a[1], a[0] + a[1]]; } return r.slice(0, n); };
+Nh.fact = function (n) { if (n > 170) return Infinity; var r = 1; for (var i = 2; i <= n; i++) r *= i; return r; };
+Nh.cnNum = function (n) { var d = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'], u = ['', '十', '百', '千'], r = ''; if (n === 0) return '零'; var s = '' + n, i = 0; for (; i < s.length; i++) { var x = +s[i]; if (x) r += d[x] + u[s.length - 1 - i]; else if (r && r[r.length - 1] !== '零') r += '零'; } return r.replace(/零+$/, ''); };
+Nh.cnMoney = function (n) {
+  if (isNaN(n)) return ''; var neg = n < 0; n = Math.abs(n); var s = (Math.round(n * 100) / 100).toFixed(2), parts = s.split('.'), intp = parts[0], dec = parts[1];
+  var d = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'], u = ['', '拾', '佰', '仟'], g = ['', '万', '亿'];
+  function grp(t) { var r = '', zero = false; for (var i = 0; i < t.length; i++) { var x = +t[i], p = t.length - 1 - i; if (x === 0) { if (!zero && r) zero = true; } else { if (zero) { r += '零'; zero = false; } r += d[x] + u[p % 4]; } } if (zero) r += ''; return r; }
+  var str = '', t = intp, gi = 0; while (t.length) { var seg = t.slice(-4); t = t.slice(0, -4); var gv = grp(seg); if (gv) str = gv + g[gi] + str; gi++; }
+  if (!str) str = '零';
+  var decStr = ''; if (dec[0] !== '0' || dec[1] !== '0') { decStr = d[+dec[0]] + (dec[0] !== '0' ? '角' : '') + (dec[1] !== '0' ? d[+dec[1]] + '分' : ''); }
+  else decStr = '整';
+  str = (neg ? '负' : '') + str + '元' + (decStr === '整' ? '整' : decStr);
+  return str;
+};
+Nh.roman = function (n) { if (n < 1 || n > 3999) return ''; var m = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]; var r = ''; for (var i = 0; i < m.length; i++) { while (n >= m[i][0]) { r += m[i][1]; n -= m[i][0]; } } return r; };
+Nh.romanD = function (s) { var m = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }, r = 0; for (var i = 0; i < s.length; i++) { var c = m[s[i]], nx = m[s[i + 1]]; if (nx > c) r -= c; else r += c; } return r; };
+Nh.parseNums = function (s) { return (s + '').split(/[^\d.\-eE]+/).map(function (x) { return parseFloat(x); }).filter(function (x) { return !isNaN(x); }); };
+Nh.fmt = function (n) { return ('' + n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+
+
+window.TOOL = { id: "num-perm", n: "排列组合", c: "number", d: "算 C(n,k) 组合数与 A(n,k) 排列数",
+  custom: null,
+  fields: [{"k":"n","t":"总数 n","type":"number","v":10,"min":0},{"k":"k","t":"选取 k","type":"number","v":3,"min":0},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+    if (v.k > v.n) return { out: '', note: 'k 不能大于 n', warn: true };
+    function f(x) { return Nh.fact(x); }
+    var c = f(v.n) / (f(v.k) * f(v.n - v.k)); var a = f(v.n) / f(v.n - v.k);
+    return { out: 'C(' + v.n + ',' + v.k + ') = ' + Nh.fmt(c), metrics: [{ t: '组合数 C', v: Nh.fmt(c) }, { t: '排列数 A', v: Nh.fmt(a) }] };
+  } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("num-perm")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("num-perm");
+if(i>=0)f.splice(i,1);else f.push("num-perm");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="num-perm"});u.unshift("num-perm");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

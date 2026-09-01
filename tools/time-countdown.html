@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>倒计时 - 超有用的工具箱</title>
+<meta name="description" content="算到目标日期还有多久。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">时间日期</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">倒计时</h1>
+<p class="lede">算到目标日期还有多久</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="time-now.html"><div class="card-t"><span class="card-name">当前时间戳</span></div><div class="card-desc">显示现在的 Unix 秒/毫秒时间戳</div></a><a class="card" href="time-ts2date.html"><div class="card-t"><span class="card-name">时间戳转日期</span></div><div class="card-desc">把 Unix 时间戳还原成可读日期</div></a><a class="card" href="time-date2ts.html"><div class="card-t"><span class="card-name">日期转时间戳</span></div><div class="card-desc">把日期转成 Unix 时间戳</div></a><a class="card" href="time-diff.html"><div class="card-t"><span class="card-name">日期差值</span></div><div class="card-desc">算两个日期相差多少天/周/月/年</div></a><a class="card" href="time-add.html"><div class="card-t"><span class="card-name">日期加减</span></div><div class="card-desc">在日期上加减天/月/年</div></a><a class="card" href="time-weekday.html"><div class="card-t"><span class="card-name">星期几</span></div><div class="card-desc">查某天是星期几</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 倒计时<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 时间 / 日期 — 28 个 */
+var Th = {};
+Th.pad = function (n) { return (n < 10 ? '0' : '') + n; };
+Th.fmt = function (d, f) { f = f || 'Y-M-D H:I:S'; var o = { Y: d.getFullYear(), M: Th.pad(d.getMonth() + 1), D: Th.pad(d.getDate()), H: Th.pad(d.getHours()), I: Th.pad(d.getMinutes()), S: Th.pad(d.getSeconds()), w: d.getDay() }; var map = { 'Y年': o.Y + '年', 'M月': o.M + '月', 'D日': o.D + '日' }; return f.replace(/Y|M|D|H|I|S/g, function (c) { return o[c]; }); };
+Th.parse = function (s) { s = (s || '').trim(); var m = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/); if (!m) return null; return new Date(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0, m[6] ? +m[6] : 0); };
+Th.wk = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+Th.zodiac = function (m, d) { var z = [[1, 20, '水瓶'], [2, 19, '双鱼'], [3, 21, '白羊'], [4, 20, '金牛'], [5, 21, '双子'], [6, 22, '巨蟹'], [7, 23, '狮子'], [8, 23, '处女'], [9, 23, '天秤'], [10, 24, '天蝎'], [11, 23, '射手'], [12, 22, '摩羯']]; for (var i = z.length - 1; i >= 0; i--) { if (m > z[i][0] || (m === z[i][0] && d >= z[i][1])) return z[i][2]; } return '摩羯'; };
+Th.sxz = function (y) { var a = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪']; return a[(y - 4) % 12]; };
+Th.workdays = function (a, b) { var n = 0, d = new Date(a); while (d <= b) { var w = d.getDay(); if (w !== 0 && w !== 6) n++; d.setDate(d.getDate() + 1); } return n; };
+Th.add = function (d, days) { var r = new Date(d); r.setDate(r.getDate() + days); return r; };
+Th.addMonths = function (d, m) { var r = new Date(d); r.setMonth(r.getMonth() + m); return r; };
+
+
+window.TOOL = { id: "time-countdown", n: "倒计时", c: "time", d: "算到目标日期还有多久",
+  custom: null,
+  fields: [{"k":"target","t":"目标日期","type":"text","ph":"2026-10-01"},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: false,
+  first: true,
+  init: null,
+  run: function (v) { var t = Th.parse(v.target); if (!t) return { out: '', note: '格式如 2026-10-01', warn: true }; var diff = t - new Date(); if (diff <= 0) return { out: '已经过了', metrics: [{ t: '状态', v: '已过期' }] }; var days = Math.floor(diff / 86400000); var h = Math.floor(diff % 86400000 / 3600000); var mi = Math.floor(diff % 3600000 / 60000); return { out: days + ' 天 ' + h + ' 小时 ' + mi + ' 分', metrics: [{ t: '剩余天数', v: days }, { t: '剩余小时', v: (diff / 3600000).toFixed(1) }] }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("time-countdown")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("time-countdown");
+if(i>=0)f.splice(i,1);else f.push("time-countdown");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="time-countdown"});u.unshift("time-countdown");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

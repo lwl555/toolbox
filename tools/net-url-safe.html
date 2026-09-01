@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>URL 安全检测 - 超有用的工具箱</title>
+<meta name="description" content="检查网址是否含危险字符/可疑协议。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">网络信息</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">URL 安全检测</h1>
+<p class="lede">检查网址是否含危险字符/可疑协议</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="net-env.html"><div class="card-t"><span class="card-name">本机环境信息</span></div><div class="card-desc">显示浏览器/系统/语言等环境参数</div></a><a class="card" href="net-screen.html"><div class="card-t"><span class="card-name">屏幕显示器信息</span></div><div class="card-desc">分辨率/DPI/色彩深度一览</div></a><a class="card" href="net-type.html"><div class="card-t"><span class="card-name">网络类型检测</span></div><div class="card-desc">检测当前是 WiFi/4G/5G 等</div></a><a class="card" href="net-public-ip.html"><div class="card-t"><span class="card-name">公网 IP 查询</span></div><div class="card-desc">查询你的公网出口 IP（需联网）</div></a><a class="card" href="net-subnet.html"><div class="card-t"><span class="card-name">子网划分计算</span></div><div class="card-desc">CIDR 算网络地址/广播/可用主机</div></a><a class="card" href="net-cidr-range.html"><div class="card-t"><span class="card-name">CIDR 转范围</span></div><div class="card-desc">把 /24 等展开成 IP 区间描述</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · URL 安全检测<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 网络 / 环境 — 16 个 */
+var Nt = {};
+Nt.cidr = function (ip, bits) { var p = ip.split('.').map(Number); var mask = bits === 32 ? 0xffffffff : (0xffffffff << (32 - bits)) >>> 0; var ipn = (p[0] << 24) + (p[1] << 16) + (p[2] << 8) + p[3]; var net = (ipn & mask) >>> 0; var broad = (net | (~mask >>> 0)) >>> 0; function toIp(n) { return [(n >>> 24) & 255, (n >> 16) & 255, (n >> 8) & 255, n & 255].join('.'); } return { net: toIp(net), broad: toIp(broad), first: toIp(net + 1), last: toIp(broad - 1), hosts: bits >= 31 ? 0 : (broad - net - 1) }; };
+
+
+window.TOOL = { id: "net-url-safe", n: "URL 安全检测", c: "network", d: "检查网址是否含危险字符/可疑协议",
+  custom: null,
+  fields: [{"k":"in","t":"URL","type":"text","ph":"https://example.com"},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) { var s = v.in || ''; var proto = (s.match(/^(\w+):/i) || [])[1] || ''; var danger = ['javascript', 'data', 'vbscript'].indexOf(proto.toLowerCase()) >= 0; var warn = /[<>\"' ]/.test(s); return { out: danger ? '⚠️ 危险协议：' + proto : (warn ? '⚠️ 含特殊字符，建议编码' : '✓ 协议正常（' + proto + '）'), metrics: [{ t: '协议', v: proto || '无' }, { t: '危险', v: danger ? '是' : '否' }] }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("net-url-safe")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("net-url-safe");
+if(i>=0)f.splice(i,1);else f.push("net-url-safe");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="net-url-safe"});u.unshift("net-url-safe");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>图片横向拼接 - 超有用的工具箱</title>
+<meta name="description" content="多张图片并排拼成一张。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">图片处理</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">图片横向拼接</h1>
+<p class="lede">多张图片并排拼成一张。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="img-resize.html"><div class="card-t"><span class="card-name">图片改尺寸</span></div><div class="card-desc">按指定宽高重绘，高度留 0 自动按比例。</div></a><a class="card" href="img-format.html"><div class="card-t"><span class="card-name">图片格式转换</span></div><div class="card-desc">PNG / JPEG / WEBP 互转，点保存图片下载。</div></a><a class="card" href="img-compress.html"><div class="card-t"><span class="card-name">图片压缩</span></div><div class="card-desc">降低质量压缩体积，可同时限制最大边。</div></a><a class="card" href="img-rotate.html"><div class="card-t"><span class="card-name">图片旋转</span></div><div class="card-desc">顺时针 90/180/270 度旋转。</div></a><a class="card" href="img-flip.html"><div class="card-t"><span class="card-name">图片翻转</span></div><div class="card-desc">水平或垂直镜像。</div></a><a class="card" href="img-gray.html"><div class="card-t"><span class="card-name">图片转灰度</span></div><div class="card-desc">去色为黑白灰阶。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 图片横向拼接<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   15-image.js — 图片处理（全部浏览器本地 canvas 处理，零上传）
+   ============================================================ */
+
+  var H = {
+    getCtx: function (c) { return c.getContext('2d'); },
+    drawResize: function (img, w, h) {
+      var c = RT.mkCanvas(w, h);
+      H.getCtx(c).drawImage(img, 0, 0, w, h);
+      return c;
+    },
+    px: function (img) { return H.getCtx(img).getImageData(0, 0, img.width, img.height); }
+  };
+  
+window.TOOL = { id: "img-merge-h", n: "图片横向拼接", c: "image", d: "多张图片并排拼成一张。",
+  custom: null,
+  fields: [{"k":"files","t":"图片(多选)","type":"file","multi":true,"accept":"image/*"},{"k":"gap","t":"间距(px)","type":"number","v":0},{"k":"bg","t":"底色","type":"color","v":"#ffffff"},{"k":"outimg","t":"预览","type":"outimg"}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+      if (!v.files || !v.files.length) return { note: '请选择多张图片', outimg: null };
+      var ps = v.files.map(RT.loadImg), gap = v.gap || 0;
+      return Promise.all(ps).then(function (imgs) {
+        var h = Math.max.apply(null, imgs.map(function (i) { return i.naturalHeight; }));
+        var w = imgs.reduce(function (s, i) { return s + i.naturalWidth; }, gap * (imgs.length - 1));
+        var c = RT.mkCanvas(w, h), x = c.getContext('2d'); x.fillStyle = v.bg; x.fillRect(0, 0, w, h);
+        var cx = 0; imgs.forEach(function (i) { x.drawImage(i, cx, (h - i.naturalHeight) / 2); cx += i.naturalWidth + gap; });
+        return { outimg: c };
+      });
+    } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("img-merge-h")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("img-merge-h");
+if(i>=0)f.splice(i,1);else f.push("img-merge-h");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="img-merge-h"});u.unshift("img-merge-h");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

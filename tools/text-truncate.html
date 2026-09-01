@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>文本截断 - 超有用的工具箱</title>
+<meta name="description" content="按字数截取并加省略号，中英文都算一个字。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">文本处理</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">文本截断</h1>
+<p class="lede">按字数截取并加省略号，中英文都算一个字</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="text-upper.html"><div class="card-t"><span class="card-name">文本转大写</span></div><div class="card-desc">英文内容一键全部转成大写字母</div></a><a class="card" href="text-lower.html"><div class="card-t"><span class="card-name">文本转小写</span></div><div class="card-desc">英文内容一键全部转成小写字母</div></a><a class="card" href="text-capital.html"><div class="card-t"><span class="card-name">首字母大写</span></div><div class="card-desc">每段话或每句的第一个字母改成大写</div></a><a class="card" href="text-reverse.html"><div class="card-t"><span class="card-name">文本倒序</span></div><div class="card-desc">把整段文字或每一行倒过来排列</div></a><a class="card" href="text-rm-blank.html"><div class="card-t"><span class="card-name">删除空行</span></div><div class="card-desc">清理文本里多余的空行和首尾空白</div></a><a class="card" href="text-rm-space.html"><div class="card-t"><span class="card-name">删除所有空格</span></div><div class="card-desc">去掉文本里全部空格、制表符，或只压缩多余空格</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 文本截断<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 文本处理 A — 30 个 */
+var H = {};
+H.L = function (s) { return String(s == null ? '' : s).split(/\r?\n/); };
+H.O = function (a) { return a.join('\n'); };
+H.half = function (s) { return s.replace(/[\uFF01-\uFF5E]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).replace(/\u3000/g, ' '); };
+H.full = function (s) { return s.replace(/[\u0020-\u007E]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) + 0xFEE0); }); };
+H.freq = function (s, top, bigram) {
+  var words;
+  if (bigram) {
+    var cn = s.replace(/[^\u4e00-\u9fa5]/g, '');
+    words = [];
+    for (var i = 0; i < cn.length - 1; i++) words.push(cn.substr(i, 2));
+    if (!words.length) words = cn.split('');
+  } else words = s.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/g, ' ').trim().split(/\s+/);
+  var m = {};
+  words.forEach(function (w) { if (w) m[w] = (m[w] || 0) + 1; });
+  return Object.keys(m).map(function (k) { return { w: k, n: m[k] }; })
+    .sort(function (a, b) { return b.n - a.n; }).slice(0, top || 20);
+};
+H.sim = function (a, b) {
+  a = a || ''; b = b || '';
+  if (a === b) return 1;
+  var la = a.length, lb = b.length;
+  if (!la || !lb) return 0;
+  var prev = [], cur = [], i, j, t;
+  for (j = 0; j <= lb; j++) prev[j] = j;
+  for (i = 1; i <= la; i++) {
+    cur[0] = i;
+    for (j = 1; j <= lb; j++) {
+      t = a[i - 1] === b[j - 1] ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + t);
+    }
+    for (j = 0; j <= lb; j++) prev[j] = cur[j];
+  }
+  return 1 - prev[lb] / Math.max(la, lb);
+};
+var MORSE = { A: '.-', B: '-...', C: '-.-.', D: '-..', E: '.', F: '..-.', G: '--.', H: '....', I: '..', J: '.---', K: '-.-', L: '.-..', M: '--', N: '-.', O: '---', P: '.--.', Q: '--.-', R: '.-.', S: '...', T: '-', U: '..-', V: '...-', W: '.--', X: '-..-', Y: '-.--', Z: '--..', '0': '-----', '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.', '.': '.-.-.-', ',': '--..--', '?': '..--..', '!': '-.-.--', '/': '-..-.', '(': '-.--.', ')': '-.--.-', '&': '.-...', ':': '---...', ';': '-.-.-.', '=': '-...-', '+': '.-.-.', '-': '-....-', '_': '..--.-', '"': '.-..-.', '@': '.--.-.' };
+var MORSE_R = {};
+for (var _mk in MORSE) MORSE_R[MORSE[_mk]] = _mk;
+H.mE = function (s) { return s.toUpperCase().split('').map(function (c) { return c === ' ' ? '/' : (MORSE[c] || ''); }).filter(Boolean).join(' '); };
+H.mD = function (s) { return s.trim().split(/\s+/).map(function (c) { return c === '/' ? ' ' : (MORSE_R[c] || ''); }).join(''); };
+
+
+window.TOOL = { id: "text-truncate", n: "文本截断", c: "text", d: "按字数截取并加省略号，中英文都算一个字",
+  custom: null,
+  fields: [{"k":"in","t":"原文","type":"textarea"},{"k":"n","t":"保留字数","type":"number","v":100,"min":1},{"k":"sfx","t":"结尾追加","type":"text","v":"…"},{"k":"out","t":"结果","type":"out","dl":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+    var s = v.in || '', n = parseInt(v.n) || 0;
+    var arr = Array.from(s);
+    var cut = arr.slice(0, n).join('');
+    return { out: arr.length > n ? cut + (v.sfx || '') : s, metrics: [{ t: '原字数', v: arr.length }, { t: '截取后', v: Math.min(n, arr.length) }] };
+  } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("text-truncate")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("text-truncate");
+if(i>=0)f.splice(i,1);else f.push("text-truncate");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="text-truncate"});u.unshift("text-truncate");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

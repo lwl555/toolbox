@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>闪卡复习 - 超有用的工具箱</title>
+<meta name="description" content="自定义卡片，正反面翻牌记忆。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">学习教育</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">闪卡复习</h1>
+<p class="lede">自定义卡片，正反面翻牌记忆</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="learn-mindmap.html"><div class="card-t"><span class="card-name">思维导图</span></div><div class="card-desc">缩进大纲一键生成可折叠树状图</div></a><a class="card" href="learn-flow.html"><div class="card-t"><span class="card-name">流程图</span></div><div class="card-desc">用 节点→下一节点 生成简单流程图</div></a><a class="card" href="learn-timer.html"><div class="card-t"><span class="card-name">学习计时</span></div><div class="card-desc">按科目计时，统计今日专注</div></a><a class="card" href="learn-ebb.html"><div class="card-t"><span class="card-name">艾宾浩斯复习</span></div><div class="card-desc">输入学习日，算出最佳复习时间点</div></a><a class="card" href="learn-words.html"><div class="card-t"><span class="card-name">背单词</span></div><div class="card-desc">随机抽词，点一下看释义</div></a><a class="card" href="learn-wrong.html"><div class="card-t"><span class="card-name">错题本</span></div><div class="card-desc">记录错题，可标注掌握</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 闪卡复习<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 学习 / 记忆 — 12 个 */
+var Lr = {};
+Lr.words = [['apple', '苹果'], ['banana', '香蕉'], ['computer', '电脑'], ['happy', '开心'], ['science', '科学'], ['knowledge', '知识'], ['student', '学生'], ['teacher', '老师'], ['language', '语言'], ['memory', '记忆'], ['practice', '练习'], ['progress', '进步'], ['future', '未来'], ['dream', '梦想'], ['friend', '朋友'], ['family', '家庭'], ['health', '健康'], ['success', '成功'], ['courage', '勇气'], ['wisdom', '智慧'], ['nature', '自然'], ['travel', '旅行'], ['music', '音乐'], ['book', '书'], ['time', '时间'], ['world', '世界'], ['idea', '想法'], ['skill', '技能'], ['goal', '目标'], ['habit', '习惯']];
+
+
+window.TOOL = { id: "learn-flashcard", n: "闪卡复习", c: "learn", d: "自定义卡片，正反面翻牌记忆",
+  custom: null,
+  fields: [{"k":"cv","t":"闪卡","type":"custom","html":"<div style=\"display:flex;gap:6px;margin-bottom:8px\"><input id=\"fcFront\" class=\"ipt\" placeholder=\"正面\" style=\"flex:1\"><input id=\"fcBack\" class=\"ipt\" placeholder=\"背面\" style=\"flex:1\"><button id=\"fcAdd\" class=\"btn btn-pri\">加</button></div><div id=\"fcCard\" style=\"border:1px solid var(--ink-2);border-radius:12px;padding:30px;text-align:center;cursor:pointer;min-height:80px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600\">点击查看卡片</div><div style=\"margin-top:8px;font-size:12px;color:var(--ink-3)\" id=\"fcInfo\"></div>"}],
+  auto: true,
+  first: true,
+  init: function (RT) {
+    var KEY = 'learn_flash_v2'; var front = document.getElementById('fcFront'), back = document.getElementById('fcBack'), add = document.getElementById('fcAdd'), card = document.getElementById('fcCard'), info = document.getElementById('fcInfo');
+    function load() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } }
+    function save(a) { localStorage.setItem(KEY, JSON.stringify(a)); }
+    var idx = -1, flipped = false;
+    function show() { var a = load(); if (!a.length) { card.textContent = '暂无卡片，先添加'; info.textContent = ''; return; } if (idx < 0) idx = 0; flipped = false; card.textContent = a[idx].front; info.textContent = '第 ' + (idx + 1) + '/' + a.length + ' 张'; }
+    add.onclick = function () { if (!front.value || !back.value) return; var a = load(); a.push({ front: front.value, back: back.value }); save(a); front.value = ''; back.value = ''; idx = a.length - 1; show(); };
+    card.onclick = function () { var a = load(); if (!a.length) return; if (!flipped) { card.textContent = a[idx].back; flipped = true; } else { idx = (idx + 1) % a.length; show(); } };
+    show();
+  },
+  run: function () {} };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("learn-flashcard")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("learn-flashcard");
+if(i>=0)f.splice(i,1);else f.push("learn-flashcard");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="learn-flashcard"});u.unshift("learn-flashcard");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

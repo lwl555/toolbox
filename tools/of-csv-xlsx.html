@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CSV 转 Excel - 超有用的工具箱</title>
+<meta name="description" content="CSV 转 .xlsx，可指定分隔符。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">办公文档</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">CSV 转 Excel</h1>
+<p class="lede">CSV 转 .xlsx，可指定分隔符。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="of-xlsx-csv.html"><div class="card-t"><span class="card-name">Excel 转 CSV</span></div><div class="card-desc">首个工作表导出为 CSV。</div></a><a class="card" href="of-json-xlsx.html"><div class="card-t"><span class="card-name">JSON 转 Excel</span></div><div class="card-desc">数组型 JSON 转表格。</div></a><a class="card" href="of-xlsx-json.html"><div class="card-t"><span class="card-name">Excel 转 JSON</span></div><div class="card-desc">首个工作表转为 JSON 数组。</div></a><a class="card" href="of-xlsx-preview.html"><div class="card-t"><span class="card-name">Excel 预览</span></div><div class="card-desc">展示工作表名与首张表前 50 行内容。</div></a><a class="card" href="of-zip-pack.html"><div class="card-t"><span class="card-name">打包成 ZIP</span></div><div class="card-desc">多个文件打包为一个 zip。</div></a><a class="card" href="of-zip-extract.html"><div class="card-t"><span class="card-name">解压 ZIP</span></div><div class="card-desc">列出压缩包内文件并可逐个下载。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · CSV 转 Excel<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   17-office.js — 表格 / 压缩包（SheetJS + JSZip，本地处理）
+   ============================================================ */
+
+  
+window.TOOL = { id: "of-csv-xlsx", n: "CSV 转 Excel", c: "office", d: "CSV 转 .xlsx，可指定分隔符。",
+  custom: null,
+  fields: [{"k":"file","t":"CSV 文件","type":"file","accept":".csv,.txt"},{"k":"sep","t":"分隔符","type":"select","opts":[{"v":",","t":"逗号 ,"},{"v":"\t","t":"制表符"},{"v":";","t":"分号 ;"},{"v":"|","t":"竖线 |"}],"v":","},{"k":"outfile","t":"输出","type":"outfile"}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+      if (!v.file) return { note: '请选择 CSV', outfile: [] };
+      return RT.lib(RT.CDN.XLSX).then(function () {
+        return txtOf(v.file).then(function (text) {
+          var wb = XLSX.read(text, { type: 'string', FS: v.sep, RS: '\n' });
+          var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          return { outfile: [{ name: (v.file.name.replace(/\.\w+$/, '') || 'data') + '.xlsx', blob: new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), size: out.byteLength }] };
+        });
+      });
+    } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("of-csv-xlsx")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("of-csv-xlsx");
+if(i>=0)f.splice(i,1);else f.push("of-csv-xlsx");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="of-csv-xlsx"});u.unshift("of-csv-xlsx");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

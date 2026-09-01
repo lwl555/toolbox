@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>大纲转 Markdown - 超有用的工具箱</title>
+<meta name="description" content="缩进大纲转成 # 标题层级。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">学习教育</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">大纲转 Markdown</h1>
+<p class="lede">缩进大纲转成 # 标题层级</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="learn-mindmap.html"><div class="card-t"><span class="card-name">思维导图</span></div><div class="card-desc">缩进大纲一键生成可折叠树状图</div></a><a class="card" href="learn-flow.html"><div class="card-t"><span class="card-name">流程图</span></div><div class="card-desc">用 节点→下一节点 生成简单流程图</div></a><a class="card" href="learn-flashcard.html"><div class="card-t"><span class="card-name">闪卡复习</span></div><div class="card-desc">自定义卡片，正反面翻牌记忆</div></a><a class="card" href="learn-timer.html"><div class="card-t"><span class="card-name">学习计时</span></div><div class="card-desc">按科目计时，统计今日专注</div></a><a class="card" href="learn-ebb.html"><div class="card-t"><span class="card-name">艾宾浩斯复习</span></div><div class="card-desc">输入学习日，算出最佳复习时间点</div></a><a class="card" href="learn-words.html"><div class="card-t"><span class="card-name">背单词</span></div><div class="card-desc">随机抽词，点一下看释义</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 大纲转 Markdown<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 学习 / 记忆 — 12 个 */
+var Lr = {};
+Lr.words = [['apple', '苹果'], ['banana', '香蕉'], ['computer', '电脑'], ['happy', '开心'], ['science', '科学'], ['knowledge', '知识'], ['student', '学生'], ['teacher', '老师'], ['language', '语言'], ['memory', '记忆'], ['practice', '练习'], ['progress', '进步'], ['future', '未来'], ['dream', '梦想'], ['friend', '朋友'], ['family', '家庭'], ['health', '健康'], ['success', '成功'], ['courage', '勇气'], ['wisdom', '智慧'], ['nature', '自然'], ['travel', '旅行'], ['music', '音乐'], ['book', '书'], ['time', '时间'], ['world', '世界'], ['idea', '想法'], ['skill', '技能'], ['goal', '目标'], ['habit', '习惯']];
+
+
+window.TOOL = { id: "learn-outline", n: "大纲转 Markdown", c: "learn", d: "缩进大纲转成 # 标题层级",
+  custom: null,
+  fields: [{"k":"in","t":"缩进大纲","type":"textarea","rows":8,"ph":"主题\n  一级\n    二级"},{"k":"out","t":"Markdown","type":"out","dl":1,"mono":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) { var lines = (v.in || '').split('\n'); var r = lines.map(function (l) { var ind = (l.match(/^\s*/) || [''])[0].length / 2; var t = l.trim(); if (!t) return ''; return '#'.repeat(Math.min(6, ind + 1)) + ' ' + t; }); return { out: r.join('\n') }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("learn-outline")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("learn-outline");
+if(i>=0)f.splice(i,1);else f.push("learn-outline");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="learn-outline"});u.unshift("learn-outline");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

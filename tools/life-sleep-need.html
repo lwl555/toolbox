@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>睡眠需求 - 超有用的工具箱</title>
+<meta name="description" content="按年龄建议睡眠时长。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">生活日常</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">睡眠需求</h1>
+<p class="lede">按年龄建议睡眠时长</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="life-pomodoro.html"><div class="card-t"><span class="card-name">番茄钟</span></div><div class="card-desc">25 分钟专注 + 5 分钟休息（可自定义）</div></a><a class="card" href="life-stopwatch.html"><div class="card-t"><span class="card-name">秒表</span></div><div class="card-desc">精确计时，支持分圈记录</div></a><a class="card" href="life-countdown-timer.html"><div class="card-t"><span class="card-name">倒计时器</span></div><div class="card-desc">设定分钟数，到点响铃提醒</div></a><a class="card" href="life-worldclock.html"><div class="card-t"><span class="card-name">世界时钟</span></div><div class="card-desc">同时显示多个城市当前时间</div></a><a class="card" href="life-todo.html"><div class="card-t"><span class="card-name">待办清单</span></div><div class="card-desc">本地保存的 Todo（刷新不丢）</div></a><a class="card" href="life-habit.html"><div class="card-t"><span class="card-name">习惯打卡</span></div><div class="card-desc">每天点一下，记录连续天数</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 睡眠需求<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 生活 / 效率 — 24 个 */
+var Lf = {};
+Lf.quote = ['行动是治愈恐惧的良药。', '今天的事今天做。', '你只管努力，剩下交给时间。', '种一棵树最好的时间是十年前，其次是现在。', '自律给你自由。', '把简单的事做好就是不简单。', '保持热爱，奔赴山海。', '慢慢来，比较快。', '不为失败找理由，只为成功找方法。', '越努力越幸运。', '细节决定成败。', '坚持就是胜利。'];
+Lf.tip = ['每天喝够 8 杯水。', '久坐一小时起来活动 2 分钟。', '睡前半小时远离屏幕。', '饭后散步 15 分钟助消化。', '用眼 20 分钟看远处 20 秒。', '早睡早起精神好。', '每周运动 3 次以上。', '多吃蔬菜水果少吃油。', '保持微笑，心情更好。', '工作 25 分钟休息 5 分钟。'];
+Lf.pomodoroState = null;
+Lf.stopwatch = null;
+
+
+window.TOOL = { id: "life-sleep-need", n: "睡眠需求", c: "life", d: "按年龄建议睡眠时长",
+  custom: null,
+  fields: [{"k":"age","t":"年龄","type":"number","v":30,"min":0,"max":100},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) { var h; if (v.age <= 1) h = '12-16'; else if (v.age <= 5) h = '10-14'; else if (v.age <= 13) h = '9-11'; else if (v.age <= 17) h = '8-10'; else if (v.age <= 64) h = '7-9'; else h = '7-8'; return { out: '建议 ' + h + ' 小时/天', metrics: [{ t: '推荐', v: h + ' 小时' }] }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("life-sleep-need")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("life-sleep-need");
+if(i>=0)f.splice(i,1);else f.push("life-sleep-need");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="life-sleep-need"});u.unshift("life-sleep-need");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

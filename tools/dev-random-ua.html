@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>随机 UA 生成 - 超有用的工具箱</title>
+<meta name="description" content="生成一个逼真的随机 User-Agent。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">开发工具</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">随机 UA 生成</h1>
+<p class="lede">生成一个逼真的随机 User-Agent</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="dev-regex.html"><div class="card-t"><span class="card-name">正则表达式测试</span></div><div class="card-desc">实时高亮匹配并展示捕获分组</div></a><a class="card" href="dev-json-fmt.html"><div class="card-t"><span class="card-name">JSON 格式化</span></div><div class="card-desc">美化压缩的 JSON，带缩进</div></a><a class="card" href="dev-json-min.html"><div class="card-t"><span class="card-name">JSON 压缩</span></div><div class="card-desc">去掉所有空白，压缩成一行</div></a><a class="card" href="dev-json-check.html"><div class="card-t"><span class="card-name">JSON 校验</span></div><div class="card-desc">检查 JSON 是否合法并定位错误</div></a><a class="card" href="dev-json-csv.html"><div class="card-t"><span class="card-name">JSON 转 CSV</span></div><div class="card-desc">把 JSON 数组转成 CSV 表格</div></a><a class="card" href="dev-csv-json.html"><div class="card-t"><span class="card-name">CSV 转 JSON</span></div><div class="card-desc">把 CSV 转成 JSON 数组</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 随机 UA 生成<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 开发者工具 — 26 个 */
+var Dh = {};
+Dh.tryJSON = function (s) { try { return JSON.parse(s); } catch (e) { return null; } };
+Dh.indent = function (s) { var out = '', i = 0; for (var k = 0; k < s.length; k++) { var c = s[k]; if (c === '{' || c === '[') { out += c; if (s[k + 1] !== '}' && s[k + 1] !== ']') { out += '\n' + '  '.repeat(++i); } } else if (c === '}' || c === ']') { if (s[k - 1] !== '{' && s[k - 1] !== '[') { out += '\n' + '  '.repeat(--i); } out += c; } else if (c === ',') { out += c; if (s[k + 1] !== '}' && s[k + 1] !== ']') out += '\n' + '  '.repeat(i); } else out += c; } return out; };
+Dh.HTTP = { 200: 'OK 成功', 201: 'Created 已创建', 204: 'No Content 无内容', 301: 'Moved Permanently 永久重定向', 302: 'Found 临时重定向', 304: 'Not Modified 未修改', 400: 'Bad Request 请求错误', 401: 'Unauthorized 未授权', 403: 'Forbidden 禁止访问', 404: 'Not Found 未找到', 405: 'Method Not Allowed 方法不允许', 408: 'Request Timeout 超时', 418: "I'm a teapot 彩蛋", 429: 'Too Many Requests 限流', 500: 'Internal Server Error 服务器错误', 502: 'Bad Gateway 网关错误', 503: 'Service Unavailable 服务不可用', 504: 'Gateway Timeout 网关超时' };
+Dh.MIME = { html: 'text/html', css: 'text/css', js: 'application/javascript', json: 'application/json', xml: 'application/xml', png: 'image/png', jpg: 'image/jpeg', gif: 'image/gif', svg: 'image/svg+xml', pdf: 'application/pdf', mp3: 'audio/mpeg', mp4: 'video/mp4', txt: 'text/plain', csv: 'text/csv', zip: 'application/zip', md: 'text/markdown', woff2: 'font/woff2' };
+Dh.PORTS = { 80: 'HTTP', 443: 'HTTPS', 21: 'FTP', 22: 'SSH', 25: 'SMTP', 3306: 'MySQL', 5432: 'PostgreSQL', 6379: 'Redis', 27017: 'MongoDB', 8080: 'HTTP 代理/备用', 8000: '开发服务器', 6379: 'Redis', 11211: 'Memcached', 9200: 'Elasticsearch', 5672: 'RabbitMQ', 1521: 'Oracle', 1433: 'SQL Server', 389: 'LDAP' };
+
+
+window.TOOL = { id: "dev-random-ua", n: "随机 UA 生成", c: "dev", d: "生成一个逼真的随机 User-Agent",
+  custom: null,
+  fields: [{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
+  auto: false,
+  first: true,
+  init: null,
+  run: function (v) { var ver = 100 + Math.floor(Math.random() * 40); var ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' + ver + '.0.0.0 Safari/537.36'; return { out: ua }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("dev-random-ua")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("dev-random-ua");
+if(i>=0)f.splice(i,1);else f.push("dev-random-ua");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="dev-random-ua"});u.unshift("dev-random-ua");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

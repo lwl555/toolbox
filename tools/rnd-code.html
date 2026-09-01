@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>随机验证码 - 超有用的工具箱</title>
+<meta name="description" content="生成数字或字母验证码。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">随机生成</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">随机验证码</h1>
+<p class="lede">生成数字或字母验证码</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="rnd-int.html"><div class="card-t"><span class="card-name">随机整数</span></div><div class="card-desc">生成区间内的随机整数</div></a><a class="card" href="rnd-float.html"><div class="card-t"><span class="card-name">随机小数</span></div><div class="card-desc">生成指定范围和精度的随机数</div></a><a class="card" href="rnd-str.html"><div class="card-t"><span class="card-name">随机字符串</span></div><div class="card-desc">生成指定长度和字符集的随机串</div></a><a class="card" href="rnd-pwd.html"><div class="card-t"><span class="card-name">强密码生成</span></div><div class="card-desc">生成高强度随机密码，可指定规则</div></a><a class="card" href="rnd-uuid.html"><div class="card-t"><span class="card-name">UUID 生成</span></div><div class="card-desc">生成 RFC4122 v4 随机 UUID</div></a><a class="card" href="rnd-name.html"><div class="card-t"><span class="card-name">随机中文姓名</span></div><div class="card-desc">随机生成常见中文姓名</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 随机验证码<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 随机 / 生成 — 26 个 */
+var Rh = {};
+Rh.pick = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+Rh.xing = '王李张刘陈杨黄赵周吴徐孙朱马胡郭林何高梁郑罗宋谢唐韩曹许邓萧冯曾程蔡彭潘袁于董余苏叶吕魏蒋田杜丁沈姜范江傅钟卢汪戴崔任陆廖姚方金邱夏谭韦贾邹石熊孟秦阎薛侯雷白龙段郝孔邵史毛常万顾赖武康贺严尹钱施牛洪龚';
+Rh.ming = '伟芳娜秀英敏静丽强磊洋勇艳杰娟涛明超秀霞平刚桂英文辉力俊峰建华婷雪梅鑫宇浩晨子萱梓涵欣怡轩博睿涵璐琪';
+Rh.words = '的了一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通期表头又只从本只利';
+Rh.uuid = function () { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; var v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); };
+Rh.hex = function (n) { var s = ''; for (var i = 0; i < n; i++) s += '0123456789abcdef'[Math.floor(Math.random() * 16)]; return s; };
+
+
+window.TOOL = { id: "rnd-code", n: "随机验证码", c: "random", d: "生成数字或字母验证码",
+  custom: null,
+  fields: [{"k":"n","t":"位数","type":"number","v":6,"min":4,"max":12},{"k":"m","t":"类型","type":"seg","v":"num","opts":[{"v":"num","t":"纯数字"},{"v":"alpha","t":"字母"},{"v":"mix","t":"数字+字母"}]},{"k":"out","t":"结果","type":"out","dl":1,"mono":1}],
+  auto: false,
+  first: true,
+  init: null,
+  run: function (v) { var cs = v.m === 'num' ? '0123456789' : v.m === 'alpha' ? 'ABCDEFGHJKLMNPQRSTUVWXYZ' : '0123456789ABCDEFGHJKLMNPQRSTUVWXYZ'; var r = ''; for (var i = 0; i < v.n; i++) r += cs[Math.floor(Math.random() * cs.length)]; return { out: r }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("rnd-code")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("rnd-code");
+if(i>=0)f.splice(i,1);else f.push("rnd-code");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="rnd-code"});u.unshift("rnd-code");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

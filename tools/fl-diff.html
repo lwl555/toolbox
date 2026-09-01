@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>文本差异对比 - 超有用的工具箱</title>
+<meta name="description" content="逐行对比，标记新增/删除。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">文件工具</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">文本差异对比</h1>
+<p class="lede">逐行对比，标记新增/删除。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="fl-md5.html"><div class="card-t"><span class="card-name">文件 MD5</span></div><div class="card-desc">计算文件的 MD5 校验值。</div></a><a class="card" href="fl-sha.html"><div class="card-t"><span class="card-name">文件 SHA256</span></div><div class="card-desc">计算文件的 SHA-256 校验值（需安全环境）。</div></a><a class="card" href="fl-b64.html"><div class="card-t"><span class="card-name">文件转 Base64</span></div><div class="card-desc">任意文件编码为 Base64 文本。</div></a><a class="card" href="fl-b64d.html"><div class="card-t"><span class="card-name">Base64 转文件</span></div><div class="card-desc">把 Base64 还原为可下载文件。</div></a><a class="card" href="fl-split.html"><div class="card-t"><span class="card-name">文件分块</span></div><div class="card-desc">按大小切分为多个片段（便于传输）。</div></a><a class="card" href="fl-hex.html"><div class="card-t"><span class="card-name">十六进制预览</span></div><div class="card-desc">查看文件头部字节（前 256 字节）。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 文本差异对比<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   19-file.js — 文件工具（哈希 / 差分 / 拆分 / 编码，本地计算）
+   ============================================================ */
+
+  
+window.TOOL = { id: "fl-diff", n: "文本差异对比", c: "file", d: "逐行对比，标记新增/删除。",
+  custom: null,
+  fields: [{"k":"a","t":"原文","type":"textarea","rows":6,"ph":"旧版本文本"},{"k":"b","t":"新文","type":"textarea","rows":6,"ph":"新版本文本"},{"k":"outhtml","t":"对比结果","type":"outhtml"}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+      var la = (v.a || '').split('\n'), lb = (v.b || '').split('\n');
+      function lcs(i, j, memo) { if (i < 0 || j < 0) return 0; if (memo[i][j] != null) return memo[i][j]; var r; if (la[i] === lb[j]) r = 1 + lcs(i - 1, j - 1, memo); else r = Math.max(lcs(i - 1, j, memo), lcs(i, j - 1, memo)); memo[i][j] = r; return r; }
+      var m = la.map(function () { return []; }); lcs(la.length - 1, lb.length - 1, m);
+      var i = la.length - 1, j = lb.length - 1, out = [];
+      while (i >= 0 && j >= 0) {
+        if (la[i] === lb[j]) { out.unshift('<div class="d-eq">' + RT.esc(la[i]) + '</div>'); i--; j--; }
+        else if ((m[i - 1] && m[i - 1][j]) === (m[i][j])) { out.unshift('<div class="d-del">- ' + RT.esc(la[i]) + '</div>'); i--; }
+        else { out.unshift('<div class="d-add">+ ' + RT.esc(lb[j]) + '</div>'); j--; }
+      }
+      while (i >= 0) { out.unshift('<div class="d-del">- ' + RT.esc(la[i]) + '</div>'); i--; }
+      while (j >= 0) { out.unshift('<div class="d-add">+ ' + RT.esc(lb[j]) + '</div>'); j--; }
+      return { outhtml: out.join('') };
+    } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("fl-diff")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("fl-diff");
+if(i>=0)f.splice(i,1);else f.push("fl-diff");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="fl-diff"});u.unshift("fl-diff");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

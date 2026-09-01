@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>二进制运算 - 超有用的工具箱</title>
+<meta name="description" content="两个二进制数做加/减/与/或/异或。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">编码加密</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">二进制运算</h1>
+<p class="lede">两个二进制数做加/减/与/或/异或</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="enc-base64.html"><div class="card-t"><span class="card-name">Base64 编码</span></div><div class="card-desc">把文本或二进制内容编码成 Base64（支持中文）</div></a><a class="card" href="enc-base64d.html"><div class="card-t"><span class="card-name">Base64 解码</span></div><div class="card-desc">把 Base64 还原成原始文本，自动兼容中文</div></a><a class="card" href="enc-url.html"><div class="card-t"><span class="card-name">URL 编码</span></div><div class="card-desc">对网址或参数做百分号编码，避免特殊字符报错</div></a><a class="card" href="enc-urld.html"><div class="card-t"><span class="card-name">URL 解码</span></div><div class="card-desc">把百分号编码还原成可读文本</div></a><a class="card" href="enc-html.html"><div class="card-t"><span class="card-name">HTML 实体编码</span></div><div class="card-desc">把 < > & 等转成 &#x 实体，防 XSS</div></a><a class="card" href="enc-htmld.html"><div class="card-t"><span class="card-name">HTML 实体解码</span></div><div class="card-desc">把 HTML 实体还原成字符</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 二进制运算<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 编码 / 进制 / 哈希 — 33 个 */
+var Hh = {};
+Hh.b64e = function (s) { try { return btoa(unescape(encodeURIComponent(s))); } catch (e) { return ''; } };
+Hh.b64d = function (s) { try { return decodeURIComponent(escape(atob(s))); } catch (e) { throw new Error('Base64 格式不正确'); } };
+Hh.hexE = function (s) { var o = ''; for (var i = 0; i < s.length; i++) o += s.charCodeAt(i).toString(16).padStart(2, '0') + (i % 1 ? '' : ''); return o; };
+Hh.toHex = function (s) { var o = ''; for (var i = 0; i < s.length; i++) o += s.charCodeAt(i).toString(16).padStart(2, '0'); return o; };
+Hh.fromHex = function (s) { s = s.replace(/\s/g, ''); if (s.length % 2) throw new Error('十六进制长度应为偶数'); var o = ''; for (var i = 0; i < s.length; i += 2) { var c = parseInt(s.substr(i, 2), 16); if (isNaN(c)) throw new Error('含非法十六进制字符'); o += String.fromCharCode(c); } return o; };
+Hh.bits = function (s) { var o = ''; for (var i = 0; i < s.length; i++) o += s.charCodeAt(i).toString(2).padStart(8, '0') + ' '; return o.trim(); };
+Hh.fromBits = function (s) { var parts = s.trim().split(/\s+/), o = ''; for (var i = 0; i < parts.length; i++) { var n = parseInt(parts[i], 2); if (isNaN(n)) throw new Error('第 ' + (i + 1) + ' 段不是二进制'); o += String.fromCharCode(n); } return o; };
+Hh.convBase = function (s, from, to) {
+  s = (s + '').trim().toUpperCase();
+  var dec = 0;
+  if (from === 10) { dec = parseInt(s, 10); if (isNaN(dec)) throw new Error('不是合法的十进制数'); return dec.toString(to); }
+  var map = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (var i = 0; i < s.length; i++) {
+    var d = map.indexOf(s[i]); if (d < 0 || d >= from) throw new Error('字符 ' + s[i] + ' 不在 ' + from + ' 进制内');
+    dec = dec * from + d;
+  }
+  if (to === 10) return String(dec);
+  var r = ''; while (dec > 0) { r = map[dec % to] + r; dec = Math.floor(dec / to); } return r || '0';
+};
+Hh.async = function (fn) { return function (v) { return Promise.resolve().then(function () { return fn(v); }); }; };
+Hh.sha = function (s, algo) {
+  if (!crypto || !crypto.subtle) return Promise.reject(new Error('当前环境不支持加密计算（需 https）'));
+  return crypto.subtle.digest(algo, new TextEncoder().encode(s)).then(function (buf) {
+    return Array.prototype.map.call(new Uint8Array(buf), function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+  });
+};
+Hh.crc32 = function (s) {
+  var c, table = Hh._crcT || (Hh._crcT = (function () { var t = []; for (var n = 0; n < 256; n++) { c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })());
+  var crc = 0xFFFFFFFF;
+  for (var i = 0; i < s.length; i++) { crc = (crc >>> 8) ^ table[(crc ^ s.charCodeAt(i)) & 0xFF]; }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+};
+
+
+window.TOOL = { id: "enc-binary-add", n: "二进制运算", c: "encode", d: "两个二进制数做加/减/与/或/异或",
+  custom: null,
+  fields: [{"k":"a","t":"操作数 A","type":"text","ph":"1101"},{"k":"b","t":"操作数 B","type":"text","ph":"1011"},{"k":"op","t":"运算","type":"select","opts":[{"v":"add","t":"加"},{"v":"sub","t":"减"},{"v":"and","t":"与 AND"},{"v":"or","t":"或 OR"},{"v":"xor","t":"异或 XOR"}]},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) {
+    var A = (v.a || '').replace(/[^01]/g, ''), B = (v.b || '').replace(/[^01]/g, '');
+    if (!A || !B) return { out: '', note: '请输入两个二进制数', warn: true };
+    var la = A.length, lb = B.length, n = Math.max(la, lb), aa = A.padStart(n, '0'), bb = B.padStart(n, '0'), r = '', carry = 0;
+    for (var i = n - 1; i >= 0; i--) {
+      var x = +aa[i], y = +bb[i];
+      if (v.op === 'and') r = (x & y) + r;
+      else if (v.op === 'or') r = (x | y) + r;
+      else if (v.op === 'xor') r = (x ^ y) + r;
+      else if (v.op === 'add') { var s = x + y + carry; r = (s % 2) + r; carry = s > 1 ? 1 : 0; }
+      else { var d = x - y - carry; if (d < 0) { d += 2; carry = 1; } else carry = 0; r = d + r; }
+    }
+    if (v.op === 'sub' && carry) return { out: '', note: '结果为负（A 小于 B）', warn: true };
+    return { out: r, metrics: [{ t: '十进制 A', v: parseInt(aa, 2) }, { t: '十进制 B', v: parseInt(bb, 2) }, { t: '十进制结果', v: parseInt(r, 2) }] };
+  } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("enc-binary-add")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("enc-binary-add");
+if(i>=0)f.splice(i,1);else f.push("enc-binary-add");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="enc-binary-add"});u.unshift("enc-binary-add");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

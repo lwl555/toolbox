@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>RLE 压缩 - 超有用的工具箱</title>
+<meta name="description" content="演示游程编码压缩（连续重复字符压缩）。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">文本进阶</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">RLE 压缩</h1>
+<p class="lede">演示游程编码压缩（连续重复字符压缩）</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="txt-csv.html"><div class="card-t"><span class="card-name">CSV 表格预览</span></div><div class="card-desc">把 CSV 文本渲染成可读表格（自动识别分隔）</div></a><a class="card" href="txt-transpose.html"><div class="card-t"><span class="card-name">文本转置</span></div><div class="card-desc">行变列、列变行，处理矩阵数据</div></a><a class="card" href="txt-align.html"><div class="card-t"><span class="card-name">制表符对齐表</span></div><div class="card-desc">把不规则的分隔文本对齐成整齐表格</div></a><a class="card" href="txt-keyword.html"><div class="card-t"><span class="card-name">关键词提取</span></div><div class="card-desc">按词频抽取文章关键词（去停用词）</div></a><a class="card" href="txt-cn-en-space.html"><div class="card-t"><span class="card-name">中英加空格</span></div><div class="card-desc">在中英文/数字之间自动加空格，排版更舒服</div></a><a class="card" href="txt-sentences.html"><div class="card-t"><span class="card-name">句子拆分</span></div><div class="card-desc">按中英文标点把段落拆成单句</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · RLE 压缩<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 文本增强 B — 18 个 */
+var Th2 = {};
+Th2.rows = function (s, sep) { return (s || '').split('\n').map(function (l) { return l.split(sep); }); };
+Th2.lines = function (s) { return (s + '').split('\n'); };
+Th2.tfidf = function (s, top) {
+  var stop = '的 了 和 是 在 我 有 他 这 中 大 来 上 个 到 说 们 为 子 也 你 得 着 下 就 还 与 及 或 把 被 让 给 从 向 对 等 都 而 又 但 因 因为 所以 如果 一种 没有 这个 那个 一个 我们 你们 他们 自己 已经 可以 应该 怎么 什么 这样 那样 一些 这些 那些'.split(' ');
+  var words = s.toLowerCase().replace(/[^a-z0-9一-龥]+/g, ' ').trim().split(' ').filter(Boolean);
+  var m = {}; words.forEach(function (w) { if (stop.indexOf(w) < 0 && w.length > 1) m[w] = (m[w] || 0) + 1; });
+  return Object.keys(m).map(function (k) { return { w: k, n: m[k] }; }).sort(function (a, b) { return b.n - a.n; }).slice(0, top || 15);
+};
+Th2.lorem = function (n, len) {
+  var s = '今天天气真好阳光洒在窗台上猫咪懒洋洋地伸了个懒腰远处传来轻柔的音乐让人想起童年夏天的午后微风拂过树梢带来淡淡的花香生活本该如此简单而美好我们都在寻找属于自己的那份宁静与快乐时间悄悄流逝却留下了温暖的痕迹故事还在继续等待着下一段旅程'.split('');
+  var r = []; for (var i = 0; i < n; i++) { var t = ''; for (var j = 0; j < len; j++) t += s[Math.floor(Math.random() * s.length)]; r.push((i + 1) + '. ' + t + '。'); } return r.join('\n');
+};
+
+
+window.TOOL = { id: "txt-rle", n: "RLE 压缩", c: "text2", d: "演示游程编码压缩（连续重复字符压缩）",
+  custom: null,
+  fields: [{"k":"in","t":"原文","type":"textarea","ph":"AAABBBCCCC"},{"k":"out","t":"压缩结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) { var s = v.in || '', r = '', i = 0; while (i < s.length) { var c = s[i], n = 1; while (s[i + n] === c) n++; r += c + n; i += n; } return { out: r, metrics: [{ t: '压缩前', v: s.length }, { t: '压缩后', v: r.length }, { t: '比率', v: (s.length ? (r.length / s.length * 100).toFixed(0) : 0) + '%' }] }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("txt-rle")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("txt-rle");
+if(i>=0)f.splice(i,1);else f.push("txt-rle");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="txt-rle"});u.unshift("txt-rle");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

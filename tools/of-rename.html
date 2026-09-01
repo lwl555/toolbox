@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>批量重命名(生成清单) - 超有用的工具箱</title>
+<meta name="description" content="按规则生成 原名→新名 映射表，便于批量改。。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">办公文档</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">批量重命名(生成清单)</h1>
+<p class="lede">按规则生成 原名→新名 映射表，便于批量改。</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="of-csv-xlsx.html"><div class="card-t"><span class="card-name">CSV 转 Excel</span></div><div class="card-desc">CSV 转 .xlsx，可指定分隔符。</div></a><a class="card" href="of-xlsx-csv.html"><div class="card-t"><span class="card-name">Excel 转 CSV</span></div><div class="card-desc">首个工作表导出为 CSV。</div></a><a class="card" href="of-json-xlsx.html"><div class="card-t"><span class="card-name">JSON 转 Excel</span></div><div class="card-desc">数组型 JSON 转表格。</div></a><a class="card" href="of-xlsx-json.html"><div class="card-t"><span class="card-name">Excel 转 JSON</span></div><div class="card-desc">首个工作表转为 JSON 数组。</div></a><a class="card" href="of-xlsx-preview.html"><div class="card-t"><span class="card-name">Excel 预览</span></div><div class="card-desc">展示工作表名与首张表前 50 行内容。</div></a><a class="card" href="of-zip-pack.html"><div class="card-t"><span class="card-name">打包成 ZIP</span></div><div class="card-desc">多个文件打包为一个 zip。</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 批量重命名(生成清单)<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* ============================================================
+   17-office.js — 表格 / 压缩包（SheetJS + JSZip，本地处理）
+   ============================================================ */
+
+  
+window.TOOL = { id: "of-rename", n: "批量重命名(生成清单)", c: "office", d: "按规则生成 原名→新名 映射表，便于批量改。",
+  custom: null,
+  fields: [{"k":"files","t":"文件(多选)","type":"file","multi":true},{"k":"prefix","t":"前缀","type":"text","v":""},{"k":"suffix","t":"后缀","type":"text","v":""},{"k":"find","t":"查找","type":"text","v":""},{"k":"repl","t":"替换为","type":"text","v":""},{"k":"pad","t":"序号补零(0=不补)","type":"number","v":0},{"k":"out","t":"映射清单","type":"out","mono":true,"dl":true,"dlName":"rename-map.txt"}],
+  auto: false,
+  first: true,
+  init: null,
+  run: function (v) {
+      if (!v.files || !v.files.length) return { out: '请先选择文件' };
+      var pad = v.pad || 0, list = [];
+      v.files.forEach(function (f, i) {
+        var base = f.name, dot = base.lastIndexOf('.');
+        var name = dot > 0 ? base.slice(0, dot) : base, ext = dot > 0 ? base.slice(dot) : '';
+        if (v.find) name = name.split(v.find).join(v.repl || '');
+        var idx = pad ? String(i + 1).padStart(pad, '0') : String(i + 1);
+        var nn = (v.prefix || '') + name + '_' + idx + (v.suffix || '') + ext;
+        list.push(f.name + '  ->  ' + nn);
+      });
+      return { out: list.join('\n') };
+    } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("of-rename")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("of-rename");
+if(i>=0)f.splice(i,1);else f.push("of-rename");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="of-rename"});u.unshift("of-rename");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>

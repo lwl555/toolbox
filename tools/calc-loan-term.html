@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>贷款期限反算 - 超有用的工具箱</title>
+<meta name="description" content="按目标月供算需要还多少期。在线免费使用，文件不上传服务器。">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<div class="tool-top"><div class="tool-top-in">
+<a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
+<span class="tool-cat">计算工具</span>
+<button class="tool-fav" id="fv" title="收藏">★</button>
+</div></div>
+<main class="pane">
+<h1 class="tool-title" style="margin-bottom:6px">贷款期限反算</h1>
+<p class="lede">按目标月供算需要还多少期</p>
+<div id="app"></div>
+<div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="calc-mortgage.html"><div class="card-t"><span class="card-name">房贷·等额本息</span></div><div class="card-desc">算月供和总利息（商贷）</div></a><a class="card" href="calc-mortgage-cap.html"><div class="card-t"><span class="card-name">房贷·等额本金</span></div><div class="card-desc">每月递减还款，总利息更少</div></a><a class="card" href="calc-car-loan.html"><div class="card-t"><span class="card-name">车贷计算</span></div><div class="card-desc">车贷月供与总花费</div></a><a class="card" href="calc-fund-loan.html"><div class="card-t"><span class="card-name">公积金贷款</span></div><div class="card-desc">公积金利率较低的月供</div></a><a class="card" href="calc-combo-loan.html"><div class="card-t"><span class="card-name">组合贷计算</span></div><div class="card-desc">公积金+商贷组合月供</div></a><a class="card" href="calc-tax.html"><div class="card-t"><span class="card-name">个税计算(综合)</span></div><div class="card-desc">按年度综合所得算个税</div></a></div></div>
+</main>
+<div class="foot"><div class="foot-in">
+<b>超有用的工具箱</b> · 贷款期限反算<br>
+所有处理都在你的浏览器本地完成，文件不会上传到任何服务器 · <a href="../index.html">全部工具</a>
+</div></div>
+<div id="toast"></div>
+
+<script src="../assets/runtime.js"></script>
+<script>
+/* 计算器 — 30 个 */
+var Ca = {};
+Ca.monthly = function (p, annual, n) { var r = annual / 12; if (r === 0) return p / n; return p * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1); };
+Ca.taxYear = function (income) { var b = [36000, 144000, 300000, 420000, 660000, 960000, Infinity], r = [0.03, 0.1, 0.2, 0.25, 0.3, 0.35, 0.45], q = [0, 2520, 16920, 31920, 52920, 85920, 181920]; var t = 0; for (var i = 0; i < b.length; i++) { if (income <= b[i]) { t = income * r[i] - q[i]; break; } } return t < 0 ? 0 : t; };
+Ca.taxBonus = function (b) { var m = b / 12, rate, q; if (m <= 3000) { rate = 0.03; q = 0; } else if (m <= 12000) { rate = 0.1; q = 210; } else if (m <= 25000) { rate = 0.2; q = 1410; } else if (m <= 35000) { rate = 0.25; q = 2660; } else if (m <= 55000) { rate = 0.3; q = 4410; } else if (m <= 80000) { rate = 0.35; q = 7160; } else { rate = 0.45; q = 15160; } return b * rate - q; };
+
+
+window.TOOL = { id: "calc-loan-term", n: "贷款期限反算", c: "calc", d: "按目标月供算需要还多少期",
+  custom: null,
+  fields: [{"k":"p","t":"贷款额","type":"number","v":500000},{"k":"monthly","t":"月供上限","type":"number","v":3000},{"k":"rate","t":"年利率%","type":"number","v":4.2},{"k":"out","t":"结果","type":"out","dl":1,"mono":1,"metrics":1}],
+  auto: true,
+  first: true,
+  init: null,
+  run: function (v) { var r = v.rate / 100 / 12; if (v.monthly <= v.p * r) return { out: '', note: '月供低于利息，永远还不清', warn: true }; var n = Math.log(v.monthly / (v.monthly - v.p * r)) / Math.log(1 + r); return { out: '约 ' + Math.ceil(n) + ' 期（' + (Math.ceil(n) / 12).toFixed(1) + ' 年）', metrics: [{ t: '期数', v: Math.ceil(n) }] }; } };
+var FK='toolbox_fav_v2';
+function sy(){try{return JSON.parse(localStorage.getItem(FK)||'[]')}catch(e){return[]}}
+var fv=document.getElementById('fv');
+function rf(){fv.classList.toggle('on',sy().indexOf("calc-loan-term")>=0)}
+rf();fv.onclick=function(){var f=sy(),i=f.indexOf("calc-loan-term");
+if(i>=0)f.splice(i,1);else f.push("calc-loan-term");
+localStorage.setItem(FK,JSON.stringify(f));rf()};
+var UK='toolbox_used_v2';
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="calc-loan-term"});u.unshift("calc-loan-term");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+RT.boot(window.TOOL);
+</script>
+</body>
+</html>
