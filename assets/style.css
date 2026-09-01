@@ -106,6 +106,22 @@ button{cursor:pointer;background:none;border:none}
 .masthead .stats{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
 .masthead .stat b{font-size:17px;font-weight:680;font-variant-numeric:tabular-nums}
 .masthead .stat span{color:var(--ink-3);font-size:12.5px;margin-left:4px}
+.aifind{margin:0 0 20px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,var(--accent-soft),var(--surface));box-shadow:0 1px 0 var(--line)}
+.aifind-in{padding:14px 14px 16px}
+.aifind-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.aifind-ic{font-size:20px}
+.aifind-h b{font-size:16px;letter-spacing:-.2px}
+.aifind-sub{color:var(--ink-3);font-size:12.5px}
+.aifind-row{display:flex;gap:8px}
+.aifind-input{flex:1;height:40px;border:1px solid var(--line-strong);border-radius:10px;padding:0 12px;background:var(--surface);color:var(--ink);font-size:14px;outline:none}
+.aifind-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.aifind-btn{border:none;background:var(--accent);color:#fff;border-radius:10px;padding:0 18px;font-size:14px;font-weight:600;cursor:pointer}
+.aifind-btn:hover{background:var(--accent-ink)}
+.aifind-btn:disabled{opacity:.5;cursor:not-allowed}
+.aifind-loading,.aifind-tip,.aifind-fallback{margin-top:12px;color:var(--ink-3);font-size:13px}
+.aifind-tip{color:var(--ink-2);font-weight:600}
+.aifind-res .grid{margin-top:10px}
+@media(max-width:560px){.aifind-row{flex-direction:column}.aifind-btn{padding:10px}}
 
 .sec{margin-bottom:26px;scroll-margin-top:110px}
 .sec-head{

@@ -32,7 +32,8 @@ var CATS = [
   { id: 'ai-biz', n: 'AI商业', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
   { id: 'ai-design', n: 'AI设计', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
   { id: 'ai-legal', n: 'AI文书', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
-  { id: 'ai-study', n: 'AI学习', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' }
+  { id: 'ai-study', n: 'AI学习', i: '<path d="M13 2L4 14h6l-1 8 9-12h-6z"/>' },
+  { id: 'ai-agent', n: 'AI智能体', i: '<rect x="5" y="7" width="14" height="12" rx="2"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/>' }
 ];
 
 var FAV_KEY = 'toolbox_fav_v2';
@@ -110,9 +111,47 @@ function search(q) {
   bind();
 }
 
+/* 主页「AI 帮找工具」：用大白话描述需求，AI 从全部工具里挑最匹配的 */
+function setupAIFind() {
+  var wrap = document.querySelector('.wrap');
+  if (!wrap) return;
+  var box = document.createElement('div');
+  box.className = 'aifind';
+  box.innerHTML = '<div class="aifind-in">' +
+    '<div class="aifind-h"><span class="aifind-ic">🤖</span><b>AI 帮找工具</b><span class="aifind-sub">用大白话描述你想做的事，AI 帮你挑最合适工具</span></div>' +
+    '<div class="aifind-row">' +
+    '<input id="aifind-q" class="aifind-input" type="text" placeholder="例如：帮我把 PDF 合并、写一封辞职信、算一下房贷月供…" />' +
+    '<button id="aifind-go" class="aifind-btn">帮我找</button></div>' +
+    '<div id="aifind-res"></div></div>';
+  wrap.insertBefore(box, document.getElementById('body'));
+  var q = box.querySelector('#aifind-q'), go = box.querySelector('#aifind-go'), res = box.querySelector('#aifind-res');
+  function run() {
+    var need = q.value.trim();
+    if (!need) { RT.toast('先描述一下你想做什么'); return; }
+    go.disabled = true; go.textContent = '思考中…';
+    res.innerHTML = '<div class="aifind-loading">AI 正在为你匹配工具…</div>';
+    RT.agnesFindTools(need, TOOLS, function (ids, err) {
+      go.disabled = false; go.textContent = '帮我找';
+      if (err || !ids || !ids.length) {
+        res.innerHTML = '<div class="aifind-tip">AI 暂时没匹配到，已按关键词帮你找：</div>';
+        var r = TOOLS.filter(function (t) { return (t.n + ' ' + t.d).toLowerCase().indexOf(need.toLowerCase()) >= 0; }).slice(0, 8);
+        if (!r.length) { res.innerHTML += '<div class="empty">没找到相关工具，换个说法试试？</div>'; return; }
+        res.innerHTML += '<div class="grid">' + r.map(cardHTML).join('') + '</div>';
+        return;
+      }
+      var picks = ids.map(function (id) { return TOOLS.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean).slice(0, 6);
+      if (!picks.length) { res.innerHTML = '<div class="empty">AI 推荐的都是陌生工具，试试别的说法～</div>'; return; }
+      res.innerHTML = '<div class="aifind-tip">AI 为你推荐 ' + picks.length + ' 个工具：</div><div class="grid">' + picks.map(cardHTML).join('') + '</div>';
+    });
+  }
+  go.onclick = run;
+  q.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('tabs').innerHTML = tabsHTML;
   renderHome();
+  setupAIFind();
   var q = document.getElementById('q'), sw = document.querySelector('.search');
   var tm;
   q.oninput = function () {
