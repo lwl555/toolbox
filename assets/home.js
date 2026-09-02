@@ -68,7 +68,7 @@ function renderHome() {
   var favList = favs().map(function (id) { return TOOLS.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
   var h = '';
   if (hist.length) h += sectionHTML(hist[0].c, hist, '最近使用');
-  if (favList.length) h += sectionHTML('text', favList, '我的收藏');
+  if (favList.length) h += '<section class="sec fav-sec" id="sec-fav"><div class="sec-head"><h2>我的收藏</h2><span class="n">' + favList.length + '</span><span class="fav-hint">拖动卡片可排序 · 自动保存</span></div><div class="grid">' + favList.map(cardHTML).join('') + '</div></section>';
   CATS.forEach(function (c) {
     var list = TOOLS.filter(function (t) { return t.c === c.id; });
     if (list.length) h += sectionHTML(c.id, list);
@@ -77,6 +77,54 @@ function renderHome() {
   document.getElementById('tCount').textContent = TOOLS.length;
   document.getElementById('cCount').textContent = CATS.filter(function (c) { return TOOLS.some(function (t) { return t.c === c.id; }); }).length;
   bind();
+  enableFavSort();
+}
+
+/* 收藏栏（快捷栏）拖拽排序：鼠标 + 触摸通用（Pointer Events），顺序持久化到 localStorage */
+var _justDragged = false;
+function enableFavSort() {
+  var grid = document.querySelector('#sec-fav .grid');
+  if (!grid) return;
+  var dragEl = null, startX = 0, startY = 0, dragging = false;
+  grid.addEventListener('pointerdown', function (e) {
+    var card = e.target.closest ? e.target.closest('.card') : null;
+    if (!card || (e.target.closest && e.target.closest('.card-fav'))) return;
+    if (e.button != null && e.button !== 0) return;
+    dragEl = card; startX = e.clientX; startY = e.clientY; dragging = false;
+    if (card.setPointerCapture) { try { card.setPointerCapture(e.pointerId); } catch (err) {} }
+  });
+  grid.addEventListener('pointermove', function (e) {
+    if (!dragEl) return;
+    if (!dragging) {
+      if (Math.abs(e.clientX - startX) < 6 && Math.abs(e.clientY - startY) < 6) return;
+      dragging = true; grid.classList.add('sorting'); dragEl.classList.add('dragging');
+    }
+    if (e.cancelable) e.preventDefault();
+    var el = document.elementFromPoint(e.clientX, e.clientY);
+    var over = el && el.closest ? el.closest('.card') : null;
+    if (over && over !== dragEl && over.parentNode === grid) {
+      var r = over.getBoundingClientRect();
+      var after = (e.clientY - r.top) > r.height / 2 || (e.clientX - r.left) > r.width / 2;
+      if (after) grid.insertBefore(dragEl, over.nextSibling);
+      else grid.insertBefore(dragEl, over);
+    }
+  });
+  function end() {
+    if (!dragEl) return;
+    if (dragging) {
+      dragEl.classList.remove('dragging'); grid.classList.remove('sorting');
+      var ids = Array.prototype.slice.call(grid.children).map(function (c) { return c.getAttribute('data-id'); });
+      localStorage.setItem(FAV_KEY, JSON.stringify(ids));
+      _justDragged = true;
+      setTimeout(function () { _justDragged = false; }, 250);
+    }
+    dragEl = null; dragging = false;
+  }
+  grid.addEventListener('pointerup', end);
+  grid.addEventListener('pointercancel', end);
+  grid.addEventListener('click', function (e) {
+    if (_justDragged) { e.preventDefault(); e.stopPropagation(); _justDragged = false; }
+  }, true);
 }
 
 var tabsHTML = CATS.filter(function (c) { return TOOLS.some(function (t) { return t.c === c.id; }); })

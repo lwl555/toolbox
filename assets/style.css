@@ -388,3 +388,11 @@ button,.btn,.cat-tab,.card-fav,.seg button,.top-links a,a.card{-webkit-tap-highl
   .pane-box #send{min-height:44px}
   .pane-box #prov,.pane-box #key,.pane-box #base,.pane-box #model{height:38px}
 }
+
+/* ---------- 收藏栏（快捷栏）拖拽排序 ---------- */
+.fav-sec .sec-head{position:relative}
+.fav-hint{margin-left:10px;font-size:12px;font-weight:400;color:var(--ink-4)}
+.fav-sec .card{cursor:grab;touch-action:manipulation}
+.fav-sec.sorting .card{touch-action:none;user-select:none;-webkit-user-select:none}
+.fav-sec .card.dragging{opacity:.45;cursor:grabbing;pointer-events:none;transform:scale(.97);box-shadow:0 6px 18px rgba(0,0,0,.12)}
+@media (max-width:640px){ .fav-hint{display:none} .fav-sec .card{cursor:grab} }
