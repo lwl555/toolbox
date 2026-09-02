@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">艾宾浩斯复习</h1>
-<p class="lede">输入学习日，算出最佳复习时间点</p>
+<div class="tool-head">
+  <div class="tool-icon">艾</div>
+  <div style="flex:1;min-width:0">
+    <h1>艾宾浩斯复习</h1>
+    <p class="lede">输入学习日，算出最佳复习时间点</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="learn-mindmap.html"><div class="card-t"><span class="card-name">思维导图</span></div><div class="card-desc">缩进大纲一键生成可折叠树状图</div></a><a class="card" href="learn-flow.html"><div class="card-t"><span class="card-name">流程图</span></div><div class="card-desc">用 节点→下一节点 生成简单流程图</div></a><a class="card" href="learn-flashcard.html"><div class="card-t"><span class="card-name">闪卡复习</span></div><div class="card-desc">自定义卡片，正反面翻牌记忆</div></a><a class="card" href="learn-timer.html"><div class="card-t"><span class="card-name">学习计时</span></div><div class="card-desc">按科目计时，统计今日专注</div></a><a class="card" href="learn-words.html"><div class="card-t"><span class="card-name">背单词</span></div><div class="card-desc">随机抽词，点一下看释义</div></a><a class="card" href="learn-wrong.html"><div class="card-t"><span class="card-name">错题本</span></div><div class="card-desc">记录错题，可标注掌握</div></a></div></div>
 </main>
@@ -137,6 +142,13 @@ if(i>=0)f.splice(i,1);else f.push("learn-ebb");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="learn-ebb"});u.unshift("learn-ebb");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

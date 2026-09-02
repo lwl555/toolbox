@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">阴影生成器</h1>
-<p class="lede">生成 box-shadow CSS 并实时预览</p>
+<div class="tool-head">
+  <div class="tool-icon">阴</div>
+  <div style="flex:1;min-width:0">
+    <h1>阴影生成器</h1>
+    <p class="lede">生成 box-shadow CSS 并实时预览</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="cl-hex-rgb.html"><div class="card-t"><span class="card-name">HEX 转 RGB</span></div><div class="card-desc">十六进制颜色转 RGB</div></a><a class="card" href="cl-rgb-hex.html"><div class="card-t"><span class="card-name">RGB 转 HEX</span></div><div class="card-desc">RGB 转十六进制</div></a><a class="card" href="cl-rgb-hsl.html"><div class="card-t"><span class="card-name">RGB 转 HSL</span></div><div class="card-desc">RGB 转 HSL 色彩空间</div></a><a class="card" href="cl-hsl-rgb.html"><div class="card-t"><span class="card-name">HSL 转 RGB</span></div><div class="card-desc">HSL 转 RGB</div></a><a class="card" href="cl-scheme.html"><div class="card-t"><span class="card-name">配色方案生成</span></div><div class="card-desc">按主色生成互补/类比/三角等配色</div></a><a class="card" href="cl-contrast.html"><div class="card-t"><span class="card-name">对比度检查</span></div><div class="card-desc">按 WCAG 检查两色文字可读性</div></a></div></div>
 </main>
@@ -162,6 +167,13 @@ if(i>=0)f.splice(i,1);else f.push("cl-shadow");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="cl-shadow"});u.unshift("cl-shadow");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">去多余空格</h1>
-<p class="lede">压缩连续空白、空行</p>
+<div class="tool-head">
+  <div class="tool-icon">去</div>
+  <div style="flex:1;min-width:0">
+    <h1>去多余空格</h1>
+    <p class="lede">压缩连续空白、空行</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="text-upper.html"><div class="card-t"><span class="card-name">文本转大写</span></div><div class="card-desc">英文内容一键全部转成大写字母</div></a><a class="card" href="text-lower.html"><div class="card-t"><span class="card-name">文本转小写</span></div><div class="card-desc">英文内容一键全部转成小写字母</div></a><a class="card" href="text-capital.html"><div class="card-t"><span class="card-name">首字母大写</span></div><div class="card-desc">每段话或每句的第一个字母改成大写</div></a><a class="card" href="text-reverse.html"><div class="card-t"><span class="card-name">文本倒序</span></div><div class="card-desc">把整段文字或每一行倒过来排列</div></a><a class="card" href="text-rm-blank.html"><div class="card-t"><span class="card-name">删除空行</span></div><div class="card-desc">清理文本里多余的空行和首尾空白</div></a><a class="card" href="text-rm-space.html"><div class="card-t"><span class="card-name">删除所有空格</span></div><div class="card-desc">去掉文本里全部空格、制表符，或只压缩多余空格</div></a></div></div>
 </main>
@@ -255,6 +260,13 @@ if(i>=0)f.splice(i,1);else f.push("tx-multi");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="tx-multi"});u.unshift("tx-multi");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

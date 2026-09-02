@@ -322,7 +322,7 @@
         '<div class="act"><button class="btn btn-sec btn-sm" data-copy="' + f.k + '">复制</button>' +
         (f.dl ? '<button class="btn btn-sec btn-sm" data-dl="' + f.k + '">下载</button>' : '') +
         '</div></div><div class="pane-bd">' +
-        '<div class="out-box' + (f.mono ? ' mono' : '') + '" id="' + id + '"><span class="out-empty">' + RT.esc(f.ph || '结果会显示在这里') + '</span></div>' +
+        '<div class="out-box' + (f.mono ? ' mono' : '') + '" id="' + id + '" tabindex="0" data-empty="' + RT.esc(f.ph || '结果会显示在这里') + '"></div>' +
         (f.metrics ? '<div class="metrics" id="m_' + f.k + '" style="display:none"></div>' : '') +
         '</div></div>';
     }
@@ -409,8 +409,13 @@
       if (!el) return;
       if (f.type === 'out') {
         var val = res[f.k];
-        if (val == null || val === '') { el.innerHTML = '<span class="out-empty">' + RT.esc(f.ph || '结果会显示在这里') + '</span>'; }
-        else el.textContent = String(val);
+        if (val == null || val === '') {
+          el.textContent = '';
+          el.removeAttribute('data-filled');
+        } else {
+          el.textContent = String(val);
+          el.setAttribute('data-filled', '1');
+        }
         if (f.metrics && res.metrics) {
           var m = document.getElementById('m_' + f.k);
           if (m) {
@@ -529,13 +534,30 @@
       }
     });
 
-    // 复制 / 下载
+    // 复制 / 下载：复制后按钮文案变"已复制" 1.2s 后还原
     RT.$$('[data-copy]').forEach(function (b) {
+      if (!b._txt) b._txt = b.textContent;
       b.onclick = function () {
         var k = b.dataset.copy, el = document.getElementById('f_' + k);
         var raw = el ? el.dataset.raw : null;
-        RT.copy(raw != null ? raw : (el ? el.textContent : ''));
+        RT.copy(raw != null ? raw : (el ? el.textContent : ''), null);
+        b.textContent = '已复制';
+        b.classList.add('copied');
+        if (el) { el.classList.add('flash'); }
+        clearTimeout(b._tm);
+        b._tm = setTimeout(function () {
+          b.textContent = b._txt;
+          b.classList.remove('copied');
+          if (el) el.classList.remove('flash');
+        }, 1200);
       };
+    });
+    // 双击 / Ctrl+A：输出区全选
+    RT.$$('.out-box').forEach(function (el) {
+      el.addEventListener('dblclick', function () {
+        var r = document.createRange(); r.selectNodeContents(el);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      });
     });
     RT.$$('[data-dl]').forEach(function (b) {
       b.onclick = function () {
@@ -555,7 +577,7 @@
         TOOL.fields.forEach(function (f) {
           if (/^out/.test(f.type)) {
             var el = document.getElementById('f_' + f.k);
-            if (el && el.classList.contains('out-box')) el.innerHTML = '<span class="out-empty">处理失败</span>';
+            if (el && el.classList.contains('out-box')) { el.textContent = '处理失败'; el.setAttribute('data-filled', '1'); }
           }
         });
         return;

@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 买卖合同</h1>
-<p class="lede">货物买卖条款。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 买卖合同</h1>
+    <p class="lede">货物买卖条款。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-legal-labor.html"><div class="card-t"><span class="card-name">AI 劳动合同</span></div><div class="card-desc">生成劳动合同主要条款。</div></a><a class="card" href="ai-legal-rent.html"><div class="card-t"><span class="card-name">AI 租赁合同</span></div><div class="card-desc">房屋租赁核心条款。</div></a><a class="card" href="ai-legal-iot.html"><div class="card-t"><span class="card-name">AI 借条</span></div><div class="card-desc">规范借条模板。</div></a><a class="card" href="ai-legal-nda.html"><div class="card-t"><span class="card-name">AI 保密协议</span></div><div class="card-desc">双向/单方保密条款。</div></a><a class="card" href="ai-legal-partner.html"><div class="card-t"><span class="card-name">AI 合伙协议</span></div><div class="card-desc">合伙出资与分工。</div></a><a class="card" href="ai-legal-service.html"><div class="card-t"><span class="card-name">AI 服务合同</span></div><div class="card-desc">委托服务条款。</div></a></div></div>
 </main>
@@ -217,6 +222,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-legal-sale");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-legal-sale"});u.unshift("ai-legal-sale");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

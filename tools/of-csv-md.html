@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">表格转 Markdown</h1>
-<p class="lede">CSV 转 Markdown 表格。</p>
+<div class="tool-head">
+  <div class="tool-icon">表</div>
+  <div style="flex:1;min-width:0">
+    <h1>表格转 Markdown</h1>
+    <p class="lede">CSV 转 Markdown 表格。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="of-csv-xlsx.html"><div class="card-t"><span class="card-name">CSV 转 Excel</span></div><div class="card-desc">CSV 转 .xlsx，可指定分隔符。</div></a><a class="card" href="of-xlsx-csv.html"><div class="card-t"><span class="card-name">Excel 转 CSV</span></div><div class="card-desc">首个工作表导出为 CSV。</div></a><a class="card" href="of-json-xlsx.html"><div class="card-t"><span class="card-name">JSON 转 Excel</span></div><div class="card-desc">数组型 JSON 转表格。</div></a><a class="card" href="of-xlsx-json.html"><div class="card-t"><span class="card-name">Excel 转 JSON</span></div><div class="card-desc">首个工作表转为 JSON 数组。</div></a><a class="card" href="of-xlsx-preview.html"><div class="card-t"><span class="card-name">Excel 预览</span></div><div class="card-desc">展示工作表名与首张表前 50 行内容。</div></a><a class="card" href="of-zip-pack.html"><div class="card-t"><span class="card-name">打包成 ZIP</span></div><div class="card-desc">多个文件打包为一个 zip。</div></a></div></div>
 </main>
@@ -202,6 +207,13 @@ if(i>=0)f.splice(i,1);else f.push("of-csv-md");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="of-csv-md"});u.unshift("of-csv-md");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

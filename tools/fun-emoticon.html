@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">颜文字</h1>
-<p class="lede">随机一个可爱颜文字</p>
+<div class="tool-head">
+  <div class="tool-icon">颜</div>
+  <div style="flex:1;min-width:0">
+    <h1>颜文字</h1>
+    <p class="lede">随机一个可爱颜文字</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="fun-wc.html"><div class="card-t"><span class="card-name">朋友圈文案</span></div><div class="card-desc">随机生成一条发圈文案</div></a><a class="card" href="fun-joke.html"><div class="card-t"><span class="card-name">冷笑话</span></div><div class="card-desc">随机一条冷笑话</div></a><a class="card" href="fun-tongue.html"><div class="card-t"><span class="card-name">绕口令</span></div><div class="card-desc">随机一条绕口令练嘴皮</div></a><a class="card" href="fun-bless.html"><div class="card-t"><span class="card-name">祝福语生成</span></div><div class="card-desc">按场景生成祝福语</div></a><a class="card" href="fun-riddle.html"><div class="card-t"><span class="card-name">猜谜语</span></div><div class="card-desc">出题+点开看答案</div></a><a class="card" href="fun-brain.html"><div class="card-t"><span class="card-name">脑筋急转弯</span></div><div class="card-desc">出题+点开看答案</div></a></div></div>
 </main>
@@ -127,6 +132,13 @@ if(i>=0)f.splice(i,1);else f.push("fun-emoticon");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="fun-emoticon"});u.unshift("fun-emoticon");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

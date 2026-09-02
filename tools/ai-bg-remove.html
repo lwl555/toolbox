@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 去背景</h1>
-<p class="lede">将接近白色/纯色的背景扣除为透明（规则法，适合白底图）。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 去背景</h1>
+    <p class="lede">将接近白色/纯色的背景扣除为透明（规则法，适合白底图）。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-tts.html"><div class="card-t"><span class="card-name">AI 文字转语音</span></div><div class="card-desc">浏览器原生 Web Speech 朗读（真实 AI 语音）。</div></a><a class="card" href="ai-stt.html"><div class="card-t"><span class="card-name">AI 语音转文字</span></div><div class="card-desc">浏览器原生语音识别听写（需授权麦克风）。</div></a><a class="card" href="ai-img-resize.html"><div class="card-t"><span class="card-name">AI 图片缩放</span></div><div class="card-desc">canvas 按目标宽高缩放并下载。</div></a><a class="card" href="ai-img-compress.html"><div class="card-t"><span class="card-name">AI 图片压缩</span></div><div class="card-desc">调整质量压缩 JPEG/PNG 体积。</div></a><a class="card" href="ai-img-crop.html"><div class="card-t"><span class="card-name">AI 中心裁剪</span></div><div class="card-desc">按比例中心裁剪正方形/指定比例。</div></a><a class="card" href="ai-img-filter.html"><div class="card-t"><span class="card-name">AI 图片滤镜</span></div><div class="card-desc">灰度/反相/怀旧/锐化等 canvas 滤镜。</div></a></div></div>
 </main>
@@ -405,6 +410,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-bg-remove");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-bg-remove"});u.unshift("ai-bg-remove");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">提取数字求和</h1>
-<p class="lede">从杂乱文本里抽出所有数字并求和</p>
+<div class="tool-head">
+  <div class="tool-icon">提</div>
+  <div style="flex:1;min-width:0">
+    <h1>提取数字求和</h1>
+    <p class="lede">从杂乱文本里抽出所有数字并求和</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="txt-csv.html"><div class="card-t"><span class="card-name">CSV 表格预览</span></div><div class="card-desc">把 CSV 文本渲染成可读表格（自动识别分隔）</div></a><a class="card" href="txt-transpose.html"><div class="card-t"><span class="card-name">文本转置</span></div><div class="card-desc">行变列、列变行，处理矩阵数据</div></a><a class="card" href="txt-align.html"><div class="card-t"><span class="card-name">制表符对齐表</span></div><div class="card-desc">把不规则的分隔文本对齐成整齐表格</div></a><a class="card" href="txt-keyword.html"><div class="card-t"><span class="card-name">关键词提取</span></div><div class="card-desc">按词频抽取文章关键词（去停用词）</div></a><a class="card" href="txt-cn-en-space.html"><div class="card-t"><span class="card-name">中英加空格</span></div><div class="card-desc">在中英文/数字之间自动加空格，排版更舒服</div></a><a class="card" href="txt-sentences.html"><div class="card-t"><span class="card-name">句子拆分</span></div><div class="card-desc">按中英文标点把段落拆成单句</div></a></div></div>
 </main>
@@ -152,6 +157,13 @@ if(i>=0)f.splice(i,1);else f.push("txt-sum-nums");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="txt-sum-nums"});u.unshift("txt-sum-nums");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

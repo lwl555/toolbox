@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 菜谱推荐</h1>
-<p class="lede">按口味标签推荐家常菜。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 菜谱推荐</h1>
+    <p class="lede">按口味标签推荐家常菜。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-mbti.html"><div class="card-t"><span class="card-name">AI MBTI 速测</span></div><div class="card-desc">8 题快速推测性格倾向（娱乐）。</div></a><a class="card" href="ai-tarot.html"><div class="card-t"><span class="card-name">AI 塔罗抽牌</span></div><div class="card-desc">随机抽 3 张大阿卡纳并给出牌义。</div></a><a class="card" href="ai-luck.html"><div class="card-t"><span class="card-name">AI 今日运势</span></div><div class="card-desc">按日期与生肖哈希生成运势等级与建议。</div></a><a class="card" href="ai-name.html"><div class="card-t"><span class="card-name">AI 智能起名</span></div><div class="card-desc">从百家姓与美字库组合生成名字。</div></a><a class="card" href="ai-love.html"><div class="card-t"><span class="card-name">AI 恋爱匹配</span></div><div class="card-desc">按双方姓名+生日计算契合度（娱乐）。</div></a><a class="card" href="ai-ganzhi.html"><div class="card-t"><span class="card-name">AI 八字干支</span></div><div class="card-desc">按出生年份计算干支生肖。</div></a></div></div>
 </main>
@@ -300,6 +305,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-recipe");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-recipe"});u.unshift("ai-recipe");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

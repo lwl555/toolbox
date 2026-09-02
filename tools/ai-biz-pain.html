@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 痛点梳理</h1>
-<p class="lede">把模糊抱怨转成可解决痛点。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 痛点梳理</h1>
+    <p class="lede">把模糊抱怨转成可解决痛点。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-biz-swot.html"><div class="card-t"><span class="card-name">AI SWOT 分析</span></div><div class="card-desc">按内外部因素生成 SWOT 四象限。</div></a><a class="card" href="ai-biz-comp.html"><div class="card-t"><span class="card-name">AI 竞品分析</span></div><div class="card-desc">生成竞品对比维度框架。</div></a><a class="card" href="ai-biz-okr.html"><div class="card-t"><span class="card-name">AI OKR 制定</span></div><div class="card-desc">把目标拆成可衡量 KR。</div></a><a class="card" href="ai-biz-bp.html"><div class="card-t"><span class="card-name">AI 商业计划大纲</span></div><div class="card-desc">生成 BP 标准章节。</div></a><a class="card" href="ai-biz-persona.html"><div class="card-t"><span class="card-name">AI 用户画像</span></div><div class="card-desc">生成典型用户 Persona。</div></a><a class="card" href="ai-biz-price.html"><div class="card-t"><span class="card-name">AI 定价策略</span></div><div class="card-desc">给出定价思路与区间建议。</div></a></div></div>
 </main>
@@ -241,6 +246,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-biz-pain");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-biz-pain"});u.unshift("ai-biz-pain");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

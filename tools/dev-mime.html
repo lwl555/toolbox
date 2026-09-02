@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">MIME 类型查询</h1>
-<p class="lede">查文件扩展名对应的 Content-Type</p>
+<div class="tool-head">
+  <div class="tool-icon">M</div>
+  <div style="flex:1;min-width:0">
+    <h1>MIME 类型查询</h1>
+    <p class="lede">查文件扩展名对应的 Content-Type</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="dev-regex.html"><div class="card-t"><span class="card-name">正则表达式测试</span></div><div class="card-desc">实时高亮匹配并展示捕获分组</div></a><a class="card" href="dev-json-fmt.html"><div class="card-t"><span class="card-name">JSON 格式化</span></div><div class="card-desc">美化压缩的 JSON，带缩进</div></a><a class="card" href="dev-json-min.html"><div class="card-t"><span class="card-name">JSON 压缩</span></div><div class="card-desc">去掉所有空白，压缩成一行</div></a><a class="card" href="dev-json-check.html"><div class="card-t"><span class="card-name">JSON 校验</span></div><div class="card-desc">检查 JSON 是否合法并定位错误</div></a><a class="card" href="dev-json-csv.html"><div class="card-t"><span class="card-name">JSON 转 CSV</span></div><div class="card-desc">把 JSON 数组转成 CSV 表格</div></a><a class="card" href="dev-csv-json.html"><div class="card-t"><span class="card-name">CSV 转 JSON</span></div><div class="card-desc">把 CSV 转成 JSON 数组</div></a></div></div>
 </main>
@@ -170,6 +175,13 @@ if(i>=0)f.splice(i,1);else f.push("dev-mime");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="dev-mime"});u.unshift("dev-mime");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

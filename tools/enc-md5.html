@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">MD5 哈希</h1>
-<p class="lede">计算文本 MD5（经典校验，已被证明不安全）</p>
+<div class="tool-head">
+  <div class="tool-icon">M</div>
+  <div style="flex:1;min-width:0">
+    <h1>MD5 哈希</h1>
+    <p class="lede">计算文本 MD5（经典校验，已被证明不安全）</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="enc-base64.html"><div class="card-t"><span class="card-name">Base64 编码</span></div><div class="card-desc">把文本或二进制内容编码成 Base64（支持中文）</div></a><a class="card" href="enc-base64d.html"><div class="card-t"><span class="card-name">Base64 解码</span></div><div class="card-desc">把 Base64 还原成原始文本，自动兼容中文</div></a><a class="card" href="enc-url.html"><div class="card-t"><span class="card-name">URL 编码</span></div><div class="card-desc">对网址或参数做百分号编码，避免特殊字符报错</div></a><a class="card" href="enc-urld.html"><div class="card-t"><span class="card-name">URL 解码</span></div><div class="card-desc">把百分号编码还原成可读文本</div></a><a class="card" href="enc-html.html"><div class="card-t"><span class="card-name">HTML 实体编码</span></div><div class="card-desc">把 < > & 等转成 &#x 实体，防 XSS</div></a><a class="card" href="enc-htmld.html"><div class="card-t"><span class="card-name">HTML 实体解码</span></div><div class="card-desc">把 HTML 实体还原成字符</div></a></div></div>
 </main>
@@ -328,6 +333,13 @@ if(i>=0)f.splice(i,1);else f.push("enc-md5");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="enc-md5"});u.unshift("enc-md5");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

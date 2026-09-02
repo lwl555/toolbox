@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">电阻换算</h1>
-<p class="lede">欧/千欧/兆欧互转</p>
+<div class="tool-head">
+  <div class="tool-icon">电</div>
+  <div style="flex:1;min-width:0">
+    <h1>电阻换算</h1>
+    <p class="lede">欧/千欧/兆欧互转</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="cvt-length.html"><div class="card-t"><span class="card-name">长度换算</span></div><div class="card-desc">米/千米/厘米/英寸/英尺/英里/海里等互转</div></a><a class="card" href="cvt-area.html"><div class="card-t"><span class="card-name">面积换算</span></div><div class="card-desc">平方米/亩/公顷/英亩/平方英尺互转</div></a><a class="card" href="cvt-volume.html"><div class="card-t"><span class="card-name">体积容量换算</span></div><div class="card-desc">升/毫升/加仑/杯/品脱互转</div></a><a class="card" href="cvt-mass.html"><div class="card-t"><span class="card-name">重量质量换算</span></div><div class="card-desc">千克/克/斤/两/磅/盎司/克拉互转</div></a><a class="card" href="cvt-temp.html"><div class="card-t"><span class="card-name">温度换算</span></div><div class="card-desc">摄氏度/华氏度/开尔文互转</div></a><a class="card" href="cvt-speed.html"><div class="card-t"><span class="card-name">速度换算</span></div><div class="card-desc">米每秒/千米时/英里时/节互转</div></a></div></div>
 </main>
@@ -255,6 +260,13 @@ if(i>=0)f.splice(i,1);else f.push("cv2-resist");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="cv2-resist"});u.unshift("cv2-resist");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

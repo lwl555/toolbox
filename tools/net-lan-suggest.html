@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">局域网网段建议</h1>
-<p class="lede">给出常用内网网段规划</p>
+<div class="tool-head">
+  <div class="tool-icon">局</div>
+  <div style="flex:1;min-width:0">
+    <h1>局域网网段建议</h1>
+    <p class="lede">给出常用内网网段规划</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="net-env.html"><div class="card-t"><span class="card-name">本机环境信息</span></div><div class="card-desc">显示浏览器/系统/语言等环境参数</div></a><a class="card" href="net-screen.html"><div class="card-t"><span class="card-name">屏幕显示器信息</span></div><div class="card-desc">分辨率/DPI/色彩深度一览</div></a><a class="card" href="net-type.html"><div class="card-t"><span class="card-name">网络类型检测</span></div><div class="card-desc">检测当前是 WiFi/4G/5G 等</div></a><a class="card" href="net-public-ip.html"><div class="card-t"><span class="card-name">公网 IP 查询</span></div><div class="card-desc">查询你的公网出口 IP（需联网）</div></a><a class="card" href="net-subnet.html"><div class="card-t"><span class="card-name">子网划分计算</span></div><div class="card-desc">CIDR 算网络地址/广播/可用主机</div></a><a class="card" href="net-cidr-range.html"><div class="card-t"><span class="card-name">CIDR 转范围</span></div><div class="card-desc">把 /24 等展开成 IP 区间描述</div></a></div></div>
 </main>
@@ -114,6 +119,13 @@ if(i>=0)f.splice(i,1);else f.push("net-lan-suggest");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="net-lan-suggest"});u.unshift("net-lan-suggest");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

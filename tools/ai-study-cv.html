@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 学业亮点</h1>
-<p class="lede">把经历写成简历亮点。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 学业亮点</h1>
+    <p class="lede">把经历写成简历亮点。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-study-essay.html"><div class="card-t"><span class="card-name">AI 作文批改</span></div><div class="card-desc">按评分维度点评作文并给建议。</div></a><a class="card" href="ai-study-outline.html"><div class="card-t"><span class="card-name">AI 大纲生成</span></div><div class="card-desc">把主题展开为多级大纲。</div></a><a class="card" href="ai-study-card.html"><div class="card-t"><span class="card-name">AI 知识点卡片</span></div><div class="card-desc">生成记忆卡片(正面/背面)。</div></a><a class="card" href="ai-study-word.html"><div class="card-t"><span class="card-name">AI 单词卡</span></div><div class="card-desc">生成单词记忆卡(音/义/句)。</div></a><a class="card" href="ai-study-key.html"><div class="card-t"><span class="card-name">AI 考点提炼</span></div><div class="card-desc">从教材片段提考点。</div></a><a class="card" href="ai-study-wrong.html"><div class="card-t"><span class="card-name">AI 错题分析</span></div><div class="card-desc">分析错因并给同类练习。</div></a></div></div>
 </main>
@@ -258,6 +263,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-study-cv");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-study-cv"});u.unshift("ai-study-cv");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

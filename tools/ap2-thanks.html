@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">感谢信</h1>
-<p class="lede">生成感谢信</p>
+<div class="tool-head">
+  <div class="tool-icon">感</div>
+  <div style="flex:1;min-width:0">
+    <h1>感谢信</h1>
+    <p class="lede">生成感谢信</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-prompt-gen.html"><div class="card-t"><span class="card-name">AI 通用提示词</span></div><div class="card-desc">输入任务，生成结构清晰的高质量提示词。</div></a><a class="card" href="ai-prompt-role.html"><div class="card-t"><span class="card-name">AI 角色提示词</span></div><div class="card-desc">生成角色设定类 system prompt。</div></a><a class="card" href="ai-prompt-rtf.html"><div class="card-t"><span class="card-name">AI 结构化提示词</span></div><div class="card-desc">Role+Task+Format 三段式专业提示词。</div></a><a class="card" href="ai-prompt-few.html"><div class="card-t"><span class="card-name">AI 少样本提示词</span></div><div class="card-desc">附带示例的 few-shot 提示词。</div></a><a class="card" href="ai-prompt-cot.html"><div class="card-t"><span class="card-name">AI 思维链提示词</span></div><div class="card-desc">引导逐步推理的 Chain-of-Thought 提示词。</div></a><a class="card" href="ai-prompt-cls.html"><div class="card-t"><span class="card-name">AI 分类提示词</span></div><div class="card-desc">零样本文本分类提示词。</div></a></div></div>
 </main>
@@ -255,6 +260,13 @@ if(i>=0)f.splice(i,1);else f.push("ap2-thanks");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ap2-thanks"});u.unshift("ap2-thanks");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

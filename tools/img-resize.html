@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">图片改尺寸</h1>
-<p class="lede">按指定宽高重绘，高度留 0 自动按比例。</p>
+<div class="tool-head">
+  <div class="tool-icon">图</div>
+  <div style="flex:1;min-width:0">
+    <h1>图片改尺寸</h1>
+    <p class="lede">按指定宽高重绘，高度留 0 自动按比例。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="img-format.html"><div class="card-t"><span class="card-name">图片格式转换</span></div><div class="card-desc">PNG / JPEG / WEBP 互转，点保存图片下载。</div></a><a class="card" href="img-compress.html"><div class="card-t"><span class="card-name">图片压缩</span></div><div class="card-desc">降低质量压缩体积，可同时限制最大边。</div></a><a class="card" href="img-rotate.html"><div class="card-t"><span class="card-name">图片旋转</span></div><div class="card-desc">顺时针 90/180/270 度旋转。</div></a><a class="card" href="img-flip.html"><div class="card-t"><span class="card-name">图片翻转</span></div><div class="card-desc">水平或垂直镜像。</div></a><a class="card" href="img-gray.html"><div class="card-t"><span class="card-name">图片转灰度</span></div><div class="card-desc">去色为黑白灰阶。</div></a><a class="card" href="img-bright.html"><div class="card-t"><span class="card-name">亮度 / 对比度</span></div><div class="card-desc">调整明暗与对比。</div></a></div></div>
 </main>
@@ -362,6 +367,13 @@ if(i>=0)f.splice(i,1);else f.push("img-resize");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="img-resize"});u.unshift("img-resize");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

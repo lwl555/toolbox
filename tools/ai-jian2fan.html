@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 简→繁</h1>
-<p class="lede">常见简体字转繁体（内置映射表）。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 简→繁</h1>
+    <p class="lede">常见简体字转繁体（内置映射表）。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-summary.html"><div class="card-t"><span class="card-name">AI 文本摘要</span></div><div class="card-desc">抽取式摘要：按词频与位置权重挑重点句，离线生成。</div></a><a class="card" href="ai-keywords.html"><div class="card-t"><span class="card-name">AI 关键词提取</span></div><div class="card-desc">按词频统计提取高频关键词（去停用词）。</div></a><a class="card" href="ai-sentiment.html"><div class="card-t"><span class="card-name">AI 情感分析</span></div><div class="card-desc">基于正负面词典统计情感倾向与强度。</div></a><a class="card" href="ai-sim.html"><div class="card-t"><span class="card-name">AI 文本相似度</span></div><div class="card-desc">余弦相似度（词频向量），0~1 越高越像。</div></a><a class="card" href="ai-ner.html"><div class="card-t"><span class="card-name">AI 命名实体提取</span></div><div class="card-desc">正则抽取邮箱/电话/网址/金额/日期/身份证等。</div></a><a class="card" href="ai-classify.html"><div class="card-t"><span class="card-name">AI 文本分类</span></div><div class="card-desc">关键词规则判断：新闻/技术/营销/学术/聊天。</div></a></div></div>
 </main>
@@ -463,6 +468,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-jian2fan");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-jian2fan"});u.unshift("ai-jian2fan");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">阶乘</h1>
-<p class="lede">求 N 的阶乘</p>
+<div class="tool-head">
+  <div class="tool-icon">阶</div>
+  <div style="flex:1;min-width:0">
+    <h1>阶乘</h1>
+    <p class="lede">求 N 的阶乘</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="num-arith.html"><div class="card-t"><span class="card-name">四则运算</span></div><div class="card-desc">输入一组数字和运算符，算出结果</div></a><a class="card" href="num-percent.html"><div class="card-t"><span class="card-name">百分比计算</span></div><div class="card-desc">算 A 占 B 的百分之几，或某百分比对应的值</div></a><a class="card" href="num-change.html"><div class="card-t"><span class="card-name">增减百分比</span></div><div class="card-desc">算从旧值到新值涨了还是跌了多少</div></a><a class="card" href="num-ratio.html"><div class="card-t"><span class="card-name">比例分配</span></div><div class="card-desc">把总数按给定比例拆分</div></a><a class="card" href="num-stats.html"><div class="card-t"><span class="card-name">统计汇总</span></div><div class="card-desc">求一组数的总和、均值、中位数、众数、最大最小</div></a><a class="card" href="num-gcd.html"><div class="card-t"><span class="card-name">最大公约数</span></div><div class="card-desc">求两个数的最大公约数</div></a></div></div>
 </main>
@@ -255,6 +260,13 @@ if(i>=0)f.splice(i,1);else f.push("nm2-fact");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="nm2-fact"});u.unshift("nm2-fact");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

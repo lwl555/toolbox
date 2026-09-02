@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">年终奖计税</h1>
-<p class="lede">年终奖单独计税最优方案</p>
+<div class="tool-head">
+  <div class="tool-icon">年</div>
+  <div style="flex:1;min-width:0">
+    <h1>年终奖计税</h1>
+    <p class="lede">年终奖单独计税最优方案</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="calc-mortgage.html"><div class="card-t"><span class="card-name">房贷·等额本息</span></div><div class="card-desc">算月供和总利息（商贷）</div></a><a class="card" href="calc-mortgage-cap.html"><div class="card-t"><span class="card-name">房贷·等额本金</span></div><div class="card-desc">每月递减还款，总利息更少</div></a><a class="card" href="calc-car-loan.html"><div class="card-t"><span class="card-name">车贷计算</span></div><div class="card-desc">车贷月供与总花费</div></a><a class="card" href="calc-fund-loan.html"><div class="card-t"><span class="card-name">公积金贷款</span></div><div class="card-desc">公积金利率较低的月供</div></a><a class="card" href="calc-combo-loan.html"><div class="card-t"><span class="card-name">组合贷计算</span></div><div class="card-desc">公积金+商贷组合月供</div></a><a class="card" href="calc-tax.html"><div class="card-t"><span class="card-name">个税计算(综合)</span></div><div class="card-desc">按年度综合所得算个税</div></a></div></div>
 </main>
@@ -188,6 +193,13 @@ if(i>=0)f.splice(i,1);else f.push("calc-bonus-tax");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="calc-bonus-tax"});u.unshift("calc-bonus-tax");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

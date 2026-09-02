@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">文本统计</h1>
-<p class="lede">统计行数、字数、字节数。</p>
+<div class="tool-head">
+  <div class="tool-icon">文</div>
+  <div style="flex:1;min-width:0">
+    <h1>文本统计</h1>
+    <p class="lede">统计行数、字数、字节数。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="fl-md5.html"><div class="card-t"><span class="card-name">文件 MD5</span></div><div class="card-desc">计算文件的 MD5 校验值。</div></a><a class="card" href="fl-sha.html"><div class="card-t"><span class="card-name">文件 SHA256</span></div><div class="card-desc">计算文件的 SHA-256 校验值（需安全环境）。</div></a><a class="card" href="fl-b64.html"><div class="card-t"><span class="card-name">文件转 Base64</span></div><div class="card-desc">任意文件编码为 Base64 文本。</div></a><a class="card" href="fl-b64d.html"><div class="card-t"><span class="card-name">Base64 转文件</span></div><div class="card-desc">把 Base64 还原为可下载文件。</div></a><a class="card" href="fl-diff.html"><div class="card-t"><span class="card-name">文本差异对比</span></div><div class="card-desc">逐行对比，标记新增/删除。</div></a><a class="card" href="fl-split.html"><div class="card-t"><span class="card-name">文件分块</span></div><div class="card-desc">按大小切分为多个片段（便于传输）。</div></a></div></div>
 </main>
@@ -211,6 +216,13 @@ if(i>=0)f.splice(i,1);else f.push("fl-count");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="fl-count"});u.unshift("fl-count");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

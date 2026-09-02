@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">距今多久</h1>
-<p class="lede">算某日期距离现在过去/未来多久</p>
+<div class="tool-head">
+  <div class="tool-icon">距</div>
+  <div style="flex:1;min-width:0">
+    <h1>距今多久</h1>
+    <p class="lede">算某日期距离现在过去/未来多久</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="time-now.html"><div class="card-t"><span class="card-name">当前时间戳</span></div><div class="card-desc">显示现在的 Unix 秒/毫秒时间戳</div></a><a class="card" href="time-ts2date.html"><div class="card-t"><span class="card-name">时间戳转日期</span></div><div class="card-desc">把 Unix 时间戳还原成可读日期</div></a><a class="card" href="time-date2ts.html"><div class="card-t"><span class="card-name">日期转时间戳</span></div><div class="card-desc">把日期转成 Unix 时间戳</div></a><a class="card" href="time-diff.html"><div class="card-t"><span class="card-name">日期差值</span></div><div class="card-desc">算两个日期相差多少天/周/月/年</div></a><a class="card" href="time-add.html"><div class="card-t"><span class="card-name">日期加减</span></div><div class="card-desc">在日期上加减天/月/年</div></a><a class="card" href="time-weekday.html"><div class="card-t"><span class="card-name">星期几</span></div><div class="card-desc">查某天是星期几</div></a></div></div>
 </main>
@@ -168,6 +173,13 @@ if(i>=0)f.splice(i,1);else f.push("time-compare-now");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="time-compare-now"});u.unshift("time-compare-now");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

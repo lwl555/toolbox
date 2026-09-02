@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 翻译助手</h1>
-<p class="lede">高质量多语种互译，保留语气与专有名词。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 翻译助手</h1>
+    <p class="lede">高质量多语种互译，保留语气与专有名词。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-chat.html"><div class="card-t"><span class="card-name">AI 智能对话</span></div><div class="card-desc">默认 Agnes 大模型，免 Key 直接聊（也可切其他服务商）。</div></a><a class="card" href="ai-chat-deepseek.html"><div class="card-t"><span class="card-name">AI 对话·DeepSeek</span></div><div class="card-desc">预设 DeepSeek 端点，填 Key 直接聊（默认仍是 Agnes）。</div></a><a class="card" href="ai-chat-role.html"><div class="card-t"><span class="card-name">AI 角色扮演</span></div><div class="card-desc">设定任意角色身份进行沉浸式对话。</div></a><a class="card" href="ai-chat-code.html"><div class="card-t"><span class="card-name">AI 代码助手</span></div><div class="card-desc">写代码、改 Bug、解释原理，附可运行示例。</div></a><a class="card" href="ai-chat-write.html"><div class="card-t"><span class="card-name">AI 写作助手</span></div><div class="card-desc">帮你起草、润色、扩写各类文章。</div></a><a class="card" href="ai-chat-sum.html"><div class="card-t"><span class="card-name">AI 长文总结</span></div><div class="card-desc">粘贴长文，AI 提炼要点与结论。</div></a></div></div>
 </main>
@@ -117,6 +122,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-chat-trans");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-chat-trans"});u.unshift("ai-chat-trans");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">音频信息</h1>
-<p class="lede">读取时长 / 类型 / 体积。</p>
+<div class="tool-head">
+  <div class="tool-icon">音</div>
+  <div style="flex:1;min-width:0">
+    <h1>音频信息</h1>
+    <p class="lede">读取时长 / 类型 / 体积。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="md-video.html"><div class="card-t"><span class="card-name">视频信息</span></div><div class="card-desc">读取时长 / 分辨率 / 体积。</div></a><a class="card" href="md-tone.html"><div class="card-t"><span class="card-name">生成音调</span></div><div class="card-desc">生成指定频率/时长的正弦音 WAV。</div></a><a class="card" href="md-noise.html"><div class="card-t"><span class="card-name">生成白噪声</span></div><div class="card-desc">生成随机白噪声 WAV，用于助眠/测试。</div></a><a class="card" href="md-beep.html"><div class="card-t"><span class="card-name">蜂鸣器</span></div><div class="card-desc">用 WebAudio 直接播放提示音。</div></a><a class="card" href="md-srt-shift.html"><div class="card-t"><span class="card-name">字幕时间轴偏移</span></div><div class="card-desc">整体平移 SRT 时间码（秒，可负）。</div></a><a class="card" href="md-srt-vtt.html"><div class="card-t"><span class="card-name">SRT / VTT 互转</span></div><div class="card-desc">字幕格式在 SRT 与 WebVTT 间转换。</div></a></div></div>
 </main>
@@ -177,6 +182,13 @@ if(i>=0)f.splice(i,1);else f.push("md-audio");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="md-audio"});u.unshift("md-audio");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

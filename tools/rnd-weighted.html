@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">加权随机</h1>
-<p class="lede">给每个选项设权重，按比例抽取</p>
+<div class="tool-head">
+  <div class="tool-icon">加</div>
+  <div style="flex:1;min-width:0">
+    <h1>加权随机</h1>
+    <p class="lede">给每个选项设权重，按比例抽取</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="rnd-int.html"><div class="card-t"><span class="card-name">随机整数</span></div><div class="card-desc">生成区间内的随机整数</div></a><a class="card" href="rnd-float.html"><div class="card-t"><span class="card-name">随机小数</span></div><div class="card-desc">生成指定范围和精度的随机数</div></a><a class="card" href="rnd-str.html"><div class="card-t"><span class="card-name">随机字符串</span></div><div class="card-desc">生成指定长度和字符集的随机串</div></a><a class="card" href="rnd-pwd.html"><div class="card-t"><span class="card-name">强密码生成</span></div><div class="card-desc">生成高强度随机密码，可指定规则</div></a><a class="card" href="rnd-uuid.html"><div class="card-t"><span class="card-name">UUID 生成</span></div><div class="card-desc">生成 RFC4122 v4 随机 UUID</div></a><a class="card" href="rnd-name.html"><div class="card-t"><span class="card-name">随机中文姓名</span></div><div class="card-desc">随机生成常见中文姓名</div></a></div></div>
 </main>
@@ -164,6 +169,13 @@ if(i>=0)f.splice(i,1);else f.push("rnd-weighted");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="rnd-weighted"});u.unshift("rnd-weighted");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 阴影生成</h1>
-<p class="lede">生成分层柔和阴影 CSS。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 阴影生成</h1>
+    <p class="lede">生成分层柔和阴影 CSS。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-des-harmony.html"><div class="card-t"><span class="card-name">AI 配色方案</span></div><div class="card-desc">基于主色生成互补/类比/三角等和谐配色。</div></a><a class="card" href="ai-des-shades.html"><div class="card-t"><span class="card-name">AI 单色阶</span></div><div class="card-desc">由主色生成明度阶梯。</div></a><a class="card" href="ai-des-grad.html"><div class="card-t"><span class="card-name">AI 渐变生成</span></div><div class="card-desc">生成 CSS 线性渐变代码。</div></a><a class="card" href="ai-des-contrast.html"><div class="card-t"><span class="card-name">AI 对比度检查</span></div><div class="card-desc">WCAG 对比度比值与达标判断。</div></a><a class="card" href="ai-des-readable.html"><div class="card-t"><span class="card-name">AI 可读文字色</span></div><div class="card-desc">给定背景推荐对比达标的文字色。</div></a><a class="card" href="ai-des-font.html"><div class="card-t"><span class="card-name">AI 字体搭配</span></div><div class="card-desc">标题/正文中英文字体配对建议。</div></a></div></div>
 </main>
@@ -239,6 +244,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-des-shadow");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-des-shadow"});u.unshift("ai-des-shadow");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

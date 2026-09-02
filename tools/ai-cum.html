@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 累计求和</h1>
-<p class="lede">输出累计值序列。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 累计求和</h1>
+    <p class="lede">输出累计值序列。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-stat.html"><div class="card-t"><span class="card-name">AI 描述统计</span></div><div class="card-desc">均值/中位/众数/方差/标准差/极值/分位。</div></a><a class="card" href="ai-outlier.html"><div class="card-t"><span class="card-name">AI 异常检测</span></div><div class="card-desc">Z-Score 法标记离群值（|z|>阈值）。</div></a><a class="card" href="ai-corr.html"><div class="card-t"><span class="card-name">AI 相关性</span></div><div class="card-desc">皮尔逊相关系数（-1~1）。</div></a><a class="card" href="ai-linreg.html"><div class="card-t"><span class="card-name">AI 线性回归</span></div><div class="card-desc">拟合 y=kx+b 并预测。</div></a><a class="card" href="ai-minmax.html"><div class="card-t"><span class="card-name">AI 归一化</span></div><div class="card-desc">Min-Max 缩放到 0~1 或指定区间。</div></a><a class="card" href="ai-zscore.html"><div class="card-t"><span class="card-name">AI Z-Score</span></div><div class="card-desc">标准化为均值0、标准差1。</div></a></div></div>
 </main>
@@ -259,6 +264,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-cum");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-cum"});u.unshift("ai-cum");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

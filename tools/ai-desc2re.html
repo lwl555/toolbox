@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 描述转正则</h1>
-<p class="lede">把常见描述转为正则表达式。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 描述转正则</h1>
+    <p class="lede">把常见描述转为正则表达式。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-code-explain.html"><div class="card-t"><span class="card-name">AI 代码解释</span></div><div class="card-desc">识别语言并统计结构，生成可读性说明。</div></a><a class="card" href="ai-code-comment.html"><div class="card-t"><span class="card-name">AI 自动注释</span></div><div class="card-desc">为函数/方法行生成占位注释。</div></a><a class="card" href="ai-code-cc.html"><div class="card-t"><span class="card-name">AI 圈复杂度</span></div><div class="card-desc">估算函数圈复杂度（分支越多越复杂）。</div></a><a class="card" href="ai-code-todo.html"><div class="card-t"><span class="card-name">AI TODO 提取</span></div><div class="card-desc">提取 TODO/FIXME/XXX/HACK 注释。</div></a><a class="card" href="ai-code-smell.html"><div class="card-t"><span class="card-name">AI 代码气味</span></div><div class="card-desc">检测长函数/深嵌套/魔法数字。</div></a><a class="card" href="ai-nl2sql.html"><div class="card-t"><span class="card-name">AI 自然语言转SQL</span></div><div class="card-desc">把简单中文描述转为 SELECT 语句。</div></a></div></div>
 </main>
@@ -326,6 +331,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-desc2re");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-desc2re"});u.unshift("ai-desc2re");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>

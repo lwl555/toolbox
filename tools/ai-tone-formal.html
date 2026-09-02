@@ -14,8 +14,13 @@
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<h1 class="tool-title" style="margin-bottom:6px">AI 转正式语气</h1>
-<p class="lede">把口语化表达转为书面正式风。</p>
+<div class="tool-head">
+  <div class="tool-icon">A</div>
+  <div style="flex:1;min-width:0">
+    <h1>AI 转正式语气</h1>
+    <p class="lede">把口语化表达转为书面正式风。</p>
+  </div>
+</div>
 <div id="app"></div>
 <div class="rel"><h4>同类工具</h4><div class="grid"><a class="card" href="ai-write-xhs.html"><div class="card-t"><span class="card-name">AI 小红书文案</span></div><div class="card-desc">种草风：表情符号+口语+痛点+安利。</div></a><a class="card" href="ai-write-gzh.html"><div class="card-t"><span class="card-name">AI 公众号推文</span></div><div class="card-desc">干货风：标题党+引言+分点+金句收尾。</div></a><a class="card" href="ai-write-dy.html"><div class="card-t"><span class="card-name">AI 抖音脚本</span></div><div class="card-desc">短平快：钩子+反转+行动号召。</div></a><a class="card" href="ai-write-ds.html"><div class="card-t"><span class="card-name">AI 电商描述</span></div><div class="card-desc">卖点风：场景+参数+促销。</div></a><a class="card" href="ai-write-pyq.html"><div class="card-t"><span class="card-name">AI 朋友圈文案</span></div><div class="card-desc">随性风：短句+心情+emoji。</div></a><a class="card" href="ai-write-zc.html"><div class="card-t"><span class="card-name">AI 种草笔记</span></div><div class="card-desc">体验风：真实使用+对比+推荐。</div></a></div></div>
 </main>
@@ -223,6 +228,13 @@ if(i>=0)f.splice(i,1);else f.push("ai-tone-formal");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
 try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="ai-tone-formal"});u.unshift("ai-tone-formal");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+/* 顶部栏滚动阴影（与首页一致） */
+(function(){
+  var top=document.querySelector('.tool-top');
+  if(!top)return;
+  function onS(){top.classList.toggle('scrolled', window.scrollY>4)}
+  window.addEventListener('scroll',onS,{passive:true});onS();
+})();
 RT.boot(window.TOOL);
 </script>
 </body>
