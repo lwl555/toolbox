@@ -220,22 +220,38 @@ document.addEventListener('DOMContentLoaded', function () {
     tab.addEventListener('click', function (e) {
       var id = tab.getAttribute('href');
       if (id && id.charAt(0) === '#') {
+        e.preventDefault();
+        /* 搜索态下：先退出搜索、回到全量首页，再定位分类，避免 #body 被搜索结果替换后区块丢失导致点击无反应 */
+        var q = document.getElementById('q');
+        if (q && q.value.trim()) {
+          q.value = '';
+          var sw = document.querySelector('.search');
+          if (sw) sw.classList.remove('has');
+          renderHome();
+        }
         var sec = document.querySelector(id);
         if (sec) {
-          e.preventDefault();
           sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
           tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
+        /* 点击即时高亮，不依赖 scroll-spy 滞后 */
+        tabEls.forEach(function (t) { t.classList.remove('on'); });
+        tab.classList.add('on');
+        /* 平滑滚动结束后，让 scroll-spy 按最终落点校准高亮，避免错位观感 */
+        setTimeout(spy, 520);
       }
     });
   });
   var spy = function () {
     var cur = null, best = 1e9;
-    document.querySelectorAll('.sec').forEach(function (sec) {
+    var secs = document.querySelectorAll('.sec');
+    secs.forEach(function (sec) {
       var r = sec.getBoundingClientRect();
       var top = r.top - 120;
       if (top <= 0 && -top < best) { best = -top; cur = sec.id; }
     });
+    /* 顶部尚未滚到任何区块时，默认激活第一个分类，避免视觉上"无选中"的空白 */
+    if (!cur && secs[0]) cur = secs[0].id;
     tabEls.forEach(function (t) {
       var href = t.getAttribute('href') || '';
       t.classList.toggle('on', cur && href === '#' + cur);
@@ -243,4 +259,9 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   window.addEventListener('scroll', spy, { passive: true });
   spy();
+  /* 顶栏滚动阴影：滚一点就浮起一层柔和阴影，强化"可交互"反馈 */
+  var topEl = document.querySelector('.top');
+  var onScrollTop = function () { if (topEl) topEl.classList.toggle('scrolled', window.scrollY > 4); };
+  window.addEventListener('scroll', onScrollTop, { passive: true });
+  onScrollTop();
 });
