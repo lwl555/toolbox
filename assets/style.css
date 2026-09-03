@@ -113,6 +113,9 @@ button,.btn,.cat-tab,.card-fav,.seg button,.top-links a,a.card{-webkit-tap-highl
 }
 .cat-tab:hover{background:var(--accent-soft);color:var(--accent-ink)}
 .cat-tab.on{background:var(--accent);color:#fff;font-weight:600;border-color:var(--accent)}
+/* 分类 section 顶部留出顶栏+分类栏高度，点击分类后不被 sticky 栏遮挡（解决手机端"点了没反应"的视觉错觉） */
+section[id^="sec-"]{scroll-margin-top:110px}
+@media (max-width:640px){section[id^="sec-"]{scroll-margin-top:108px}}
 
 /* ---------- 主体 ---------- */
 .wrap{max-width:1240px;margin:0 auto;padding:20px 16px 60px}
