@@ -152,6 +152,9 @@ section[id^="sec-"]{scroll-margin-top:110px}
 .sec-head h2{font-size:16px;font-weight:680;letter-spacing:-.2px}
 .sec-head .n{color:var(--ink-4);font-size:12px;font-variant-numeric:tabular-nums}
 .sec-head .more{margin-left:auto;font-size:12.5px;color:var(--accent);font-weight:550}
+.clear-hist{margin-left:auto;font-size:12px;font-weight:500;color:var(--ink-4);background:transparent;border:1px solid var(--line-strong);border-radius:999px;padding:3px 11px;cursor:pointer;transition:color .15s,border-color .15s}
+.clear-hist:hover{color:var(--accent);border-color:var(--accent)}
+@media (max-width:640px){.clear-hist{padding:2px 8px}}
 
 /* 网格：桌面 4 列 → 移动 2 列，紧凑 */
 .grid{

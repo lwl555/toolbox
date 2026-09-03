@@ -156,7 +156,7 @@ rf();fv.onclick=function(){var f=sy(),i=f.indexOf("txt-list-html");
 if(i>=0)f.splice(i,1);else f.push("txt-list-html");
 localStorage.setItem(FK,JSON.stringify(f));rf()};
 var UK='toolbox_used_v2';
-try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="txt-list-html"});u.unshift("txt-list-html");localStorage.setItem(UK,JSON.stringify(u.slice(0,12)))}catch(e){}
+try{var u=JSON.parse(localStorage.getItem(UK)||'[]');u=u.filter(function(x){return x!=="txt-list-html"});u.unshift("txt-list-html");localStorage.setItem(UK,JSON.stringify(u.slice(0,24)))}catch(e){}
 /* 顶部栏滚动阴影（与首页一致） */
 (function(){
   var top=document.querySelector('.tool-top');

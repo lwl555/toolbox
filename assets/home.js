@@ -61,13 +61,20 @@ function sectionHTML(cid, list, title) {
     '<div class="sec-head"><h2>' + esc(title || c.n) + '</h2><span class="n">' + list.length + '</span></div>' +
     '<div class="grid">' + list.map(cardHTML).join('') + '</div></section>';
 }
+/* 最近使用（历史记录）栏：用独立 id sec-recent，避免与分类 section id（如 sec-calc）冲突导致分类导航定位错乱 */
+function recentSectionHTML(list) {
+  return '<section class="sec recent-sec" id="sec-recent"><div class="sec-head"><h2>最近使用</h2><span class="n">' + list.length + '</span>' +
+    '<span class="fav-hint">按使用时间排序 · 自动记录</span>' +
+    '<button class="clear-hist" data-clear="used" title="清除历史记录">清除</button></div>' +
+    '<div class="grid">' + list.map(cardHTML).join('') + '</div></section>';
+}
 
-var hist = used().map(function (id) { return TOOLS.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean).slice(0, 12);
-
+/* hist 移到 renderHome 内每次调用时重算（与 favList 一致），确保清除历史后首页即时更新 */
 function renderHome() {
   var favList = favs().map(function (id) { return TOOLS.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean);
+  var hist = used().map(function (id) { return TOOLS.filter(function (t) { return t.id === id; })[0]; }).filter(Boolean).slice(0, 12);
   var h = '';
-  if (hist.length) h += sectionHTML(hist[0].c, hist, '最近使用');
+  if (hist.length) h += recentSectionHTML(hist);
   if (favList.length) h += '<section class="sec fav-sec" id="sec-fav"><div class="sec-head"><h2>我的收藏</h2><span class="n">' + favList.length + '</span><span class="fav-hint">拖动卡片可排序 · 自动保存</span></div><div class="grid">' + favList.map(cardHTML).join('') + '</div></section>';
   CATS.forEach(function (c) {
     var list = TOOLS.filter(function (t) { return t.c === c.id; });
@@ -139,6 +146,14 @@ function bind() {
       localStorage.setItem(FAV_KEY, JSON.stringify(f));
       b.classList.toggle('on', f.indexOf(id) >= 0);
       if (document.getElementById('q').value === '') renderHome();
+    };
+  });
+  document.querySelectorAll('[data-clear]').forEach(function (b) {
+    b.onclick = function (e) {
+      e.preventDefault(); e.stopPropagation();
+      try { localStorage.removeItem(USE_KEY); } catch (e2) {}
+      RT.toast('已清除最近使用记录');
+      renderHome();
     };
   });
 }
