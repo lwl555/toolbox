@@ -348,7 +348,7 @@
     if (f.type !== 'checkbox' && f.t) {
       h += '<label class="f-l" for="' + id + '">' + RT.esc(f.t) + (f.hint ? '<span class="hint">' + RT.esc(f.hint) + '</span>' : '') + req + '</label>';
     }
-    var ph = f.ph ? ' placeholder="' + RT.esc(f.ph) + '"' : '';
+    var ph = f.ph ? ' placeholder="' + RT.esc(f.ph) + '"' : ((f.type === 'textarea' || f.type === 'text' || f.type === 'number') ? ' placeholder="' + RT.esc('请输入' + (f.t || '内容')) + '"' : '');
     if (f.type === 'textarea') {
       h += '<textarea class="ta' + (f.mono ? ' mono' : '') + '" id="' + id + '"' + ph +
         (f.rows ? ' rows="' + f.rows + '"' : '') + '>' + RT.esc(f.v || '') + '</textarea>';
