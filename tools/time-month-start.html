@@ -158,8 +158,8 @@ tool({ id: 'time-iso-week', n: 'ISO 周日期', c: 'time', d: '输出 ISO 8601 �
   run: function (v) { var d = Th.parse(v.dt) || new Date(); var day = (d.getDay() + 6) % 7; var thursday = new Date(d); thursday.setDate(d.getDate() - day + 3); var firstThu = new Date(thursday.getFullYear(), 0, 4); var wk = 1 + Math.floor((thursday - firstThu) / 604800000); return { out: thursday.getFullYear() + '-W' + Th.pad(wk) + '-' + (day + 1) }; } });
 
 tool({ id: 'time-sleep', n: '睡眠时长', c: 'time', d: '算入睡到起床的睡眠小时数',
-  f: [{ k: 'a', t: '入睡（如 23:30）', type: 'text', ph: '23:30' }, { k: 'b', t: '起床（如 7:20）', type: 'text', ph: '7:20' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
-  run: function (v) { function toMin(s) { var p = s.split(':'); return (+p[0]) * 60 + (+p[1]); } var a = toMin(v.a), b = toMin(v.b); var diff = b - a; if (diff <= 0) diff += 1440; return { out: (diff / 60).toFixed(2) + ' 小时', metrics: [{ t: '分钟', v: diff }, { t: '是否达标', v: diff >= 420 ? '充足(≥7h)' : '偏少' }] }; } });
+  f: [{ k: 'a', t: '入睡（如 23:30）', type: 'text', v: '23:30' }, { k: 'b', t: '起床（如 7:20）', type: 'text', v: '7:20' }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { if (!v.a || !v.b) return { out: '', note: '请输入入睡和起床时间', warn: true }; function toMin(s) { var p = s.split(':'); return (+p[0]) * 60 + (+p[1]); } var a = toMin(v.a), b = toMin(v.b); if (isNaN(a) || isNaN(b)) return { out: '', note: '时间格式应为 时:分', warn: true }; var diff = b - a; if (diff <= 0) diff += 1440; return { out: (diff / 60).toFixed(2) + ' 小时', metrics: [{ t: '分钟', v: diff }, { t: '是否达标', v: diff >= 420 ? '充足(≥7h)' : '偏少' }] }; } });
 
 
 window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "time-month-start"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();

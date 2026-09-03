@@ -44,7 +44,20 @@ Nh.isPrime = function (n) { if (n < 2) return false; for (var i = 2; i * i <= n;
 Nh.factor = function (n) { n = Math.abs(n); var r = [], p = 2; while (p * p <= n) { while (n % p === 0) { r.push(p); n /= p; } p++; } if (n > 1) r.push(n); return r; };
 Nh.fib = function (n) { if (n < 1) return []; var a = [0, 1], r = [0]; for (var i = 1; i < n; i++) { r.push(a[1]); a = [a[1], a[0] + a[1]]; } return r.slice(0, n); };
 Nh.fact = function (n) { if (n > 170) return Infinity; var r = 1; for (var i = 2; i <= n; i++) r *= i; return r; };
-Nh.cnNum = function (n) { var d = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'], u = ['', '十', '百', '千'], r = ''; if (n === 0) return '零'; var s = '' + n, i = 0; for (; i < s.length; i++) { var x = +s[i]; if (x) r += d[x] + u[s.length - 1 - i]; else if (r && r[r.length - 1] !== '零') r += '零'; } return r.replace(/零+$/, ''); };
+Nh.cnNum = function (n) {
+  if (n === 0) return '零';
+  var d = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'], u = ['', '十', '百', '千'], g = ['', '万', '亿'];
+  var neg = n < 0; n = Math.abs(Math.round(n));
+  var s = '' + n, groups = [];
+  for (var i = s.length; i > 0; i -= 4) groups.unshift(s.slice(Math.max(0, i - 4), i));
+  function groupStr(seg) { var r = '', zero = false; for (var j = 0; j < seg.length; j++) { var x = +seg[j], pos = seg.length - 1 - j; if (x === 0) { if (r && !zero) zero = true; } else { if (zero) { r += '零'; zero = false; } r += d[x] + u[pos]; } } return r; }
+  var result = '';
+  for (var gi = 0; gi < groups.length; gi++) {
+    var seg = groups[gi], gs = groupStr(seg);
+    if (gs) { if (result && seg[0] === '0' && !/零$/.test(result)) result += '零'; result += gs + g[groups.length - 1 - gi]; }
+  }
+  return (neg ? '负' : '') + result;
+};
 Nh.cnMoney = function (n) {
   if (isNaN(n)) return ''; var neg = n < 0; n = Math.abs(n); var s = (Math.round(n * 100) / 100).toFixed(2), parts = s.split('.'), intp = parts[0], dec = parts[1];
   var d = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'], u = ['', '拾', '佰', '仟'], g = ['', '万', '亿'];
@@ -125,8 +138,8 @@ tool({ id: 'num-trigo', n: '三角函数', c: 'number', d: 'sin/cos/tan 等，�
   run: function (v) { var r = Math[v.fn](v.x * Math.PI / 180); if (!isFinite(r)) return { out: '无定义（如 tan 90°）' }; return { out: r.toFixed(6) }; } });
 
 tool({ id: 'num-roman', n: '罗马数字转换', c: 'number', d: '阿拉伯数字与罗马数字互转（1-3999）',
-  f: [{ k: 'in', t: '数字 或 罗马串', type: 'text', ph: '2024 或 MMXXIV' }, { k: 'm', t: '方向', type: 'seg', v: 'auto', opts: [{ v: 'auto', t: '自动识别' }, { v: 'a2r', t: '数字→罗马' }, { v: 'r2a', t: '罗马→数字' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
-  run: function (v) { var s = (v.in || '').trim(); if (/^[0-9]+$/.test(s) && v.m !== 'r2a') { var n = +s; if (n < 1 || n > 3999) return { out: '', note: '范围 1-3999', warn: true }; return { out: Nh.roman(n) }; } return { out: String(Nh.romanD(s.toUpperCase())), note: s.toUpperCase() }; } });
+  f: [{ k: 'in', t: '数字 或 罗马串', type: 'text', ph: '2024 或 MMXXIV', v: '2024' }, { k: 'm', t: '方向', type: 'seg', v: 'auto', opts: [{ v: 'auto', t: '自动识别' }, { v: 'a2r', t: '数字→罗马' }, { v: 'r2a', t: '罗马→数字' }] }, { k: 'out', t: '结果', type: 'out', dl: 1, mono: 1 }],
+  run: function (v) { var s = (v.in || '').trim(); if (!s) return { out: '', note: '请输入数字或罗马串', warn: true }; if (/^[0-9]+$/.test(s) && v.m !== 'r2a') { var n = +s; if (n < 1 || n > 3999) return { out: '', note: '范围 1-3999', warn: true }; return { out: Nh.roman(n) }; } return { out: String(Nh.romanD(s.toUpperCase())), note: s.toUpperCase() }; } });
 
 tool({ id: 'num-cnmoney', n: '人民币大写', c: 'number', d: '把金额转成财务用的中文大写（壹贰叁…）',
   f: [{ k: 'n', t: '金额', type: 'text', ph: '1234.56' }, { k: 'out', t: '大写', type: 'out', dl: 1, mono: 1 }],

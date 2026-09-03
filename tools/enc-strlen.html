@@ -188,19 +188,19 @@ tool({ id: 'enc-jwt', n: 'JWT 解析', c: 'encode', d: '拆解 JSON Web Token �
   } });
 
 tool({ id: 'enc-sha256', n: 'SHA-256 哈希', c: 'encode', d: '用浏览器原生加密计算文本的 SHA-256（不可逆）',
-  f: [{ k: 'in', t: '原文', type: 'textarea' }, { k: 'out', t: 'SHA-256', type: 'out', dl: 1, mono: 1 }],
+  f: [{ k: 'in', t: '原文', type: 'textarea', v: 'hello' }, { k: 'out', t: 'SHA-256', type: 'out', dl: 1, mono: 1 }],
   run: Hh.async(function (v) { return Hh.sha(v.in || '', 'SHA-256').then(function (h) { return { out: h }; }).catch(function (e) { return { out: '', note: e.message, warn: true }; }); }) });
 
 tool({ id: 'enc-sha1', n: 'SHA-1 哈希', c: 'encode', d: '计算文本 SHA-1（校验旧系统兼容用）',
-  f: [{ k: 'in', t: '原文', type: 'textarea' }, { k: 'out', t: 'SHA-1', type: 'out', dl: 1, mono: 1 }],
+  f: [{ k: 'in', t: '原文', type: 'textarea', v: 'hello' }, { k: 'out', t: 'SHA-1', type: 'out', dl: 1, mono: 1 }],
   run: Hh.async(function (v) { return Hh.sha(v.in || '', 'SHA-1').then(function (h) { return { out: h }; }).catch(function (e) { return { out: '', note: e.message, warn: true }; }); }) });
 
 tool({ id: 'enc-sha512', n: 'SHA-512 哈希', c: 'encode', d: '计算文本 SHA-512，安全性更高',
-  f: [{ k: 'in', t: '原文', type: 'textarea' }, { k: 'out', t: 'SHA-512', type: 'out', dl: 1, mono: 1 }],
+  f: [{ k: 'in', t: '原文', type: 'textarea', v: 'hello' }, { k: 'out', t: 'SHA-512', type: 'out', dl: 1, mono: 1 }],
   run: Hh.async(function (v) { return Hh.sha(v.in || '', 'SHA-512').then(function (h) { return { out: h }; }).catch(function (e) { return { out: '', note: e.message, warn: true }; }); }) });
 
 tool({ id: 'enc-md5', n: 'MD5 哈希', c: 'encode', d: '计算文本 MD5（经典校验，已被证明不安全）',
-  f: [{ k: 'in', t: '原文', type: 'textarea' }, { k: 'out', t: 'MD5', type: 'out', dl: 1, mono: 1 }],
+  f: [{ k: 'in', t: '原文', type: 'textarea', v: 'hello' }, { k: 'out', t: 'MD5', type: 'out', dl: 1, mono: 1 }],
   run: Hh.async(function (v) {
     return Promise.resolve().then(function () {
       var s = v.in || '', h = Hh._md5(s); return { out: h };

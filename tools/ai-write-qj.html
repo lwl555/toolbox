@@ -205,7 +205,8 @@ tool({ id: 'ai-click', n: 'AI 震惊体', c: 'ai-write', d: '生成标题党风�
 tool({ id: 'ai-gongwen', n: 'AI 公文模板', c: 'ai-write', d: '生成通知类公文骨架。',
   f: [{ k: 'topic', t: '事项', type: 'text' }, { k: 'point', t: '内容要点', type: 'textarea' }, { k: 'out', t: '公文', type: 'out' }],
   run: function (v) {
-    var pts = (v.point || '').split(/[。\n]/).filter(Boolean).map(function (p) { return '（' + (pts.indexOf(p) + 1) + '）' + p.trim() + '。'; });
+    var raw = (v.point || '').split(/[。\n]/).filter(Boolean);
+    var pts = raw.map(function (p, i) { return '（' + (i + 1) + '）' + p.trim() + '。'; });
     return { out: '关于' + (v.topic || '有关事项') + '的通知\n\n各相关单位：\n现将' + (v.topic || '有关事项') + '通知如下：\n' + pts.join('\n') + '\n\n特此通知。\n\n' + (new Date().getFullYear()) + '年' + (new Date().getMonth() + 1) + '月' + new Date().getDate() + '日' };
   } });
 
