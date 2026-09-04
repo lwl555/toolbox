@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>视频链接解析下载 - 超有用的工具箱</title>
-<meta name="description" content="粘贴带文字的分享链接，自动提取并识别抖音/快手/B站/YouTube 等主流平台，给出规范链接与下载入口。在线免费使用，文件不上传服务器。">
+<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，站内调用解析服务显示直链预览与下载（不跳转第三方站）。在线免费使用，文件不上传服务器。">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
   <div class="tool-icon">视</div>
   <div style="flex:1;min-width:0">
     <h1>视频链接解析下载</h1>
-    <p class="lede">粘贴带文字的分享链接，自动提取并识别抖音/快手/B站/YouTube 等主流平台，给出规范链接与下载入口</p>
+    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，站内调用解析服务显示直链预览与下载（不跳转第三方站）</p>
   </div>
 </div>
 <div id="app"></div>
@@ -32,7 +32,7 @@
 
 <script src="../assets/runtime.js"></script>
 <script>
-/* 音视频 — 视频链接解析下载 */
+/* 音视频 — 视频链接解析下载（站内解析，不跳转第三方解析站） */
 function vdEsc(s) {
   return ('' + s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -84,36 +84,70 @@ function vdVid(url, plt) {
   if (s && s[1] !== 'www' && s[1] !== 'v') return s[1];
   return '';
 }
-function vdCard(url, plt, isShort) {
+
+// 服务端解析（Supabase Edge Function，免费档无需绑卡）。第三方解析能力只在后端用，前端不暴露第三方站。
+var VD_FN = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse";
+// 下面是你项目的公开 anon key（Supabase 设计上允许公开，可安全放在前端）
+var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
+
+function vdBaseCard(url, plt, isShort) {
   var vid = vdVid(url, plt);
   var idLabel = isShort ? '短链码' : '视频ID';
   var openUrl = vdEsc(url);
-  var parser = 'https://greenvideo.cc';
   var p = '<div style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">';
   p += '<div style="margin-bottom:8px"><span style="display:inline-block;padding:2px 10px;border:1px solid #1f2328;border-radius:999px;font-weight:600">' + vdEsc(plt.cn) + (plt.en ? ' · ' + vdEsc(plt.en) : '') + '</span></div>';
   p += '<div style="margin:4px 0"><b>' + idLabel + '：</b>' + (vid ? vdEsc(vid) : '<span style="color:#9b1c1c">短链需服务端解析</span>') + '</div>';
   p += '<div style="margin:4px 0;word-break:break-all"><b>链接：</b><a href="' + openUrl + '" target="_blank" rel="noopener" style="color:#0b57d0">' + openUrl + '</a></div>';
-  p += '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">';
-  p += '<a href="' + openUrl + '" target="_blank" rel="noopener" style="display:inline-block;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none">在' + vdEsc(plt.cn) + '打开</a>';
-  p += '<a href="' + parser + '" target="_blank" rel="noopener" style="display:inline-block;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none">去无水印解析站下载</a>';
-  p += '</div>';
-  p += '<div style="margin-top:10px;color:#9b1c1c;font-size:12px;line-height:1.6">说明：纯前端站点受浏览器跨域限制，无法直接抓取视频流字节。已为你提取并识别链接；点击「去无水印解析站下载」到第三方解析站粘贴即可保存。如需站内一键直链，可加 Supabase Edge Function 服务端解析（免费档无需绑卡）。</div>';
+  p += '<div style="margin-top:10px"><a href="' + openUrl + '" target="_blank" rel="noopener" style="display:inline-block;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none">在原平台打开</a></div>';
   p += '</div>';
   return p;
 }
+function vdDirectSection(video, title) {
+  var t = title ? vdEsc(title) : '视频';
+  return '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #d0d7de">'
+    + '<b>直链（站内预览 / 下载）：</b>'
+    + '<div style="margin:6px 0;color:#57606a;font-size:12px">' + vdEsc(t) + '</div>'
+    + '<video src="' + vdEsc(video) + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video>'
+    + '<div style="margin-top:8px"><a href="' + vdEsc(video) + '" download style="display:inline-block;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none">⬇ 下载视频</a></div>'
+    + '</div>';
+}
+function vdNoteNoService() {
+  return '<div style="margin-top:12px;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.7">'
+    + '尚未连上解析服务：请先部署 Supabase Edge Function <code>video-parse</code>，并在其 <code>UPSTREAMS</code> 填入<b>“活的第三方解析地址”</b>。'
+    + '<br>当前免费抖音解析上游均已失效（api.douyin.wtf 等返回 404，抖音页为 bot challenge），需自备可用上游（自托管解析服务或付费 API）。'
+    + '<br>架构已就绪：函数部署且上游可用后，这里会自动显示视频预览与下载按钮，全程不跳转第三方站。</div>';
+}
+
 var T = [];
 function tool(o) { T.push(o); }
 
-tool({ id: 'vd-parse', n: '视频链接解析下载', c: 'media', d: '粘贴带文字的分享链接，自动提取并识别抖音/快手/B站/YouTube 等主流平台，给出规范链接与下载入口',
+tool({ id: 'vd-parse', n: '视频链接解析下载', c: 'media', d: '粘贴带文字的分享链接，自动提取并识别主流平台，站内调用解析服务显示直链预览与下载（不跳转第三方站）',
   f: [{ k: 'text', t: '分享文字或链接（可整段粘贴，自动提取）', type: 'textarea', rows: 4, ph: '例：童年动画片主题曲 https://v.douyin.com/ulGUaTp0ZNM/ 复制此链接，打开Dou音搜索…' }, { k: 'out', t: '解析结果', type: 'outhtml' }],
-  run: function (v) {
+  run: async function (v) {
     var raw = (v.text || '').trim();
     if (!raw) return { out: '<div style="color:#9b1c1c;font:13px system-ui">请输入或粘贴分享链接。</div>' };
     var url = vdExtractUrl(raw);
     if (!url) return { out: '<div style="color:#9b1c1c;font:13px system-ui">未检测到有效视频链接，请检查粘贴内容。</div>' };
     var plt = vdDetect(url);
     var isShort = /^https?:\/\/v\.douyin\.com\//.test(url) || /\/(b23\.tv|douy\.in|t\.tiktok\.com|xhslink\.com|t\.cn)\//.test(url);
-    return { out: vdCard(url, plt, isShort) };
+    var out = vdBaseCard(url, plt, isShort);
+    try {
+      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var to = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
+      var r = await fetch(VD_FN, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': VD_ANON },
+        body: JSON.stringify({ url: url }),
+        signal: ctrl ? ctrl.signal : undefined
+      });
+      if (to) clearTimeout(to);
+      var j = await r.json();
+      if (j && j.ok && j.video) out += vdDirectSection(j.video, j.title);
+      else out += vdNoteNoService();
+    } catch (e) {
+      out += vdNoteNoService();
+    }
+    return { out: out };
   } });
 
 
