@@ -87,6 +87,7 @@ function vdVid(url, plt) {
 
 // 服务端解析（Supabase Edge Function，免费档无需绑卡）。第三方解析能力只在后端用，前端不暴露第三方站。
 var VD_FN = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse";
+var VD_PROXY = VD_FN.replace("video-parse", "video-proxy");
 // 下面是你项目的公开 anon key（Supabase 设计上允许公开，可安全放在前端）
 var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
 
@@ -102,20 +103,35 @@ function vdBaseCard(url, plt, isShort) {
   p += '</div>';
   return p;
 }
-function vdDirectSection(video, title) {
-  var t = title ? vdEsc(title) : '视频';
+// B站直链区：小视频走 /video-proxy（Referer 正确，跨域可控）；大视频(>6MB，受 Function 响应体限制)走直连(video 标签跨域播放通常放行)
+function vdDirectSection(video, title, cover, size, author, duration) {
+  var big = size && size > 6 * 1024 * 1024;
+  var playSrc = big ? vdEsc(video) : VD_PROXY + '?u=' + encodeURIComponent(video);
+  var dlHref = big ? vdEsc(video) : VD_PROXY + '?u=' + encodeURIComponent(video) + '&dl=1';
+  var meta = [];
+  if (title) meta.push(vdEsc(title));
+  if (author) meta.push('UP主：' + vdEsc(author));
+  if (duration) { var m = Math.floor(duration / 60), s = duration % 60; meta.push('时长：' + m + ':' + (s < 10 ? '0' : '') + s); }
+  var note = big
+    ? '<div style="margin-top:6px;color:#7a4b00;font-size:12px">视频较大（&gt;6MB），已用直链播放/下载；若浏览器拦截，请复制直链用下载器获取。</div>'
+    : '';
   return '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #d0d7de">'
     + '<b>直链（站内预览 / 下载）：</b>'
-    + '<div style="margin:6px 0;color:#57606a;font-size:12px">' + vdEsc(t) + '</div>'
-    + '<video src="' + vdEsc(video) + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video>'
-    + '<div style="margin-top:8px"><a href="' + vdEsc(video) + '" download style="display:inline-block;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none">⬇ 下载视频</a></div>'
-    + '</div>';
+    + (cover ? '<div style="margin:6px 0"><img src="' + vdEsc(cover) + '" style="max-width:160px;border-radius:8px"></div>' : '')
+    + (meta.length ? '<div style="margin:6px 0;color:#57606a;font-size:12px">' + meta.join(' ｜ ') + '</div>' : '')
+    + '<video src="' + playSrc + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video>'
+    + '<div style="margin-top:8px"><a href="' + dlHref + '" download style="display:inline-block;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none">⬇ 下载视频</a></div>'
+    + note + '</div>';
+}
+function vdPlatformNote(plt, reason) {
+  return '<div style="margin-top:12px;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.7">'
+    + '「' + vdEsc(plt.cn) + '」' + vdEsc(reason || '该平台暂不支持') + '</div>';
 }
 function vdNoteNoService() {
   return '<div style="margin-top:12px;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.7">'
-    + '尚未连上解析服务：请先部署 Supabase Edge Function <code>video-parse</code>，并在其 <code>UPSTREAMS</code> 填入<b>“活的第三方解析地址”</b>。'
-    + '<br>当前免费抖音解析上游均已失效（api.douyin.wtf 等返回 404，抖音页为 bot challenge），需自备可用上游（自托管解析服务或付费 API）。'
-    + '<br>架构已就绪：函数部署且上游可用后，这里会自动显示视频预览与下载按钮，全程不跳转第三方站。</div>';
+    + '解析服务待激活：<b>哔哩哔哩 B站</b>已支持站内直链下载。请部署 Supabase Edge Function <code>video-parse</code>（免费档，不绑卡）即可生效。'
+    + '<br>部署后这里会自动显示视频预览与下载按钮，全程不跳转第三方站。抖音等签名平台纯免费无解，已说明。'
+    + '<br>部署命令：<code>supabase functions deploy video-parse --project-ref wcnssyiqitugqfmcbdhe</code>（需先 <code>supabase login</code>）。</div>';
 }
 
 var T = [];
@@ -142,8 +158,13 @@ tool({ id: 'vd-parse', n: '视频链接解析下载', c: 'media', d: '粘贴带�
       });
       if (to) clearTimeout(to);
       var j = await r.json();
-      if (j && j.ok && j.video) out += vdDirectSection(j.video, j.title);
-      else out += vdNoteNoService();
+      if (j && j.ok && j.platform === 'bilibili' && j.videoUrl) {
+        out += vdDirectSection(j.videoUrl, j.title, j.cover, j.size, j.author, j.duration);
+      } else if (j && j.reason) {
+        out += vdPlatformNote(plt, j.reason);
+      } else {
+        out += vdNoteNoService();
+      }
     } catch (e) {
       out += vdNoteNoService();
     }
