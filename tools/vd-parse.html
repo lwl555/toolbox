@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>视频链接解析下载 - 超有用的工具箱</title>
-<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，站内调用解析服务显示直链预览与下载（不跳转第三方站）。在线免费使用，文件不上传服务器。">
+<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/B站/快手等，套壳中转不跳转第三方站）。在线免费使用，文件不上传服务器。">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
   <div class="tool-icon">视</div>
   <div style="flex:1;min-width:0">
     <h1>视频链接解析下载</h1>
-    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，站内调用解析服务显示直链预览与下载（不跳转第三方站）</p>
+    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/B站/快手等，套壳中转不跳转第三方站）</p>
   </div>
 </div>
 <div id="app"></div>
@@ -32,124 +32,128 @@
 
 <script src="../assets/runtime.js"></script>
 <script>
-/* 音视频 — 视频链接解析下载（站内解析，不跳转第三方解析站） */
+/* 音视频 — 视频链接解析下载（套壳中转：前端只连我们自己的解析服务，第三方平台在后端，站内显示不跳转） */
 function vdEsc(s) {
   return ('' + s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 function vdExtractUrl(text) {
   if (!text) return '';
   var m = ('' + text).match(/https?:\/\/[^\s"'<>`（）【】\s]+/i);
-  if (m) {
-    var u = m[0].replace(/[^\w\-./?:&=#%:@~]+$/, '');
-    return u;
-  }
-  var m2 = ('' + text).match(/(?:v\.douyin\.com\/\S+|b23\.tv\/\S+|t\.tiktok\.com\/\S+|douy\.in\/\S+|xhslink\.com\/\S+|t\.cn\/\S+)/i);
+  if (m) return m[0].replace(/[^\w\-./?:&=#%:@~]+$/, '');
+  var m2 = ('' + text).match(
+    /(?:v\.douyin\.com\/\S+|b23\.tv\/\S+|t\.tiktok\.com\/\S+|douy\.in\/\S+|xhslink\.com\/\S+|t\.cn\/\S+|kuaishou\.com\/\S+|ixigua\.com\/\S+|weibo\.com\/\S+|xiaohongshu\.com\/\S+)/i,
+  );
   if (m2) { var s = m2[0]; return s.indexOf('http') === 0 ? s : 'https://' + s; }
   return '';
 }
 function vdDetect(url) {
   var h = ('' + url).toLowerCase();
   var map = [
-    [/v\.douyin\.com|douyin\.com|iesdouyin\.com/, '抖音', 'Douyin'],
-    [/tiktok\.com/, 'TikTok', 'TikTok'],
-    [/b23\.tv|bilibili\.(com|tv)/, '哔哩哔哩', 'Bilibili'],
-    [/kuaishou\.com|ksapp|v\.kuaishou/, '快手', 'Kuaishou'],
-    [/ixigua\.com|xigua/, '西瓜视频', 'Xigua'],
-    [/weibo\.com|weibo\.cn/, '微博', 'Weibo'],
-    [/xiaohongshu\.com|xhslink\.com/, '小红书', 'Xiaohongshu'],
-    [/youtube\.com|youtu\.be|yt\.be/, 'YouTube', 'YouTube'],
-    [/twitter\.com|x\.com/, 'X', 'Twitter'],
-    [/instagram\.com/, 'Instagram', 'Instagram'],
-    [/facebook\.com|fb\.watch/, 'Facebook', 'Facebook'],
-    [/v\.qq\.com/, '腾讯视频', 'Tencent'],
-    [/youku/, '优酷', 'Youku'],
-    [/iqiyi/, '爱奇艺', 'iQiyi'],
-    [/mgtv/, '芒果TV', 'Mango'],
-    [/douyu/, '斗鱼', 'Douyu'],
-    [/huya/, '虎牙', 'Huya'],
-    [/acfun/, 'AcFun', 'AcFun'],
-    [/zhihu/, '知乎', 'Zhihu'],
-    [/ted\.com/, 'TED', 'TED'],
-    [/vimeo/, 'Vimeo', 'Vimeo'],
-    [/twitch/, 'Twitch', 'Twitch'],
-    [/t\.me|telegram/, 'Telegram', 'Telegram']
+    [/v\.douyin\.com|douyin\.com|iesdouyin\.com/, '抖音'],
+    [/tiktok\.com/, 'TikTok'],
+    [/b23\.tv|bilibili\.(com|tv)/, '哔哩哔哩'],
+    [/kuaishou\.com|ksapp|v\.kuaishou/, '快手'],
+    [/ixigua\.com|xigua/, '西瓜视频'],
+    [/weibo\.com|weibo\.cn/, '微博'],
+    [/xiaohongshu\.com|xhslink\.com/, '小红书'],
+    [/youtube\.com|youtu\.be|yt\.be/, 'YouTube'],
+    [/twitter\.com|x\.com/, 'X'],
+    [/instagram\.com/, 'Instagram'],
+    [/facebook\.com|fb\.watch/, 'Facebook'],
+    [/v\.qq\.com/, '腾讯视频'],
+    [/youku/, '优酷'],
+    [/iqiyi/, '爱奇艺'],
+    [/mgtv/, '芒果TV'],
+    [/douyu/, '斗鱼'],
+    [/huya/, '虎牙'],
+    [/acfun/, 'AcFun'],
+    [/zhihu/, '知乎']
   ];
-  for (var i = 0; i < map.length; i++) if (map[i][0].test(h)) return { cn: map[i][1], en: map[i][2] };
-  return { cn: '未知平台', en: '' };
-}
-function vdVid(url, plt) {
-  var m = url.match(/\/(?:video|status|watch)\/([\w-]+)/i) || url.match(/[?&]v=([\w-]+)/i);
-  if (m) return m[1];
-  var s = url.match(/\/\/[\w.-]+\/([\w-]{4,})/i);
-  if (s && s[1] !== 'www' && s[1] !== 'v') return s[1];
-  return '';
+  for (var i = 0; i < map.length; i++) if (map[i][0].test(h)) return map[i][1];
+  return '未知平台';
 }
 
-// 服务端解析（Supabase Edge Function，免费档无需绑卡）。第三方解析能力只在后端用，前端不暴露第三方站。
+// 我们只连自己部署的解析服务(免费 Supabase Edge Function)。第三方解析平台只在服务端被调用, 前端永不接触, 因此不暴露任何第三方站。
 var VD_FN = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse";
-var VD_PROXY = VD_FN.replace("video-parse", "video-proxy");
-// 下面是你项目的公开 anon key（Supabase 设计上允许公开，可安全放在前端）
+// 项目的公开 anon key (Supabase 设计上允许公开, 可安全放前端)
 var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
 
-function vdBaseCard(url, plt, isShort) {
-  var vid = vdVid(url, plt);
-  var idLabel = isShort ? '短链码' : '视频ID';
-  var openUrl = vdEsc(url);
+function vdBadge(plt) {
+  return '<span style="display:inline-block;padding:2px 10px;border:1px solid #1f2328;border-radius:999px;font-weight:600">' + vdEsc(plt) + '</span>';
+}
+function vdBtn(label, href, primary) {
+  var c = primary ? '#0b57d0' : '#1f2328';
+  return '<a href="' + href + '" target="_blank" rel="noopener" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid ' + c + ';border-radius:6px;color:' + c + ';text-decoration:none;font-size:13px">' + label + '</a>';
+}
+
+// 成功渲染: 站内预览 + 下载(全部直链, 不跳转第三方站)
+function vdRenderOk(j, plt) {
   var p = '<div style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">';
-  p += '<div style="margin-bottom:8px"><span style="display:inline-block;padding:2px 10px;border:1px solid #1f2328;border-radius:999px;font-weight:600">' + vdEsc(plt.cn) + (plt.en ? ' · ' + vdEsc(plt.en) : '') + '</span></div>';
-  p += '<div style="margin:4px 0"><b>' + idLabel + '：</b>' + (vid ? vdEsc(vid) : '<span style="color:#9b1c1c">短链需服务端解析</span>') + '</div>';
-  p += '<div style="margin:4px 0;word-break:break-all"><b>链接：</b><a href="' + openUrl + '" target="_blank" rel="noopener" style="color:#0b57d0">' + openUrl + '</a></div>';
-  p += '<div style="margin-top:10px"><a href="' + openUrl + '" target="_blank" rel="noopener" style="display:inline-block;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none">在原平台打开</a></div>';
+  p += '<div style="margin-bottom:8px">' + vdBadge(j.platform || plt) + '</div>';
+  var meta = [];
+  if (j.title) meta.push(vdEsc(j.title));
+  if (j.author) meta.push('作者：' + vdEsc(j.author));
+  if (meta.length) p += '<div style="margin:6px 0;font-weight:600">' + meta.join(' ｜ ') + '</div>';
+  if (j.cover) p += '<div style="margin:6px 0"><img src="' + vdEsc(j.cover) + '" style="max-width:180px;border-radius:8px"></div>';
+  // 视频
+  var vids = j.video || [];
+  if (vids.length) {
+    p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>视频（站内预览 / 下载）：</b>';
+    p += '<div style="margin:8px 0"><video src="' + vdEsc(vids[0]) + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video></div>';
+    p += vdBtn('⬇ 下载视频', vdEsc(vids[0]), true);
+    // 多清晰度/多片段: 列出其余
+    for (var i = 1; i < vids.length; i++) p += vdBtn('下载片段' + (i + 1), vdEsc(vids[i]), false);
+    p += '</div>';
+  }
+  // 图文帖(小红书等)
+  var imgs = j.images || [];
+  if (imgs.length && !vids.length) {
+    p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>图片（可逐个保存）：</b><div style="margin:8px 0">';
+    for (var k = 0; k < imgs.length; k++) p += '<div style="margin:6px 0"><img src="' + vdEsc(imgs[k]) + '" style="max-width:200px;border-radius:8px"></div>' + vdBtn('保存图片' + (k + 1), vdEsc(imgs[k]), false);
+    p += '</div></div>';
+  }
+  // 音频(背景音乐)
+  var aud = j.audio || [];
+  if (aud.length) {
+    p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>背景音乐：</b><div style="margin:8px 0">';
+    p += '<audio src="' + vdEsc(aud[0]) + '" controls style="max-width:100%"></audio></div>';
+    p += vdBtn('⬇ 下载音乐', vdEsc(aud[0]), false) + '</div>';
+  }
   p += '</div>';
   return p;
 }
-// B站直链区：小视频走 /video-proxy（Referer 正确，跨域可控）；大视频(>6MB，受 Function 响应体限制)走直连(video 标签跨域播放通常放行)
-function vdDirectSection(video, title, cover, size, author, duration) {
-  var big = size && size > 6 * 1024 * 1024;
-  var playSrc = big ? vdEsc(video) : VD_PROXY + '?u=' + encodeURIComponent(video);
-  var dlHref = big ? vdEsc(video) : VD_PROXY + '?u=' + encodeURIComponent(video) + '&dl=1';
-  var meta = [];
-  if (title) meta.push(vdEsc(title));
-  if (author) meta.push('UP主：' + vdEsc(author));
-  if (duration) { var m = Math.floor(duration / 60), s = duration % 60; meta.push('时长：' + m + ':' + (s < 10 ? '0' : '') + s); }
-  var note = big
-    ? '<div style="margin-top:6px;color:#7a4b00;font-size:12px">视频较大（&gt;6MB），已用直链播放/下载；若浏览器拦截，请复制直链用下载器获取。</div>'
-    : '';
-  return '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #d0d7de">'
-    + '<b>直链（站内预览 / 下载）：</b>'
-    + (cover ? '<div style="margin:6px 0"><img src="' + vdEsc(cover) + '" style="max-width:160px;border-radius:8px"></div>' : '')
-    + (meta.length ? '<div style="margin:6px 0;color:#57606a;font-size:12px">' + meta.join(' ｜ ') + '</div>' : '')
-    + '<video src="' + playSrc + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video>'
-    + '<div style="margin-top:8px"><a href="' + dlHref + '" download style="display:inline-block;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none">⬇ 下载视频</a></div>'
-    + note + '</div>';
-}
-function vdPlatformNote(plt, reason) {
-  return '<div style="margin-top:12px;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.7">'
-    + '「' + vdEsc(plt.cn) + '」' + vdEsc(reason || '该平台暂不支持') + '</div>';
+function vdNote(reason, warn) {
+  var border = warn ? '#f0c36d' : '#d0d7de', bg = warn ? '#fff8e6' : '#f6f8fa', col = warn ? '#7a4b00' : '#57606a';
+  return '<div style="margin-top:12px;padding:10px;border:1px solid ' + border + ';background:' + bg + ';border-radius:8px;color:' + col + ';font-size:12px;line-height:1.7">' + vdEsc(reason) + '</div>';
 }
 function vdNoteNoService() {
   return '<div style="margin-top:12px;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.7">'
-    + '解析服务待激活：<b>哔哩哔哩 B站</b>已支持站内直链下载。请部署 Supabase Edge Function <code>video-parse</code>（免费档，不绑卡）即可生效。'
-    + '<br>部署后这里会自动显示视频预览与下载按钮，全程不跳转第三方站。抖音等签名平台纯免费无解，已说明。'
-    + '<br>部署命令：<code>supabase functions deploy video-parse --project-ref wcnssyiqitugqfmcbdhe</code>（需先 <code>supabase login</code>）。</div>';
+    + '<b>解析服务待激活</b>：本站视频解析走自建中转服务（免费 Supabase Edge Function，不绑卡）。'
+    + '部署后这里会自动显示站内预览与下载，全程不跳转第三方站。'
+    + '<br>激活命令（你登录一次即可）：<br><code>supabase login --token &lt;token&gt;</code><br><code>supabase functions deploy video-parse --project-ref wcnssyiqitugqfmcbdhe --no-verify-jwt</code>'
+    + '<br>token 获取：supabase.com/dashboard/account/tokens</div>';
 }
 
 var T = [];
 function tool(o) { T.push(o); }
 
-tool({ id: 'vd-parse', n: '视频链接解析下载', c: 'media', d: '粘贴带文字的分享链接，自动提取并识别主流平台，站内调用解析服务显示直链预览与下载（不跳转第三方站）',
-  f: [{ k: 'text', t: '分享文字或链接（可整段粘贴，自动提取）', type: 'textarea', rows: 4, ph: '例：童年动画片主题曲 https://v.douyin.com/ulGUaTp0ZNM/ 复制此链接，打开Dou音搜索…' }, { k: 'out', t: '解析结果', type: 'outhtml' }],
+tool({
+  id: 'vd-parse', n: '视频链接解析下载', c: 'media',
+  d: '粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/B站/快手等，套壳中转不跳转第三方站）',
+  f: [{ k: 'text', t: '分享文字或链接（可整段粘贴，自动提取）', type: 'textarea', rows: 4, ph: '例：童年动画片主题曲 https://v.douyin.com/ulGUaTp0ZNM/ 复制此链接，打开Dou音搜索…' },
+      { k: 'out', t: '解析结果', type: 'outhtml' }],
   run: async function (v) {
     var raw = (v.text || '').trim();
     if (!raw) return { out: '<div style="color:#9b1c1c;font:13px system-ui">请输入或粘贴分享链接。</div>' };
     var url = vdExtractUrl(raw);
     if (!url) return { out: '<div style="color:#9b1c1c;font:13px system-ui">未检测到有效视频链接，请检查粘贴内容。</div>' };
     var plt = vdDetect(url);
-    var isShort = /^https?:\/\/v\.douyin\.com\//.test(url) || /\/(b23\.tv|douy\.in|t\.tiktok\.com|xhslink\.com|t\.cn)\//.test(url);
-    var out = vdBaseCard(url, plt, isShort);
+    var head = '<div style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">'
+      + '<div style="margin-bottom:8px">' + vdBadge(plt) + '</div>'
+      + '<div style="margin:4px 0;word-break:break-all"><b>链接：</b>' + vdEsc(url) + '</div></div>';
     try {
       var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var to = ctrl ? setTimeout(function () { ctrl.abort(); }, 8000) : null;
+      var to = ctrl ? setTimeout(function () { ctrl.abort(); }, 12000) : null;
       var r = await fetch(VD_FN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': VD_ANON },
@@ -158,18 +162,14 @@ tool({ id: 'vd-parse', n: '视频链接解析下载', c: 'media', d: '粘贴带�
       });
       if (to) clearTimeout(to);
       var j = await r.json();
-      if (j && j.ok && j.platform === 'bilibili' && j.videoUrl) {
-        out += vdDirectSection(j.videoUrl, j.title, j.cover, j.size, j.author, j.duration);
-      } else if (j && j.reason) {
-        out += vdPlatformNote(plt, j.reason);
-      } else {
-        out += vdNoteNoService();
-      }
+      if (j && j.ok) return { out: head + vdRenderOk(j, plt) };
+      if (j && (j.reason || j.error)) return { out: head + vdNote(j.reason || j.error, false) };
+      return { out: head + vdNoteNoService() };
     } catch (e) {
-      out += vdNoteNoService();
+      return { out: head + vdNoteNoService() };
     }
-    return { out: out };
-  } });
+  }
+});
 
 
 window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "vd-parse"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
