@@ -185,6 +185,15 @@ tool({
     var head = '<div style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">'
       + '<div style="margin-bottom:8px">' + vdBadge(plt) + '</div>'
       + '<div style="margin:4px 0;word-break:break-all"><b>链接：</b>' + vdEsc(url) + '</div></div>';
+    // 运行时提示：点击「解析」到拿到结果之间(冷启动可能 10–30s)显示加载状态, 避免界面空白无反馈
+    var vdOutEl = (typeof document !== 'undefined') ? document.getElementById('f_out') : null;
+    if (vdOutEl) {
+      vdOutEl.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;padding:14px;color:#57606a;font:13px/1.5 system-ui">'
+        + '<span style="width:16px;height:16px;flex:0 0 16px;border:2px solid #d0d7de;border-top-color:#157a5e;border-radius:50%;animation:vd-spin .8s linear infinite"></span>'
+        + '<div>正在解析 <b>' + vdEsc(plt) + '</b> 的链接…<br><span style="color:#8b949e;font-size:12px">首次调用解析服务可能需 10–30 秒冷启动，请稍候。</span></div>'
+        + '</div><style>@keyframes vd-spin{to{transform:rotate(360deg)}}</style>';
+    }
     try {
       var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
       // 35s: 给 Supabase Edge Function 冷启动 + 第三方解析留够时间
