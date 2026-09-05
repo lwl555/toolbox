@@ -141,6 +141,18 @@ function vdRenderOk(j, plt) {
   p += '</div>';
   return p;
 }
+function vdRenderHlsFallback(j, plt) {
+  var p = '<div class="vd-tool-wrap" style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">';
+  p += '<div style="margin-bottom:8px">' + vdBadge(j.platform || plt) + '</div>';
+  if (j.title) p += '<div style="margin:6px 0;font-weight:600">' + vdEsc(j.title) + '</div>';
+  p += '<div style="margin:10px 0;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.6">当前浏览器不支持 HLS 流在线播放（' + vdEsc(j.platform || plt) + ' 链接）。请用 Safari / iOS 打开本页，或点击下方按钮下载后本地播放。</div>';
+  var vids = j.video || [];
+  for (var i = 0; i < vids.length; i++) {
+    p += '<a class="vd-dlbtn" href="' + vdProxy(vids[i]) + '" download="video' + (i ? ('_' + i) : '') + '.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none;font-size:13px;font-weight:600">⬇ 下载视频(HLS)</a>';
+  }
+  p += '</div>';
+  return p;
+}
 function vdNote(reason, warn) {
   var border = warn ? '#f0c36d' : '#d0d7de', bg = warn ? '#fff8e6' : '#f6f8fa', col = warn ? '#7a4b00' : '#57606a';
   return '<div style="margin-top:12px;padding:10px;border:1px solid ' + border + ';background:' + bg + ';border-radius:8px;color:' + col + ';font-size:12px;line-height:1.7">' + vdEsc(reason) + '</div>';
@@ -184,7 +196,12 @@ tool({
       });
       if (to) clearTimeout(to);
       var j = await r.json();
-      if (j && j.ok) return { out: head + vdRenderOk(j, plt) };
+      if (j && j.ok) {
+        var isHls = (j.video || []).some(function (u) { return /\.m3u8/i.test(u); });
+        var canHls = (typeof document !== 'undefined') && document.createElement('video').canPlayType('application/vnd.apple.mpegurl');
+        if (isHls && !canHls) return { out: head + vdRenderHlsFallback(j, plt) };
+        return { out: head + vdRenderOk(j, plt) };
+      }
       if (j && (j.reason || j.error)) {
         if (VD_UNSUPPORTED.indexOf(plt) >= 0) {
           return { out: head + vdNote('该平台（' + plt + '）当前解析后端暂不支持。已支持：抖音 / 哔哩哔哩 / 快手 / YouTube（YouTube 为 HLS 流，建议用 Safari / iOS 或下载后播放）。', true) };
