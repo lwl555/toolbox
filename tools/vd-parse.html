@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>视频链接解析下载 - 超有用的工具箱</title>
-<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/B站/快手等，套壳中转不跳转第三方站）。在线免费使用，文件不上传服务器。">
+<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/哔哩哔哩/快手/YouTube 等，套壳中转不跳转第三方站）。在线免费使用，文件不上传服务器。">
 <link rel="stylesheet" href="../assets/style.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
   <div class="tool-icon">视</div>
   <div style="flex:1;min-width:0">
     <h1>视频链接解析下载</h1>
-    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/B站/快手等，套壳中转不跳转第三方站）</p>
+    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/哔哩哔哩/快手/YouTube 等，套壳中转不跳转第三方站）</p>
   </div>
 </div>
 <div id="app"></div>
@@ -78,14 +78,16 @@ var VD_FN = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse";
 // 项目自身部署的视频流代理(同 Function): 服务端注入 Referer, 解决抖音/B站/快手等防盗链导致浏览器原生 <video> 黑屏
 var VD_PROXY = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse/video-proxy";
 // 项目的公开 anon key (Supabase 设计上允许公开, 可安全放前端)
-var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZSI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
+var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
 
 // 视频/音频直链 -> 走我们的代理 (解防盗链)
 function vdProxy(url) {
   if (!url) return '';
-  // 已经是本站代理或 data:/blob: 直连
   if (url.indexOf(VD_PROXY) === 0) return url;
-  if (/^(data:|blob:|https?:\/\/(wcnssyiqitugqfmcbdhe\.functions\.supabase\.co|lwl555\.github\.io))/i.test(url)) return url;
+  if (/^(data:|blob:)/i.test(url)) return url;
+  // HLS(m3u8) 由原站提供 CORS, 浏览器原生支持(Safari/iOS); 经代理会破坏 ts 分片, 故直连
+  if (/\.m3u8(\?|$)/i.test(url) || /googlevideo\.com|youtube\.com/i.test(url)) return url;
+  if (/^https?:\/\/(wcnssyiqitugqfmcbdhe\.functions\.supabase\.co|lwl555\.github\.io)/i.test(url)) return url;
   return VD_PROXY + '?url=' + encodeURIComponent(url);
 }
 
@@ -99,7 +101,7 @@ function vdBtn(label, href, primary) {
 
 // 成功渲染: 站内预览 + 下载(全部直链, 不跳转第三方站)
 function vdRenderOk(j, plt) {
-  var p = '<div style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">';
+  var p = '<div class="vd-tool-wrap" style="font:13px/1.65 system-ui,-apple-system,' + "'Segoe UI'" + ',sans-serif;color:#1f2328">';
   p += '<div style="margin-bottom:8px">' + vdBadge(j.platform || plt) + '</div>';
   var meta = [];
   if (j.title) meta.push(vdEsc(j.title));
@@ -110,9 +112,9 @@ function vdRenderOk(j, plt) {
   var vids = j.video || [];
   if (vids.length) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>视频（站内预览 / 下载）：</b>';
-    p += '<div style="margin:8px 0"><video src="' + vdProxy(vids[0]) + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video></div>';
+    // playsinline 等属性是修复 iOS / 微信内联播放默认静音的关键
+    p += '<div style="margin:8px 0"><video src="' + vdProxy(vids[0]) + '" controls preload="metadata" playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="true" onerror="try{window.__vdHlsFallback(this)}catch(e){}" style="width:100%;max-width:100%;border-radius:8px;background:#000"></video></div>';
     p += '<a href="' + vdProxy(vids[0]) + '" download="video.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none;font-size:13px;font-weight:600">⬇ 下载视频</a>';
-    // 多清晰度/多片段: 列出其余
     for (var i = 1; i < vids.length; i++) {
       var dl = '<a href="' + vdProxy(vids[i]) + '" download="video_part' + (i + 1) + '.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">下载片段' + (i + 1) + '</a>';
       p += dl;
@@ -133,7 +135,7 @@ function vdRenderOk(j, plt) {
   var aud = j.audio || [];
   if (aud.length) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>背景音乐：</b><div style="margin:8px 0">';
-    p += '<audio src="' + vdProxy(aud[0]) + '" controls style="max-width:100%"></audio></div>';
+    p += '<audio src="' + vdProxy(aud[0]) + '" controls style="width:100%;max-width:100%"></audio></div>';
     p += '<a href="' + vdProxy(aud[0]) + '" download="bgm.mp3" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">⬇ 下载音乐</a></div>';
   }
   p += '</div>';
@@ -150,12 +152,15 @@ function vdNoteNoService(reason) {
     + '<br>原因：' + (reason ? vdEsc(reason) : '网络/超时') + '</div>';
 }
 
+// 解析后端(diadi)实测暂不支持的平台 -> 给友好提示而非笼统"解析失败"
+var VD_UNSUPPORTED = ['TikTok', '小红书', '微博', 'X', 'Instagram', 'Facebook', '腾讯视频', '优酷', '爱奇艺', '芒果TV', '斗鱼', '虎牙', 'AcFun', '知乎'];
+
 var T = [];
 function tool(o) { T.push(o); }
 
 tool({
   id: 'vd-parse', n: '视频链接解析下载', c: 'media',
-  d: '粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/B站/快手等，套壳中转不跳转第三方站）',
+  d: '粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/哔哩哔哩/快手/YouTube 等，套壳中转不跳转第三方站）',
   f: [{ k: 'text', t: '分享文字或链接（可整段粘贴，自动提取）', type: 'textarea', rows: 4, ph: '例：童年动画片主题曲 https://v.douyin.com/ulGUaTp0ZNM/ 复制此链接，打开Dou音搜索…' },
       { k: 'out', t: '解析结果', type: 'outhtml' }],
   run: async function (v) {
@@ -180,7 +185,12 @@ tool({
       if (to) clearTimeout(to);
       var j = await r.json();
       if (j && j.ok) return { out: head + vdRenderOk(j, plt) };
-      if (j && (j.reason || j.error)) return { out: head + vdNote(j.reason || j.error, false) };
+      if (j && (j.reason || j.error)) {
+        if (VD_UNSUPPORTED.indexOf(plt) >= 0) {
+          return { out: head + vdNote('该平台（' + plt + '）当前解析后端暂不支持。已支持：抖音 / 哔哩哔哩 / 快手 / YouTube（YouTube 为 HLS 流，建议用 Safari / iOS 或下载后播放）。', true) };
+        }
+        return { out: head + vdNote(j.reason || j.error, false) };
+      }
       return { out: head + vdNoteNoService('返回值缺少 ok 字段') };
     } catch (e) {
       var msg = (e && e.name === 'AbortError') ? '请求超时(首次冷启动约 10-30 秒), 请重试' : String(e);
@@ -188,6 +198,32 @@ tool({
     }
   }
 });
+
+// 移动端适配: 注入一次性全局 style (textarea 16px 防 iOS 聚焦缩放, 按钮在窄屏加大)
+(function () {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('vd-mobile-style')) return;
+  var s = document.createElement('style');
+  s.id = 'vd-mobile-style';
+  s.textContent = '@media (max-width:640px){'
+    + ' textarea{font-size:16px !important}'
+    + ' .vd-tool-wrap video{width:100%}'
+    + ' .vd-tool-wrap a[download]{display:block;text-align:center;padding:11px 16px !important;font-size:15px !important;margin:8px 0 !important}'
+    + '}';
+  document.head.appendChild(s);
+})();
+
+// YouTube 等 HLS 流: Chrome 不支持原生 HLS, 出错时降级为提示(引导 Safari/iOS 或下载)
+if (typeof window !== 'undefined') {
+  window.__vdHlsFallback = function (v) {
+    if (!v || v._fb) return; v._fb = true;
+    var d = document.createElement('div');
+    d.style.cssText = 'margin:8px 0;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.6';
+    d.textContent = '当前浏览器不支持 HLS 流在线播放（YouTube 链接）。请用 Safari / iOS 打开本页，或点下方按钮下载后本地播放。';
+    if (v.parentNode) v.parentNode.insertBefore(d, v.nextSibling);
+    v.style.display = 'none';
+  };
+}
 
 
 window.TOOL = (function () { var t = (typeof T !== 'undefined') ? T.filter(function (x) { return x.id === "vd-parse"; })[0] : null; if (t && !t.fields) t.fields = t.f; return t; })();
