@@ -75,8 +75,19 @@ function vdDetect(url) {
 
 // 我们只连自己部署的解析服务(免费 Supabase Edge Function)。第三方解析平台只在服务端被调用, 前端永不接触, 因此不暴露任何第三方站。
 var VD_FN = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse";
+// 项目自身部署的视频流代理(同 Function): 服务端注入 Referer, 解决抖音/B站/快手等防盗链导致浏览器原生 <video> 黑屏
+var VD_PROXY = "https://wcnssyiqitugqfmcbdhe.functions.supabase.co/video-parse/video-proxy";
 // 项目的公开 anon key (Supabase 设计上允许公开, 可安全放前端)
-var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
+var VD_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZSI6IndjbnNzeWlxaXR1Z3FmbWNiZGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0MDEyNzUsImV4cCI6MjA5ODk3NzI3NX0.9EfbEr7BQhZtbOwHJ3IrkOy16kcaxlmzuJuV0A2Z8Eg";
+
+// 视频/音频直链 -> 走我们的代理 (解防盗链)
+function vdProxy(url) {
+  if (!url) return '';
+  // 已经是本站代理或 data:/blob: 直连
+  if (url.indexOf(VD_PROXY) === 0) return url;
+  if (/^(data:|blob:|https?:\/\/(wcnssyiqitugqfmcbdhe\.functions\.supabase\.co|lwl555\.github\.io))/i.test(url)) return url;
+  return VD_PROXY + '?url=' + encodeURIComponent(url);
+}
 
 function vdBadge(plt) {
   return '<span style="display:inline-block;padding:2px 10px;border:1px solid #1f2328;border-radius:999px;font-weight:600">' + vdEsc(plt) + '</span>';
@@ -99,25 +110,31 @@ function vdRenderOk(j, plt) {
   var vids = j.video || [];
   if (vids.length) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>视频（站内预览 / 下载）：</b>';
-    p += '<div style="margin:8px 0"><video src="' + vdEsc(vids[0]) + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video></div>';
-    p += vdBtn('⬇ 下载视频', vdEsc(vids[0]), true);
+    p += '<div style="margin:8px 0"><video src="' + vdProxy(vids[0]) + '" controls preload="metadata" style="max-width:100%;border-radius:8px;background:#000"></video></div>';
+    p += '<a href="' + vdProxy(vids[0]) + '" download="video.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none;font-size:13px;font-weight:600">⬇ 下载视频</a>';
     // 多清晰度/多片段: 列出其余
-    for (var i = 1; i < vids.length; i++) p += vdBtn('下载片段' + (i + 1), vdEsc(vids[i]), false);
+    for (var i = 1; i < vids.length; i++) {
+      var dl = '<a href="' + vdProxy(vids[i]) + '" download="video_part' + (i + 1) + '.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">下载片段' + (i + 1) + '</a>';
+      p += dl;
+    }
     p += '</div>';
   }
   // 图文帖(小红书等)
   var imgs = j.images || [];
   if (imgs.length && !vids.length) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>图片（可逐个保存）：</b><div style="margin:8px 0">';
-    for (var k = 0; k < imgs.length; k++) p += '<div style="margin:6px 0"><img src="' + vdEsc(imgs[k]) + '" style="max-width:200px;border-radius:8px"></div>' + vdBtn('保存图片' + (k + 1), vdEsc(imgs[k]), false);
+    for (var k = 0; k < imgs.length; k++) {
+      p += '<div style="margin:6px 0"><img src="' + vdEsc(imgs[k]) + '" style="max-width:200px;border-radius:8px"></div>';
+      p += '<a href="' + vdEsc(imgs[k]) + '" target="_blank" rel="noopener" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">保存图片' + (k + 1) + '</a>';
+    }
     p += '</div></div>';
   }
   // 音频(背景音乐)
   var aud = j.audio || [];
   if (aud.length) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>背景音乐：</b><div style="margin:8px 0">';
-    p += '<audio src="' + vdEsc(aud[0]) + '" controls style="max-width:100%"></audio></div>';
-    p += vdBtn('⬇ 下载音乐', vdEsc(aud[0]), false) + '</div>';
+    p += '<audio src="' + vdProxy(aud[0]) + '" controls style="max-width:100%"></audio></div>';
+    p += '<a href="' + vdProxy(aud[0]) + '" download="bgm.mp3" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">⬇ 下载音乐</a></div>';
   }
   p += '</div>';
   return p;
