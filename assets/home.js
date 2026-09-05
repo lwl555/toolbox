@@ -229,7 +229,17 @@ document.addEventListener('DOMContentLoaded', function () {
     location.href = 'tools/' + t.id + '.html';
   };
 
-  /* 分类导航：点击平滑滚动到对应区块，并把当前 tab 滚到可视区中央；滚动时高亮当前分类（scroll-spy） */
+  /* 分类导航：点击平滑滚动到对应区块。
+     移动端坑修复：原 sec.scrollIntoView({behavior:'smooth'}) 在 iOS Safari 上经常不滚动/定位漂移，
+     且连点 tab.scrollIntoView 会与页面纵向滚动打架 → 手机端"点了没反应/跳错位置"。
+     改为确定性 window.scrollTo(减去顶栏实际高度) + 仅在分类栏内部横向居中当前 tab（不触发页面纵向滚动）。 */
+  var headerH = 108;
+  function recalcHeaderH() {
+    var t = document.querySelector('.top'), c = document.querySelector('.cats');
+    headerH = (t ? t.offsetHeight : 52) + (c ? c.offsetHeight : 48) + 4;
+  }
+  recalcHeaderH();
+  var _navLock = 0; /* 导航锁：点击分类后滚动途中，禁止 scroll-spy 把高亮算飞 */
   var tabEls = Array.prototype.slice.call(document.querySelectorAll('.cat-tab'));
   tabEls.forEach(function (tab) {
     tab.addEventListener('click', function (e) {
@@ -246,23 +256,35 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         var sec = document.querySelector(id);
         if (sec) {
-          sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          recalcHeaderH();
+          var y = sec.getBoundingClientRect().top + window.scrollY - headerH;
+          if (y < 0) y = 0;
+          /* 确定性滚动：直接算目标 Y，绕开 scrollIntoView 在移动端的不可靠行为 */
+          try { window.scrollTo({ top: y, behavior: 'smooth' }); }
+          catch (err) { window.scrollTo(0, y); }
+          /* 把当前 tab 横向居中到分类栏：只动分类栏自身的横向滚动，绝不影响页面纵向滚动 */
+          var catsIn = document.getElementById('tabs');
+          if (catsIn && tab.parentNode === catsIn) {
+            var target = tab.offsetLeft - catsIn.clientWidth / 2 + tab.offsetWidth / 2;
+            try { catsIn.scrollTo({ left: Math.max(0, target), behavior: 'smooth' }); }
+            catch (err) { catsIn.scrollLeft = Math.max(0, target); }
+          }
         }
-        /* 点击即时高亮，不依赖 scroll-spy 滞后 */
+        /* 点击即时高亮，并锁住 scroll-spy 直到滚动结束，避免滚动途中高亮被算飞 */
         tabEls.forEach(function (t) { t.classList.remove('on'); });
         tab.classList.add('on');
-        /* 平滑滚动结束后，让 scroll-spy 按最终落点校准高亮，避免错位观感 */
-        setTimeout(spy, 520);
+        _navLock = Date.now() + 3000;
+        setTimeout(spy, 3100); /* 兜底：不支持 scrollend 的浏览器，滚动结束后校准一次 */
       }
     });
   });
   var spy = function () {
+    if (_navLock > Date.now()) return; /* 导航锁定期内不打断用户点击的高亮 */
     var cur = null, best = 1e9;
     var secs = document.querySelectorAll('.sec');
     secs.forEach(function (sec) {
       var r = sec.getBoundingClientRect();
-      var top = r.top - 120;
+      var top = r.top - headerH - 8;
       if (top <= 0 && -top < best) { best = -top; cur = sec.id; }
     });
     /* 顶部尚未滚到任何区块时，默认激活第一个分类，避免视觉上"无选中"的空白 */
@@ -273,6 +295,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   };
   window.addEventListener('scroll', spy, { passive: true });
+  window.addEventListener('resize', function () { recalcHeaderH(); spy(); });
+  /* 滚动一停就按落点校准高亮（现代浏览器支持 scrollend，比固定定时器更准） */
+  try { window.addEventListener('scrollend', function () { _navLock = 0; spy(); }, { passive: true }); } catch (e) {}
   spy();
   /* 顶栏滚动阴影：滚一点就浮起一层柔和阴影，强化"可交互"反馈 */
   var topEl = document.querySelector('.top');
