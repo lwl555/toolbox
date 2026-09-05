@@ -114,9 +114,9 @@ function vdRenderOk(j, plt) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>视频（站内预览 / 下载）：</b>';
     // playsinline 等属性是修复 iOS / 微信内联播放默认静音的关键
     p += '<div style="margin:8px 0"><video src="' + vdProxy(vids[0]) + '" controls preload="metadata" playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="true" onerror="try{window.__vdHlsFallback(this)}catch(e){}" style="width:100%;max-width:100%;border-radius:8px;background:#000"></video></div>';
-    p += '<a href="' + vdProxy(vids[0]) + '" download="video.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none;font-size:13px;font-weight:600">⬇ 下载视频</a>';
+    p += '<a class="vd-dlbtn" href="' + vdProxy(vids[0]) + '" download="video.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #0b57d0;border-radius:6px;color:#0b57d0;text-decoration:none;font-size:13px;font-weight:600">⬇ 下载视频</a>';
     for (var i = 1; i < vids.length; i++) {
-      var dl = '<a href="' + vdProxy(vids[i]) + '" download="video_part' + (i + 1) + '.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">下载片段' + (i + 1) + '</a>';
+      var dl = '<a class="vd-dlbtn" href="' + vdProxy(vids[i]) + '" download="video_part' + (i + 1) + '.mp4" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">下载片段' + (i + 1) + '</a>';
       p += dl;
     }
     p += '</div>';
@@ -136,7 +136,7 @@ function vdRenderOk(j, plt) {
   if (aud.length) {
     p += '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #d0d7de"><b>背景音乐：</b><div style="margin:8px 0">';
     p += '<audio src="' + vdProxy(aud[0]) + '" controls style="width:100%;max-width:100%"></audio></div>';
-    p += '<a href="' + vdProxy(aud[0]) + '" download="bgm.mp3" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">⬇ 下载音乐</a></div>';
+    p += '<a class="vd-dlbtn" href="' + vdProxy(aud[0]) + '" download="bgm.mp3" style="display:inline-block;margin:4px 6px 4px 0;padding:6px 14px;border:1px solid #1f2328;border-radius:6px;color:#1f2328;text-decoration:none;font-size:13px">⬇ 下载音乐</a></div>';
   }
   p += '</div>';
   return p;
@@ -208,7 +208,7 @@ tool({
   s.textContent = '@media (max-width:640px){'
     + ' textarea{font-size:16px !important}'
     + ' .vd-tool-wrap video{width:100%}'
-    + ' .vd-tool-wrap a[download]{display:block;text-align:center;padding:11px 16px !important;font-size:15px !important;margin:8px 0 !important}'
+    + ' .vd-tool-wrap a.vd-dlbtn{display:block !important;text-align:center;padding:11px 16px !important;font-size:15px !important;margin:8px 0 !important}'
     + '}';
   document.head.appendChild(s);
 })();
