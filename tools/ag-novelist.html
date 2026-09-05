@@ -6,16 +6,17 @@
 <title>小说家 - 超有用的工具箱</title>
 <meta name="description" content="构思情节与人物。在线免费使用，文件不上传服务器。">
 <link rel="stylesheet" href="../assets/style.css">
+<style>:root{--accent:#7c5cff;--accent-ink:#4b2fbf;--accent-soft:#efe9ff;--accent-2:#4b2fbf;--brand:#7c5cff}</style>
 </head>
 <body>
 <div class="tool-top"><div class="tool-top-in">
 <a class="back" href="../index.html"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>返回</a>
-<span class="tool-cat">工具</span>
+<span class="tool-cat">写作创意</span>
 <button class="tool-fav" id="fv" title="收藏">★</button>
 </div></div>
 <main class="pane">
-<div class="tool-head">
-  <div class="tool-icon">小</div>
+<div class="tool-head" style="background:linear-gradient(180deg,#efe9ff,rgba(255,255,255,0))">
+  <div class="tool-icon">✍️</div>
   <div style="flex:1;min-width:0">
     <h1>小说家</h1>
     <p class="lede">构思情节与人物</p>
@@ -96,9 +97,23 @@ var AGENTS = [
   { id: 'ag-title', n: '起名大师', d: '宝宝/品牌/账号起名', sys: '你是起名师，按风格与寓意给多个名字并注解，兼顾好听、好记与适配场景。' }
 ];
 
+/* 领域分组（用于 UI 主题差异化）：每个智能体归属一个领域，gen.js 据此注入主题色/图标/徽章 */
+var AGENT_CAT = {
+  'ag-writer':'writing','ag-copywriter':'writing','ag-xhs':'writing','ag-script':'writing',
+  'ag-poet':'writing','ag-novelist':'writing','ag-screenwriter':'writing','ag-title':'writing',
+  'ag-coder':'code','ag-interviewer2':'code',
+  'ag-translator':'lang','ag-english':'lang',
+  'ag-therapist':'care','ag-listener':'care','ag-love':'care','ag-coach':'care','ag-parent':'care','ag-zen':'care','ag-story':'care',
+  'ag-fitness':'health','ag-nutrition':'health','ag-med':'health','ag-tcm':'health','ag-pet':'health',
+  'ag-math':'edu','ag-history':'edu','ag-science':'edu','ag-reader':'edu','ag-debater':'edu',
+  'ag-pm':'biz','ag-growth':'biz','ag-analyst':'biz','ag-invest':'biz','ag-money':'biz','ag-startup':'biz','ag-marketing':'biz','ag-brand':'biz','ag-career':'biz','ag-resume':'biz','ag-interviewer':'biz','ag-negotiator':'biz','ag-decision':'biz','ag-speaker':'biz','ag-timemgr':'biz','ag-summary':'biz',
+  'ag-travel':'life','ag-decor':'life','ag-chef':'life','ag-photo':'life','ag-music':'life','ag-astro':'life','ag-tarot':'life',
+  'ag-lawyer':'legal'
+};
+
 AGENTS.forEach(function (a) {
   tool({
-    id: a.id, n: a.n, c: 'ai-agent', d: a.d,
+    id: a.id, n: a.n, c: 'ai-agent', d: a.d, cat: AGENT_CAT[a.id] || 'life',
     auto: false, first: false, f: [],
     init: function (RT, host) { RT.buildChat(host, { sys: a.sys, defaultProv: 'agnes' }); }
   });
