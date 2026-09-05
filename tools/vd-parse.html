@@ -143,12 +143,11 @@ function vdNote(reason, warn) {
   var border = warn ? '#f0c36d' : '#d0d7de', bg = warn ? '#fff8e6' : '#f6f8fa', col = warn ? '#7a4b00' : '#57606a';
   return '<div style="margin-top:12px;padding:10px;border:1px solid ' + border + ';background:' + bg + ';border-radius:8px;color:' + col + ';font-size:12px;line-height:1.7">' + vdEsc(reason) + '</div>';
 }
-function vdNoteNoService() {
+function vdNoteNoService(reason) {
   return '<div style="margin-top:12px;padding:10px;border:1px solid #f0c36d;background:#fff8e6;border-radius:8px;color:#7a4b00;font-size:12px;line-height:1.7">'
-    + '<b>解析服务待激活</b>：本站视频解析走自建中转服务（免费 Supabase Edge Function，不绑卡）。'
-    + '部署后这里会自动显示站内预览与下载，全程不跳转第三方站。'
-    + '<br>激活命令（你登录一次即可）：<br><code>supabase login --token &lt;token&gt;</code><br><code>supabase functions deploy video-parse --project-ref wcnssyiqitugqfmcbdhe --no-verify-jwt</code>'
-    + '<br>token 获取：supabase.com/dashboard/account/tokens</div>';
+    + '<b>解析请求失败</b>：本站视频解析走自建中转服务（免费 Supabase Edge Function，未绑外卡）。'
+    + '当前可能正在冷启动（约 10-30 秒），请稍候重试；或检查链接是否可公开访问。'
+    + '<br>原因：' + (reason ? vdEsc(reason) : '网络/超时') + '</div>';
 }
 
 var T = [];
@@ -170,7 +169,8 @@ tool({
       + '<div style="margin:4px 0;word-break:break-all"><b>链接：</b>' + vdEsc(url) + '</div></div>';
     try {
       var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-      var to = ctrl ? setTimeout(function () { ctrl.abort(); }, 12000) : null;
+      // 35s: 给 Supabase Edge Function 冷启动 + 第三方解析留够时间
+      var to = ctrl ? setTimeout(function () { ctrl.abort(); }, 35000) : null;
       var r = await fetch(VD_FN, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': VD_ANON },
@@ -181,9 +181,10 @@ tool({
       var j = await r.json();
       if (j && j.ok) return { out: head + vdRenderOk(j, plt) };
       if (j && (j.reason || j.error)) return { out: head + vdNote(j.reason || j.error, false) };
-      return { out: head + vdNoteNoService() };
+      return { out: head + vdNoteNoService('返回值缺少 ok 字段') };
     } catch (e) {
-      return { out: head + vdNoteNoService() };
+      var msg = (e && e.name === 'AbortError') ? '请求超时(首次冷启动约 10-30 秒), 请重试' : String(e);
+      return { out: head + vdNoteNoService(msg) };
     }
   }
 });
