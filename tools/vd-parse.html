@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>视频链接解析下载 - 超有用的工具箱</title>
-<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/哔哩哔哩/快手/YouTube 等，套壳中转不跳转第三方站）。在线免费使用，文件不上传服务器。">
+<meta name="description" content="粘贴带文字的分享链接，自动提取并识别主流平台，支持抖音 / 哔哩哔哩 / 快手 / YouTube 等站内预览与下载。。在线免费使用，文件不上传服务器。">
 <link rel="stylesheet" href="../assets/style.css">
 
 </head>
@@ -19,7 +19,7 @@
   <div class="tool-icon">视</div>
   <div style="flex:1;min-width:0">
     <h1>视频链接解析下载</h1>
-    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/哔哩哔哩/快手/YouTube 等，套壳中转不跳转第三方站）</p>
+    <p class="lede">粘贴带文字的分享链接，自动提取并识别主流平台，支持抖音 / 哔哩哔哩 / 快手 / YouTube 等站内预览与下载。</p>
   </div>
 </div>
 <div id="app"></div>
@@ -173,7 +173,7 @@ function tool(o) { T.push(o); }
 
 tool({
   id: 'vd-parse', n: '视频链接解析下载', c: 'media',
-  d: '粘贴带文字的分享链接，自动提取并识别主流平台，站内中转解析显示直链预览与下载（抖音/哔哩哔哩/快手/YouTube 等，套壳中转不跳转第三方站）',
+  d: '粘贴带文字的分享链接，自动提取并识别主流平台，支持抖音 / 哔哩哔哩 / 快手 / YouTube 等站内预览与下载。',
   f: [{ k: 'text', t: '分享文字或链接（可整段粘贴，自动提取）', type: 'textarea', rows: 4, ph: '例：童年动画片主题曲 https://v.douyin.com/ulGUaTp0ZNM/ 复制此链接，打开Dou音搜索…' },
       { k: 'out', t: '解析结果', type: 'outhtml' }],
   run: async function (v) {
